@@ -80,9 +80,10 @@ def registrar_usuario():
         conn.commit()
         print("Usuario registrado correctamente.")
     except sqlite3.IntegrityError:
-        print("Error: Ya existe un usuario con ese email.")
+        print("Error: Ya existe un usuario con ese email. ")
     finally:
         conn.close()
+
 
 
 # -------------------- EJECUCIÓN --------------------
