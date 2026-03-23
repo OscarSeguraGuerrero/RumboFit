@@ -1,5 +1,13 @@
 import hashlib
 
+class Registro_Usuario():
+    def __init__(self, nombre, correo, telefono):
+        self.nombre = nombre
+        self.correo = correo
+        self.telefono = telefono
+
+
+
 # Función para encriptar la contraseña
 def encriptar_contraseña(contraseña):
     return hashlib.sha256(contraseña.encode()).hexdigest()
@@ -9,6 +17,7 @@ def comprobar_contraseña(contraseña, confirmar_contraseña):
     if contraseña != confirmar_contraseña:
         print("Error: Las contraseñas no coinciden.")
         return
+    if contraseña
 
 # Función para registrar usuario
 def registrar_usuario():
