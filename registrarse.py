@@ -63,7 +63,7 @@ def registrar_usuario():
             print("Error: Las contraseñas no coinciden.")
             continue
         if len(contraseña) < 8 or not any(c.isupper() for c in contraseña) or not any(c.isdigit() for c in contraseña):
-            print("Contraseña inválida. Debe tener mínimo 8 caracteres, una mayúscula y un número.")
+            print("Contraseña inválida. Debe tener mínimo 8 caracteres, una mayúscula y un número. ")
             continue
         break
 
