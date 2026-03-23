@@ -21,6 +21,13 @@ def crear_tabla_usuarios():
     conn.commit()
     conn.close()
 
+class Registro_Usuario():
+    def __init__(self, nombre, correo, telefono):
+        self.nombre = nombre
+        self.correo = correo
+        self.telefono = telefono
+
+
 
 # -------------------- FUNCIONES DE REGISTRO --------------------
 def encriptar_contraseña(contraseña):
