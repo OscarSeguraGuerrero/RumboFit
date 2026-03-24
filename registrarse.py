@@ -1,7 +1,7 @@
 import hashlib
 import sqlite3
 import re
-
+from database import conectar
 # -------------------- BASE DE DATOS --------------------
 DB_NAME = "fitness.db"
 
