@@ -21,14 +21,6 @@ def crear_tabla_usuarios():
     conn.commit()
     conn.close()
 
-class Registro_Usuario():
-    def __init__(self, nombre, correo, telefono):
-        self.nombre = nombre
-        self.correo = correo
-        self.telefono = telefono
-
-
-
 # -------------------- FUNCIONES DE REGISTRO --------------------
 def encriptar_contraseña(contraseña):
     return hashlib.sha256(contraseña.encode()).hexdigest()
@@ -42,6 +34,7 @@ def validar_email(email):
 
 def validar_telefono(telefono):
     # Debe tener exactamente 9 dígitos
+    telefono = telefono.replace(" ", "").replace("-", "")
     return telefono.isdigit() and len(telefono) == 9
 
 
@@ -95,4 +88,5 @@ def registrar_usuario():
 
 # -------------------- EJECUCIÓN --------------------
 if __name__ == "__main__":
+    crear_tabla_usuarios()
     registrar_usuario()
