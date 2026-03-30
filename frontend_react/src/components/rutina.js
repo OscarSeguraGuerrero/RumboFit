@@ -18,6 +18,9 @@ const Rutina = () => {
     return (
         <div className="card" style={{width: '450px'}}>
             <h2>{data.metodo}</h2>
+            <div className="logo">
+                <img src="/images/logo1.png" alt="logo" />
+            </div>
             <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap', margin: '15px 0'}}>
                 {Object.keys(data.rutina).map(dia => (
                     <button key={dia} className={diaActual === dia ? 'active' : ''} onClick={() => setDiaActual(dia)}>
@@ -25,7 +28,7 @@ const Rutina = () => {
                     </button>
                 ))}
             </div>
-            <div style={{background: '#fff', padding: '15px', borderRadius: '10px'}}>
+            <div style={{background: '#ff7a00', padding: '15px', borderRadius: '10px'}}>
                 {data.rutina[diaActual].map((ej, i) => (
                     <p key={i}>• {ej}</p>
                 ))}
