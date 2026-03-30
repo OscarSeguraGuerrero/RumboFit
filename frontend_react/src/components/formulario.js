@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './styles/formulario.css';
+import '../styles/formulario.css';
 
 const Formulario = () => {
     const [datos, setDatos] = useState({ peso: '', altura: '', edad: '', dias: '' });

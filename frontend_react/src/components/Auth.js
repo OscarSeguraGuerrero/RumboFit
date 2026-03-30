@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './styles/global.css';
+import '../styles/global.css';
 
 const Auth = () => {
     const [esRegistro, setEsRegistro] = useState(true);
@@ -31,7 +31,7 @@ const Auth = () => {
 
     return (
         <div className="card">
-            <div className="logo"><img src="/images/logo1.png" alt="logo" /></div>
+            <div className="logo"><img src="public/images/logo1.png" alt="logo" /></div>
             <p className="subtitle">Tu entrenador personal digital</p>
             {esRegistro && <input name="nombre" placeholder="Nombre" onChange={handleInput} />}
             <input name="email" placeholder="Email" onChange={handleInput} />

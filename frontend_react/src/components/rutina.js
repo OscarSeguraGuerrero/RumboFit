@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './styles/rutina.css';
+import '../styles/rutina.css';
 
 const Rutina = () => {
     const [data, setData] = useState(null);

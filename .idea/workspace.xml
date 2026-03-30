@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="implementación frontend con react">
+      <change beforePath="$PROJECT_DIR$/frontend_react/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_react/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/Auth.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_react/src/components/Auth.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/formulario.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_react/src/components/formulario.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_react/src/components/rutina.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="tsconfig.json" />
+        <option value="HTML File" />
+        <option value="TypeScript File" />
+        <option value="JavaScript File" />
+        <option value="CSS File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="frontend" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
+    &quot;accountId&quot;: &quot;5171907a-7895-4994-a74b-f77553eb9f4d&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="3BP52A22W4Uw0gutXjpOB21y74M" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "JavaScript Debug.formulario.html.executor": "Run",
+    "JavaScript Debug.index.html.executor": "Run",
+    "JavaScript Debug.rutina.html.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "frontend-react",
+    "javascript.preferred.runtime.type.id": "node",
+    "junie.onboarding.icon.badge.shown": "true",
+    "list.type.of.created.stylesheet": "CSS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\WebStorm 2025.3.2\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_react\src\styles" />
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_react" />
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="" />
+      <created>1774377655064</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774377655064</updated>
+      <workItem from="1774377656121" duration="1466000" />
+      <workItem from="1774379135439" duration="1144000" />
+      <workItem from="1774573884176" duration="84000" />
+      <workItem from="1774860182542" duration="2493000" />
+      <workItem from="1774863962593" duration="37000" />
+      <workItem from="1774866118107" duration="383000" />
+      <workItem from="1774866739240" duration="3382000" />
+    </task>
+    <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
+      <option name="closed" value="true" />
+      <created>1774378719238</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1774378719239</updated>
+    </task>
+    <task id="LOCAL-00002" summary="versión básica del frontend del formulario de diagnóstico">
+      <option name="closed" value="true" />
+      <created>1774380180145</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1774380180145</updated>
+    </task>
+    <task id="LOCAL-00003" summary="logo">
+      <option name="closed" value="true" />
+      <created>1774380277742</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1774380277742</updated>
+    </task>
+    <task id="LOCAL-00004" summary="implementación frontend del formulario">
+      <option name="closed" value="true" />
+      <created>1774863590745</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1774863590745</updated>
+    </task>
+    <task id="LOCAL-00005" summary="implementación frontend con react">
+      <option name="closed" value="true" />
+      <created>1774868227838</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1774868227838</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Creación básica del frontend  de la aplicación" />
+    <MESSAGE value="versión básica del frontend del formulario de diagnóstico" />
+    <MESSAGE value="logo" />
+    <MESSAGE value="implementación frontend del formulario" />
+    <MESSAGE value="implementación frontend con react" />
+    <option name="LAST_COMMIT_MESSAGE" value="implementación frontend con react" />
+  </component>
+</project>
