@@ -11,9 +11,9 @@ body {
 /* CARD */
 .card {
     background: #f3f3f3;
-    padding: 60px;
-    border-radius: 200px;
-    width: 680px;
+    padding: 30px;
+    border-radius: 20px; /* antes */
+    width: 380px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 

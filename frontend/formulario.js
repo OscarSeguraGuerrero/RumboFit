@@ -28,31 +28,28 @@ function setObjetivo(o) {
     if (o === "mantenimiento") document.getElementById("mant").classList.add("active");
 }
 
-// VALIDACIÓN + ENVÍO
-function enviar() {
+async function enviar() {
+
     let peso = Number(document.getElementById("peso").value);
     let altura = Number(document.getElementById("altura").value);
     let edad = Number(document.getElementById("edad").value);
     let dias = Number(document.getElementById("dias").value);
 
-    // VALIDACIONES
-    if (!peso || peso < 20 || peso > 400) {
-        document.getElementById("errorPeso").innerText = "Peso inválido";
-        return;
-    }
+    let res = await fetch("http://localhost:8000/generar_rutina", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            peso, altura, edad,
+            dias,
+            objetivo
+        })
+    });
 
-    // GENERAR RESULTADO (simulado)
-    let rutina = "";
-    let dieta = "";
+    let data = await res.json();
 
-    if (dias <= 3) rutina = "Full Body";
-    else if (dias <= 5) rutina = "Torso/Pierna";
-    else rutina = (objetivo === "masa") ? "PPL" : "Weider";
+    // guardar resultado
+    localStorage.setItem("rutina", JSON.stringify(data));
 
-    if (objetivo === "masa") dieta = "Hipercalórica";
-    else if (objetivo === "definicion") dieta = "Hipocalórica";
-    else dieta = "Mantenimiento";
-
-    document.getElementById("resultado").innerText =
-        `Rutina: ${rutina} | Dieta: ${dieta}`;
+    // ir a página resultados
+    window.location.href = "rutina.html";
 }
