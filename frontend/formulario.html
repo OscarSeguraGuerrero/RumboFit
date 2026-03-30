@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>RumboFit - Formulario</title>
+  <link rel="stylesheet" href="formulario.css">
+</head>
+
+<body>
+
+<div class="card">
+
+  <div class="logo">
+    <img src="images/logo1.png" alt="logo">
+  </div>
+
+  <h1>¡Bienvenido!</h1>
+  <p class="subtitle">Cuéntanos sobre ti para crear tu plan personalizado</p>
+
+  <!-- PESO -->
+  <label>Peso (kg)</label>
+  <input id="peso" placeholder="Ej: 70">
+  <span id="errorPeso" class="error"></span>
+
+  <!-- ALTURA -->
+  <label>Altura (cm)</label>
+  <input id="altura" placeholder="Ej: 175">
+
+  <!-- EDAD -->
+  <label>Edad (años)</label>
+  <input id="edad" placeholder="Ej: 25">
+
+  <!-- SEXO -->
+  <label>Sexo</label>
+  <div class="sexo">
+    <button onclick="setSexo('masculino')" id="btnM">Masculino</button>
+    <button onclick="setSexo('femenino')" id="btnF">Femenino</button>
+  </div>
+
+  <!-- FRECUENCIA -->
+  <label>Frecuencia de entrenamiento</label>
+  <input id="dias" placeholder="Ej: 4">
+
+  <!-- OBJETIVO -->
+  <label>Objetivo</label>
+  <div class="objetivo">
+    <button onclick="setObjetivo('masa')" id="masa">💪 Subir masa muscular</button>
+    <button onclick="setObjetivo('definicion')" id="def">🔥 Bajar de peso</button>
+    <button onclick="setObjetivo('mantenimiento')" id="mant">⚖️ Mantenimiento</button>
+  </div>
+
+  <button class="submit" onclick="enviar()">Generar mi plan personalizado</button>
+
+  <p id="resultado"></p>
+
+</div>
+
+<script src="formulario.js"></script>
+</body>
+</html>
