@@ -1,5 +1,5 @@
-frontend-react/node_modules
-frontend-react/build
+frontend_react/node_modules
+frontend_react/build
 backend/
 .git
 npm-debug.log

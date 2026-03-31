@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="modificaciones en el frontend con react">
-      <change afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Dockerfile para ver la aplicacion">
+      <change beforePath="$PROJECT_DIR$/.dockerignore" beforeDir="false" afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,7 +106,7 @@
       <workItem from="1774866118107" duration="383000" />
       <workItem from="1774866739240" duration="4233000" />
       <workItem from="1774881871252" duration="173000" />
-      <workItem from="1774959071018" duration="963000" />
+      <workItem from="1774959071018" duration="1245000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -165,7 +164,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774881978077</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Dockerfile para ver la aplicacion">
+      <option name="closed" value="true" />
+      <created>1774960203726</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1774960203726</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -190,6 +197,7 @@
     <MESSAGE value="implementación frontend con react" />
     <MESSAGE value="implementación frontend con react y node.js" />
     <MESSAGE value="modificaciones en el frontend con react" />
-    <option name="LAST_COMMIT_MESSAGE" value="modificaciones en el frontend con react" />
+    <MESSAGE value="Dockerfile para ver la aplicacion" />
+    <option name="LAST_COMMIT_MESSAGE" value="Dockerfile para ver la aplicacion" />
   </component>
 </project>
