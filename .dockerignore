@@ -1,5 +1,4 @@
-frontend_react/node_modules
-frontend_react/build
-backend/
-.git
-npm-debug.log
+frontend_ReactNative/node_modules
+frontend_ReactNative/.expo
+frontend_ReactNative/.next
+frontend_ReactNative/dist

@@ -1,29 +1,27 @@
-# Etapa 1: Construcción (Build)
-FROM node:18-alpine AS build
+# 1. Imagen base
+FROM node:20-alpine
 
-# Establecer directorio de trabajo
+# 2. Instalar dependencias del sistema para Expo y Túnel
+RUN apk add --no-cache bash
+
+# 3. Directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY frontend_react/package*.json ./
+# 4. Copiar archivos de dependencias primero (Optimiza la caché de Docker)
+# Nota: "RUMBOFITNATIVE/" es el nombre de tu carpeta de React Native
+COPY frontend_ReactNative/package*.json ./
 
-# Instalar dependencias
+# 5. Instalar dependencias
 RUN npm install
 
-# Copiar el resto del código del frontend
-COPY frontend_react/ .
+# 6. Copiar el resto del código de la carpeta frontend
+COPY frontend_ReactNative/ .
 
-# Crear la versión de producción (genera la carpeta /build)
-RUN npm run build
+# 7. Exponer puertos necesarios para Expo
+EXPOSE 8081
+EXPOSE 19000
+EXPOSE 19001
+EXPOSE 19002
 
-# Etapa 2: Servidor de Producción (Nginx)
-FROM nginx:stable-alpine
-
-# Copiar los archivos construidos desde la etapa anterior a Nginx
-COPY --from=build /app/build /usr/share/nginx/html
-
-# Exponer el puerto 80 (estándar web)
-EXPOSE 80
-
-# Arrancar Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# 8. Comando para iniciar con túnel (necesario para ver el QR desde Docker)
+CMD ["npx", "expo", "start", "--tunnel"]

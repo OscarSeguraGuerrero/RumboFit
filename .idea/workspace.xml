@@ -4,8 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Dockerfile para ver la aplicacion">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Dockerfile">
       <change beforePath="$PROJECT_DIR$/.dockerignore" beforeDir="false" afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/public/images/logo1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/public/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/App.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/Auth.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/formulario.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/rutina.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/styles/formulario.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/styles/global.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_react/src/styles/rutina.css" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,7 +121,8 @@
       <workItem from="1774866118107" duration="383000" />
       <workItem from="1774866739240" duration="4233000" />
       <workItem from="1774881871252" duration="173000" />
-      <workItem from="1774959071018" duration="1245000" />
+      <workItem from="1774959071018" duration="1277000" />
+      <workItem from="1775046758094" duration="1030000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -172,7 +188,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774960203726</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Dockerfile">
+      <option name="closed" value="true" />
+      <created>1774960347053</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1774960347053</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -198,6 +222,7 @@
     <MESSAGE value="implementación frontend con react y node.js" />
     <MESSAGE value="modificaciones en el frontend con react" />
     <MESSAGE value="Dockerfile para ver la aplicacion" />
-    <option name="LAST_COMMIT_MESSAGE" value="Dockerfile para ver la aplicacion" />
+    <MESSAGE value="Dockerfile" />
+    <option name="LAST_COMMIT_MESSAGE" value="Dockerfile" />
   </component>
 </project>
