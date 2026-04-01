@@ -10,3 +10,4 @@ services:
       - EXPO_NGROK_AUTHTOKEN=3Bl3MFAoTLqxKPwYzFZJAdiL3YY_V3XeWJhsY9Xc4PqWyFHF
     stdin_open: true
     tty: true
+    init: true
