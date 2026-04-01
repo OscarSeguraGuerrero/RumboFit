@@ -4,23 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Dockerfile">
-      <change beforePath="$PROJECT_DIR$/.dockerignore" beforeDir="false" afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Implementación en React Native para aplicaciones móbiles">
+      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.dockerignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/.dockerignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/public/images/logo1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/public/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/App.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/Auth.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/formulario.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/components/rutina.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/index.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/styles/formulario.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/styles/global.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_react/src/styles/rutina.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,12 +78,13 @@
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\WebStorm 2025.3.2\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\samuel\\WebstormProjects\\RumboFit\\frontend_ReactNative\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_ReactNative" />
       <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_react\src\styles" />
       <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_react" />
       <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend" />
@@ -122,7 +113,9 @@
       <workItem from="1774866739240" duration="4233000" />
       <workItem from="1774881871252" duration="173000" />
       <workItem from="1774959071018" duration="1277000" />
-      <workItem from="1775046758094" duration="1030000" />
+      <workItem from="1775046758094" duration="3779000" />
+      <workItem from="1775051077564" duration="2215000" />
+      <workItem from="1775055017063" duration="1598000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -196,7 +189,23 @@
       <option name="project" value="LOCAL" />
       <updated>1774960347053</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Implementación en React Native para aplicaciones móbiles">
+      <option name="closed" value="true" />
+      <created>1775048267170</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1775048267170</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Implementación en React Native para aplicaciones móbiles">
+      <option name="closed" value="true" />
+      <created>1775048276517</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1775048276517</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -223,6 +232,7 @@
     <MESSAGE value="modificaciones en el frontend con react" />
     <MESSAGE value="Dockerfile para ver la aplicacion" />
     <MESSAGE value="Dockerfile" />
-    <option name="LAST_COMMIT_MESSAGE" value="Dockerfile" />
+    <MESSAGE value="Implementación en React Native para aplicaciones móbiles" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implementación en React Native para aplicaciones móbiles" />
   </component>
 </project>

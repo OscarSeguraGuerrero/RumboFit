@@ -1,13 +1,9 @@
 # RumboFit
 
-DOCKER para ver el frontend:
+DOCKER-COMPOSE para ver la aplicación:
 
-Construir la imagen:
 
-docker build -t rumbofit.
+docker-compose up --build
 
-Correr el contenedor:
-
-docker run -p 8080:80 rumbofit
-
- http://localhost:8080
+INSTALAR APP DE MÓVIL "EXPO GO" PARA VER LA APLICACIÓN EN MÓVIL ESCANEANDO EL QR QUE DA EL DOCKER POR LA TERMINAL
+O ABRIR http://localhost:8081 PARA VERLO EN PC 
