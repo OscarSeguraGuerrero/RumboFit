@@ -6,15 +6,25 @@ import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } fro
 export default function Auth() {
     const router = useRouter();
     const [esRegistro, setEsRegistro] = useState(true);
-    const [form, setForm] = useState({ nombre: '', email: '', password: '' });
+    // Añadimos 'telefono' al objeto inicial
+    const [form, setForm] = useState({ nombre: '', email: '', password: '', telefono: '' });
     const [error, setError] = useState('');
 
     const handleAuth = async () => {
         if (esRegistro) {
-            if (!form.nombre || !form.email || !form.password) {
+            // Validación de todos los campos
+            if (!form.nombre || !form.email || !form.password || !form.telefono) {
                 setError("Completa todos los campos");
                 return;
             }
+
+            // Validación: Mínimo 9 números para el móvil
+            const soloNumeros = form.telefono.replace(/\D/g, '');
+            if (soloNumeros.length < 9) {
+                setError("El teléfono debe tener al menos 9 dígitos");
+                return;
+            }
+
             await AsyncStorage.setItem("usuario", JSON.stringify(form));
             Alert.alert("¡Éxito!", "Usuario registrado correctamente");
             setEsRegistro(false);
@@ -36,27 +46,38 @@ export default function Auth() {
                 <Text style={styles.subtitle}>Tu entrenador personal digital</Text>
 
                 {esRegistro && (
-                    <TextInput 
-                        style={styles.input} 
-                        placeholder="Nombre" 
-                        placeholderTextColor="#999"
-                        onChangeText={(t) => setForm({...form, nombre: t})} 
-                    />
+                    <>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Nombre"
+                            placeholderTextColor="#999"
+                            onChangeText={(t) => setForm({...form, nombre: t})}
+                        />
+                        {}
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Teléfono móvil (Ej: 600123456)"
+                            placeholderTextColor="#999"
+                            keyboardType="phone-pad" // Teclado numérico de teléfono
+                            onChangeText={(t) => setForm({...form, telefono: t})}
+                        />
+                    </>
                 )}
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="Email" 
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Email"
                     placeholderTextColor="#999"
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    onChangeText={(t) => setForm({...form, email: t})} 
+                    onChangeText={(t) => setForm({...form, email: t})}
                 />
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="Contraseña" 
+                <TextInput
+                    style={styles.input}
+                    placeholder="Contraseña"
                     placeholderTextColor="#999"
-                    secureTextEntry 
-                    onChangeText={(t) => setForm({...form, password: t})} 
+                    secureTextEntry
+                    onChangeText={(t) => setForm({...form, password: t})}
                 />
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -78,11 +99,11 @@ export default function Auth() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
     card: { backgroundColor: '#f3f3f3', padding: 25, borderRadius: 20, width: '85%', alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-    logo: { width: 180, height: 80, marginBottom: 5 },
+    logo: { width: 300, height: 210, marginBottom: 5 },
     subtitle: { color: '#666', marginBottom: 20, textAlign: 'center' },
     input: { width: '100%', backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#ccc' },
     button: { backgroundColor: '#ff7a00', width: '100%', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 5 },
     buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     switchText: { marginTop: 15, color: '#ff7a00', fontWeight: '500' },
-    errorText: { color: 'red', fontSize: 12, marginBottom: 10 }
+    errorText: { color: 'red', fontSize: 12, marginBottom: 10, textAlign: 'center' }
 });
