@@ -4,11 +4,36 @@ def formulario():
     print("=== FORMULARIO DIAGNÓSTICO ===")
 
     peso = float(input("Peso (kg): "))
+
+    if type(peso) != float:
+        print("El parámetro introducido no es válido")
+        return
+
     altura = float(input("Altura (cm): "))
+
+    if type(altura) != float:
+        print("El parámetro introducido no es válido")
+        return
+
     edad = int(input("Edad: "))
+
+    if type(edad) != int:
+        print("El parámetro introducido no es válido")
+        return
+
     sexo = input("Sexo (M/F): ")
+
+    if sexo != 'M' and sexo != 'F':
+        print("El parámetro introducido no es válido")
+        return
+
     frecuencia = int(input("Días de entrenamiento (1-7): "))
-    objetivo = input("Objetivo (volumen / definir / mantener): ")
+
+    if type(frecuencia) != int:
+        print("El parámetro introducido no es válido")
+        return
+
+    objetivo = input("Objetivo (\n1.Volumen \n2.Definir \n3.Mantener) ")
 
     # VALIDACIONES
     if not (20 <= peso <= 400):
