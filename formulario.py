@@ -31,7 +31,7 @@ def formulario():
     if frecuencia <= 3:
         rutina = "Full Body"
     elif frecuencia <= 5 and frecuencia >= 4:
-        rutina = "Torso-Pierna (UPPER-LOWER"
+        rutina = "Torso-Pierna (UPPER-LOWER)"
     else:
         rutina = "PPL(Push Pull Legs)"
 
