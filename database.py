@@ -1,6 +1,9 @@
-import sqlite3
-
-DB_NAME = "fitness.db"
+import psycopg2
 
 def conectar():
-    return sqlite3.connect(DB_NAME)
+    return psycopg2.connect(
+        host="localhost",
+        database="rumbofit",
+        user="postgres",
+        password="tu_password"
+    )
