@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Implementación del docker compose">
-      <change afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Implementación del frontend de la página para ver la rutina y el perfil">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -116,7 +113,8 @@
       <workItem from="1775051077564" duration="2215000" />
       <workItem from="1775055017063" duration="3387000" />
       <workItem from="1775126325885" duration="1627000" />
-      <workItem from="1775144770808" duration="3057000" />
+      <workItem from="1775144770808" duration="3344000" />
+      <workItem from="1775300998959" duration="3969000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -222,7 +220,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775058407535</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Implementación del frontend de la página para ver la rutina y el perfil">
+      <option name="closed" value="true" />
+      <created>1775148801251</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1775148801251</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -252,6 +258,7 @@
     <MESSAGE value="Implementación en React Native para aplicaciones móbiles" />
     <MESSAGE value="Implementación del docker compose para ver la app con el qr por el móvil" />
     <MESSAGE value="Implementación del docker compose" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implementación del docker compose" />
+    <MESSAGE value="Implementación del frontend de la página para ver la rutina y el perfil" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implementación del frontend de la página para ver la rutina y el perfil" />
   </component>
 </project>

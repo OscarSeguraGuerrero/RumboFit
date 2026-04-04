@@ -20,6 +20,31 @@ export default function Rutina() {
     const [diaActual, setDiaActual] = useState(null);
     const [usuario, setUsuario] = useState({ nombre: 'Usuario' });
 
+    // --- MAPEO DE IMÁGENES POR MÚSCULO ---
+    // Asegúrate de tener estas imágenes en tu carpeta assets/images/
+    const imagenesMusculos = {
+        empuje: require('../assets/images/musculo_pecho.png'),
+        traccion: require('../assets/images/musculo_traccion.png'),
+        pierna: require('../assets/images/musculo_pierna.png'),
+        fullbody: require('../assets/images/fullbody.png'),
+        core: require('../assets/images/musculo_core.png'),
+        torso: require('../assets/images/musculo_torso.png'),
+        descanso: require('../assets/images/descanso.png')
+    };
+
+    // Función para decidir qué imagen mostrar basándose en el texto del día
+    const obtenerImagenMusculo = (textoDia) => {
+        const dia = textoDia.toLowerCase();
+        if (dia.includes('empuje')) return imagenesMusculos.empuje;
+        if (dia.includes('tracción') || dia.includes('traccion')) return imagenesMusculos.traccion;
+        if (dia.includes('core')) return imagenesMusculos.core;
+        if (dia.includes('pierna')) return imagenesMusculos.pierna;
+        if (dia.includes('torso')) return imagenesMusculos.torso;
+        if (dia.includes('fullbody')) return imagenesMusculos.fullbody;
+        if (dia.includes('descanso')) return imagenesMusculos.descanso;
+        return imagenesMusculos.default;
+    };
+
     const fadeAnim = new Animated.Value(0);
 
     useEffect(() => {
@@ -62,7 +87,7 @@ export default function Rutina() {
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
 
-            {/* --- TOP BAR MEJORADA --- */}
+            {/* --- TOP BAR --- */}
             <View style={styles.topBar}>
                 <TouchableOpacity style={styles.logoutButton} onPress={cerrarSesion}>
                     <Text style={styles.logoutIcon}>✕</Text>
@@ -75,7 +100,6 @@ export default function Rutina() {
                     onPress={irAPerfil}
                 >
                     <View style={styles.textContainer}>
-                        <Text style={styles.welcome}></Text>
                         <Text style={styles.userName}>{usuario.nombre}</Text>
                     </View>
                     <View style={styles.avatarGlow}>
@@ -98,6 +122,7 @@ export default function Rutina() {
                     <Image source={require('../assets/images/logo1.png')} style={styles.miniLogo} resizeMode="contain" />
                 </View>
 
+                {/* --- TABS --- */}
                 <View style={styles.tabsWrapper}>
                     <ScrollView
                         horizontal
@@ -125,6 +150,19 @@ export default function Rutina() {
                         <Text style={styles.exerciseCount}>{data.rutina[diaActual].length} ejercicios</Text>
                     </View>
 
+                    {/* --- NUEVA FOTO DE MÚSCULOS --- */}
+                    <View style={styles.imageContainer}>
+                        <Image
+                            source={obtenerImagenMusculo(diaActual)}
+                            style={styles.muscleImage}
+                            resizeMode="cover"
+                        />
+                        <View style={styles.imageOverlay}>
+                            <Text style={styles.overlayText}>Músculos trabajados</Text>
+                        </View>
+                    </View>
+
+                    {/* --- LISTA EJERCICIOS --- */}
                     {data.rutina[diaActual].map((ej, i) => (
                         <View key={i} style={styles.exerciseCard}>
                             <View style={styles.indexCircle}>
@@ -150,7 +188,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         marginBottom: 25
     },
-    // BOTÓN CERRAR SESIÓN ESTILIZADO
     logoutButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -161,21 +198,11 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#eee'
     },
-    logoutIcon: {
-        color: '#ff4444',
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginRight: 4
-    },
-    logoutText: {
-        color: '#666',
-        fontSize: 12,
-        fontWeight: '600'
-    },
+    logoutIcon: { color: '#ff4444', fontSize: 14, fontWeight: 'bold', marginRight: 4 },
+    logoutText: { color: '#666', fontSize: 12, fontWeight: '600' },
 
     profileTrigger: { flexDirection: 'row', alignItems: 'center' },
     textContainer: { alignItems: 'flex-end', marginRight: 10 },
-    welcome: { color: '#999', fontSize: 12 },
     userName: { color: '#1a1a1a', fontWeight: '800', fontSize: 16 },
     avatarGlow: { padding: 2, borderRadius: 25, backgroundColor: 'rgba(255, 122, 0, 0.1)' },
     avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
@@ -192,7 +219,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 25 },
     methodLabel: { color: '#ffffff', fontSize: 10, fontWeight: 'bold', letterSpacing: 1, opacity: 0.8 },
     title: { fontSize: 22, fontWeight: '900', color: '#ffffff', marginTop: 4 },
-    miniLogo: { width: 100, height: 105, tintColor: 'white' },
+    miniLogo: { width: 60, height: 45, tintColor: 'white' },
 
     tabsWrapper: { marginBottom: 20, marginHorizontal: -25 },
     tabsScroll: { paddingHorizontal: 25, gap: 10 },
@@ -206,6 +233,36 @@ const styles = StyleSheet.create({
     contentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
     diaH3: { fontSize: 18, fontWeight: '800', color: '#ffffff' },
     exerciseCount: { color: '#ffffff', fontSize: 12, opacity: 0.8 },
+
+    // ESTILOS DE LA NUEVA IMAGEN
+    imageContainer: {
+        width: '100%',
+        height: 235,
+        borderRadius: 20,
+        overflow: 'hidden',
+        marginBottom: 10,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        position: 'relative'
+    },
+    muscleImage: {
+        width: '100%',
+        height: '100%'
+    },
+    imageOverlay: {
+        position: 'absolute',
+        bottom: 10,
+        left: 10,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 10
+    },
+    overlayText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold'
+    },
+
     exerciseCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -219,4 +276,4 @@ const styles = StyleSheet.create({
     itemText: { fontSize: 15, color: '#333', fontWeight: '600', flex: 1 },
 
     loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' }
-});
+})
