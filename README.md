@@ -9,4 +9,13 @@ INSTALAR APP DE MÓVIL "EXPO GO" PARA VER LA APLICACIÓN EN MÓVIL ESCANEANDO EL
 O ABRIR http://localhost:8081 PARA VERLO EN PC 
 
 
-si falla el docker-compose:  "npx expo start --tunnel" dentro de RumboFit\frontend_ReactNative
+si falla el docker-compose:  
+instalar node.js https://nodejs.org/es/download
+npm install -> instalar bibiliotecas de node.js en la raiz de la aplicación
+npx expo install
+npx expo start --tunnel  -> dentro de RumboFit\frontend_ReactNative
+
+escanear qr 
+
+
+
