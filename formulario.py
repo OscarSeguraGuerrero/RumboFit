@@ -1,4 +1,6 @@
 from database import conectar
+from motor_rutinas import generar_plan
+
 
 def guardar_diagnostico(user_id, peso, altura, edad, sexo, frecuencia, objetivo, rutina):
     try:
@@ -11,7 +13,16 @@ def guardar_diagnostico(user_id, peso, altura, edad, sexo, frecuencia, objetivo,
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
 
-        cursor.execute(query, (user_id, peso, altura, edad, sexo, frecuencia, objetivo, rutina))
+        cursor.execute(query, (
+            user_id,
+            peso,
+            altura,
+            edad,
+            sexo,
+            frecuencia,
+            objetivo,
+            rutina
+        ))
 
         conn.commit()
         cursor.close()
@@ -20,7 +31,7 @@ def guardar_diagnostico(user_id, peso, altura, edad, sexo, frecuencia, objetivo,
         print("✅ Datos guardados en la base de datos")
 
     except Exception as e:
-        print("❌ Error al guardar en la BD:", e)
+        print("Error al guardar en la BD:", e)
 
 
 def formulario():
@@ -35,7 +46,7 @@ def formulario():
         objetivo = input("Objetivo (volumen / definir / mantener): ").lower()
 
     except ValueError:
-        print("❌ Error: introduce valores numéricos correctos")
+        print("Error: introduce valores correctos")
         return
 
     # VALIDACIONES
@@ -63,20 +74,18 @@ def formulario():
         print("Objetivo inválido")
         return
 
-    # MOTOR DE REGLAS
-    if frecuencia <= 3:
-        rutina = "Full Body"
-    elif 4 <= frecuencia <= 5:
-        rutina = "Torso-Pierna (Upper-Lower)"
-    else:
-        rutina = "PPL (Push Pull Legs)"
+    #Llamada a función  de motor_rutinas para generar una rutina
+    rutina, descripcion = generar_plan(frecuencia, objetivo)
 
-    print(f"\n💪 Tu rutina recomendada es: {rutina}")
 
-    #Es temporal porque luego vendra del login el user_id
+    print("\n=== RESULTADO ===")
+    print(f"Rutina recomendada: {rutina}")
+    print(f"Descripción: {descripcion}")
+
+    #TEMPORAL porque viene del login
     user_id = 1
 
-    # GUARDAR EN BD
+    # 💾 GUARDAR EN BD
     guardar_diagnostico(
         user_id,
         peso,
