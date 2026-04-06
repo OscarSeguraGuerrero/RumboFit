@@ -14,30 +14,35 @@ datasource db {
 // 1. USUARIOS Y SUSCRIPCIÓN
 // ==========================================
 model Usuario {
-  id                 Int       @id @default(autoincrement())
-  nombre             String
-  email              String    @unique
-  password_hash      String
-  telefono           String?
-  peso               Decimal?  @db.Decimal
-  altura             Int?
-  edad               Int?
-  sexo               String?
-  frecuencia_semanal Int?
-  objetivo           String?
-  es_premium         Boolean   @default(false)
-  fecha_registro     DateTime  @default(now())
+  id                  Int       @id @default(autoincrement())
+  nombre              String
+  email               String    @unique
+  password_hash       String
+  telefono            String?
+  foto_perfil         String?                      // URL/path de la foto (HU-14, HU-22)
+  peso                Decimal?  @db.Decimal
+  altura              Int?
+  edad                Int?
+  sexo                String?
+  frecuencia_semanal  Int?
+  objetivo            String?
+  es_premium          Boolean   @default(false)
+  fecha_registro      DateTime  @default(now())
+  // Recuperación de contraseña (HU-03)
+  reset_token         String?
+  reset_token_expiry  DateTime?
 
   // Relaciones
-  rutinas            Rutina[]
-  rutina_ejercicios  Rutina_Ejercicio[]
-  entrenamientos     Entrenamiento[]
-  registro_comidas   Registro_Comidas[]
-  publicaciones      Publicacion[]
-  seguidores         Seguidor[] @relation("UsuarioSeguidores")
-  seguidos           Seguidor[] @relation("UsuarioSeguidos")
-  me_gusta           Me_Gusta[]
-  notificaciones     Notificacion[]
+  rutinas             Rutina[]
+  rutina_ejercicios   Rutina_Ejercicio[]
+  entrenamientos      Entrenamiento[]
+  registro_comidas    Registro_Comidas[]
+  publicaciones       Publicacion[]
+  seguidores          Seguidor[]    @relation("UsuarioSeguidores")
+  seguidos            Seguidor[]    @relation("UsuarioSeguidos")
+  me_gusta            Me_Gusta[]
+  notificaciones      Notificacion[]
+  notificaciones_orig Notificacion[] @relation("NotificacionOrigen")
 }
 
 // ==========================================
@@ -70,27 +75,29 @@ model Alimento {
 // 3. PLANIFICACIÓN
 // ==========================================
 model Rutina {
-  id          Int      @id @default(autoincrement())
-  usuario_id  Int
-  nombre      String
-  
-  usuario     Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
-  ejercicios  Rutina_Ejercicio[]
+  id             Int      @id @default(autoincrement())
+  usuario_id     Int
+  nombre         String
+  tipo_rutina    String?           // "FullBody", "PPL", "Weider", "Torso/Pierna"… (HU-05)
+  es_generada    Boolean  @default(false)  // true = asignada por motor de reglas
+  descripcion    String?  @db.Text         // razón de la elección mostrada al usuario (HU-05)
+
+  usuario        Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  ejercicios     Rutina_Ejercicio[]
   entrenamientos Entrenamiento[]
 }
 
 model Rutina_Ejercicio {
-  id                    Int       @id @default(autoincrement())
-  usuario_id            Int
-  rutina_id             Int
-  ejercicio_id          Int
-  dia_semana            Int?
-  series_objetivo       Int?
-  repeticiones_objetivo String?
+  id                   Int       @id @default(autoincrement())
+  rutina_id            Int
+  ejercicio_id         Int
+  dia_semana           Int?
+  series_objetivo      Int?
+  repeticiones_min     Int?      // rango inferior, p.ej. 8  (antes String "8-12")
+  repeticiones_max     Int?      // rango superior, p.ej. 12
 
-  usuario               Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
-  rutina                Rutina    @relation(fields: [rutina_id], references: [id], onDelete: Cascade)
-  ejercicio             Ejercicio @relation(fields: [ejercicio_id], references: [id], onDelete: Cascade)
+  rutina               Rutina    @relation(fields: [rutina_id], references: [id], onDelete: Cascade)
+  ejercicio            Ejercicio @relation(fields: [ejercicio_id], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
@@ -152,16 +159,26 @@ model Seguidor {
 }
 
 model Publicacion {
-  id               Int            @id @default(autoincrement())
-  usuario_id       Int
-  entrenamiento_id Int?
-  titulo           String
-  descripcion      String?        @db.Text
-  fecha_publicacion DateTime      @default(now())
+  id                Int             @id @default(autoincrement())
+  usuario_id        Int
+  entrenamiento_id  Int?
+  titulo            String
+  descripcion       String?         @db.Text
+  fecha_publicacion DateTime        @default(now())
 
-  usuario          Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
-  entrenamiento    Entrenamiento? @relation(fields: [entrenamiento_id], references: [id], onDelete: SetNull)
-  me_gusta         Me_Gusta[]
+  usuario           Usuario         @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  entrenamiento     Entrenamiento?  @relation(fields: [entrenamiento_id], references: [id], onDelete: SetNull)
+  me_gusta          Me_Gusta[]
+  imagenes          Imagen_Publicacion[]   // hasta 5 imágenes por post (HU-19)
+}
+
+model Imagen_Publicacion {
+  id             Int         @id @default(autoincrement())
+  publicacion_id Int
+  url            String      // URL o path del archivo
+  orden          Int         @default(0)  // posición en el carrusel
+
+  publicacion    Publicacion @relation(fields: [publicacion_id], references: [id], onDelete: Cascade)
 }
 
 model Me_Gusta {
@@ -176,11 +193,15 @@ model Me_Gusta {
 }
 
 model Notificacion {
-  id                Int      @id @default(autoincrement())
-  usuario_id        Int
-  tipo_notificacion String
-  leida             Boolean  @default(false)
-  fecha             DateTime @default(now())
+  id                  Int          @id @default(autoincrement())
+  usuario_id          Int          // destinatario
+  tipo_notificacion   String       // "nuevo_seguidor", "me_gusta" (HU-24)
+  leida               Boolean      @default(false)
+  fecha               DateTime     @default(now())
+  // Contexto de la notificación (HU-24)
+  origen_usuario_id   Int?         // quién generó la notificación
+  publicacion_id      Int?         // post relacionado (si aplica)
 
-  usuario           Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  usuario             Usuario      @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  origen_usuario      Usuario?     @relation("NotificacionOrigen", fields: [origen_usuario_id], references: [id], onDelete: SetNull)
 }
