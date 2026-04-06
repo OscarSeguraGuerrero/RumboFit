@@ -1,0 +1,13 @@
+services:
+  app-frontend:
+    build:
+      context: ./frontend_ReactNative
+      dockerfile: Dockerfile
+    container_name: rumbofit_container
+    ports:
+      - "8081:8081"
+    environment:
+      - EXPO_NGROK_AUTHTOKEN=3Bl3MFAoTLqxKPwYzFZJAdiL3YY_V3XeWJhsY9Xc4PqWyFHF
+    stdin_open: true
+    tty: true
+    init: true

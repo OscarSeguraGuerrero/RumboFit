@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Implementación del docker compose">
+      <change afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="HTML File" />
+        <option value="TypeScript File" />
+        <option value="CSS File" />
+        <option value="tsconfig.json" />
+        <option value="JavaScript File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="frontend-react" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
+    &quot;accountId&quot;: &quot;5171907a-7895-4994-a74b-f77553eb9f4d&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="3BP52A22W4Uw0gutXjpOB21y74M" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;JavaScript Debug.formulario.html.executor&quot;: &quot;Run&quot;,
+    &quot;JavaScript Debug.index.html.executor&quot;: &quot;Run&quot;,
+    &quot;JavaScript Debug.rutina.html.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\samuel\\WebstormProjects\\RumboFit\\frontend_ReactNative\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_ReactNative" />
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_react\src\styles" />
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend_react" />
+      <recent name="C:\Users\samuel\WebstormProjects\RumboFit\frontend" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="" />
+      <created>1774377655064</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774377655064</updated>
+      <workItem from="1774377656121" duration="1466000" />
+      <workItem from="1774379135439" duration="1144000" />
+      <workItem from="1774573884176" duration="84000" />
+      <workItem from="1774860182542" duration="2493000" />
+      <workItem from="1774863962593" duration="37000" />
+      <workItem from="1774866118107" duration="383000" />
+      <workItem from="1774866739240" duration="4233000" />
+      <workItem from="1774881871252" duration="173000" />
+      <workItem from="1774959071018" duration="1277000" />
+      <workItem from="1775046758094" duration="3779000" />
+      <workItem from="1775051077564" duration="2215000" />
+      <workItem from="1775055017063" duration="3387000" />
+      <workItem from="1775126325885" duration="1627000" />
+      <workItem from="1775144770808" duration="3057000" />
+    </task>
+    <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
+      <option name="closed" value="true" />
+      <created>1774378719238</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1774378719239</updated>
+    </task>
+    <task id="LOCAL-00002" summary="versión básica del frontend del formulario de diagnóstico">
+      <option name="closed" value="true" />
+      <created>1774380180145</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1774380180145</updated>
+    </task>
+    <task id="LOCAL-00003" summary="logo">
+      <option name="closed" value="true" />
+      <created>1774380277742</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1774380277742</updated>
+    </task>
+    <task id="LOCAL-00004" summary="implementación frontend del formulario">
+      <option name="closed" value="true" />
+      <created>1774863590745</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1774863590745</updated>
+    </task>
+    <task id="LOCAL-00005" summary="implementación frontend con react">
+      <option name="closed" value="true" />
+      <created>1774868227838</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1774868227838</updated>
+    </task>
+    <task id="LOCAL-00006" summary="implementación frontend con react y node.js">
+      <option name="closed" value="true" />
+      <created>1774870485216</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1774870485216</updated>
+    </task>
+    <task id="LOCAL-00007" summary="modificaciones en el frontend con react">
+      <option name="closed" value="true" />
+      <created>1774881978077</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1774881978077</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Dockerfile para ver la aplicacion">
+      <option name="closed" value="true" />
+      <created>1774960203726</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1774960203726</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Dockerfile">
+      <option name="closed" value="true" />
+      <created>1774960347053</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1774960347053</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Implementación en React Native para aplicaciones móbiles">
+      <option name="closed" value="true" />
+      <created>1775048267170</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1775048267170</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Implementación en React Native para aplicaciones móbiles">
+      <option name="closed" value="true" />
+      <created>1775048276517</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1775048276517</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Implementación del docker compose para ver la app con el qr por el móvil">
+      <option name="closed" value="true" />
+      <created>1775056843184</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1775056843184</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Implementación del docker compose">
+      <option name="closed" value="true" />
+      <created>1775058407535</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1775058407535</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Creación básica del frontend  de la aplicación" />
+    <MESSAGE value="versión básica del frontend del formulario de diagnóstico" />
+    <MESSAGE value="logo" />
+    <MESSAGE value="implementación frontend del formulario" />
+    <MESSAGE value="implementación frontend con react" />
+    <MESSAGE value="implementación frontend con react y node.js" />
+    <MESSAGE value="modificaciones en el frontend con react" />
+    <MESSAGE value="Dockerfile para ver la aplicacion" />
+    <MESSAGE value="Dockerfile" />
+    <MESSAGE value="Implementación en React Native para aplicaciones móbiles" />
+    <MESSAGE value="Implementación del docker compose para ver la app con el qr por el móvil" />
+    <MESSAGE value="Implementación del docker compose" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implementación del docker compose" />
+  </component>
+</project>
