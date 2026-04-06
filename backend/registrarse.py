@@ -1,42 +1,25 @@
-import hashlib
-import sqlite3
-import re
 from database import conectar
-# -------------------- BASE DE DATOS --------------------
-DB_NAME = "fitness.db"
+import hashlib
+import re
 
 
-def crear_tabla_usuarios():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            telefono TEXT NOT NULL,
-            contraseña TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+# -------------------- FUNCIONES --------------------
 
-# -------------------- FUNCIONES DE REGISTRO --------------------
 def encriptar_contraseña(contraseña):
     return hashlib.sha256(contraseña.encode()).hexdigest()
 
 
 def validar_email(email):
-    # Validación simple de email
     patron = r"^[\w\.-]+@[\w\.-]+\.\w+$"
     return re.match(patron, email) is not None
 
 
 def validar_telefono(telefono):
-    # Debe tener exactamente 9 dígitos
     telefono = telefono.replace(" ", "").replace("-", "")
     return telefono.isdigit() and len(telefono) == 9
 
+
+# -------------------- REGISTRO --------------------
 
 def registrar_usuario():
     print("=== Registro de Usuario ===")
@@ -47,46 +30,48 @@ def registrar_usuario():
         email = input("Email: ").strip()
         if validar_email(email):
             break
-        print("Email inválido. Debe contener '@' y un dominio válido.")
+        print("Email inválido.")
 
     while True:
         telefono = input("Número de Teléfono (9 dígitos): ").strip()
         if validar_telefono(telefono):
             break
-        print("Teléfono inválido. Debe tener exactamente 9 dígitos.")
+        print("Teléfono inválido.")
 
     while True:
-        contraseña = input("Contraseña (mínimo 8 caracteres, una mayúscula y un número): ").strip()
-        confirmar_contraseña = input("Confirmar contraseña: ").strip()
+        contraseña = input("Contraseña: ").strip()
+        confirmar = input("Confirmar contraseña: ").strip()
 
-        if contraseña != confirmar_contraseña:
-            print("Error: Las contraseñas no coinciden.")
+        if contraseña != confirmar:
+            print("Las contraseñas no coinciden.")
             continue
+
         if len(contraseña) < 8 or not any(c.isupper() for c in contraseña) or not any(c.isdigit() for c in contraseña):
-            print("Contraseña inválida. Debe tener mínimo 8 caracteres, una mayúscula y un número. ")
+            print("Contraseña débil.")
             continue
+
         break
 
     contraseña_encriptada = encriptar_contraseña(contraseña)
 
-    # Guardar en SQLite
+    # 💾 GUARDAR EN POSTGRESQL
     try:
-        conn = sqlite3.connect(DB_NAME)
+        conn = conectar()
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO users (nombre, email, telefono, contraseña)
-            VALUES (?, ?, ?, ?)
-        """, (nombre, email, telefono, contraseña_encriptada))
+
+        query = """
+        INSERT INTO users (nombre, email, telefono, contraseña)
+        VALUES (%s, %s, %s, %s)
+        """
+
+        cursor.execute(query, (nombre, email, telefono, contraseña_encriptada))
+
         conn.commit()
-        print("Usuario registrado correctamente.")
-    except sqlite3.IntegrityError:
-        print("Error: Ya existe un usuario con ese email. ")
-    finally:
+
+        print("✅ Usuario registrado correctamente")
+
+        cursor.close()
         conn.close()
 
-
-
-# -------------------- EJECUCIÓN --------------------
-if __name__ == "__main__":
-    crear_tabla_usuarios()
-    registrar_usuario()
+    except Exception as e:
+        print("❌ Error:", e)
