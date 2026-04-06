@@ -42,7 +42,7 @@ export default function Perfil() {
                 <View style={styles.divider} />
 
                 <Text style={styles.label}>Teléfono Móvil</Text>
-                <Text style={styles.valor}>{usuario.telefono}</Text>
+                <Text style={styles.valor}>+34 {usuario.telefono}</Text>
 
                 <View style={styles.divider} />
 
