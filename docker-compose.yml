@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app-frontend:
     build:
@@ -11,3 +13,34 @@ services:
     stdin_open: true
     tty: true
     init: true
+
+  db:
+    image: postgres:15
+    container_name: rumbofit_db
+    restart: always
+    environment:
+      POSTGRES_USER: rumbofit
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: rumbofit
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: rumbofit_backend
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://rumbofit:password123@db:5432/rumbofit?schema=public"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - db
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npx prisma db seed && npm run dev"
+
+volumes:
+  pgdata:

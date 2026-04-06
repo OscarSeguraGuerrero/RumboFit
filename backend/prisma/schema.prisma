@@ -1,0 +1,207 @@
+// This is your Prisma schema file
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. USUARIOS Y SUSCRIPCIÓN
+// ==========================================
+model Usuario {
+  id                  Int       @id @default(autoincrement())
+  nombre              String
+  email               String    @unique
+  password_hash       String
+  telefono            String?
+  foto_perfil         String?                      // URL/path de la foto (HU-14, HU-22)
+  peso                Decimal?  @db.Decimal
+  altura              Int?
+  edad                Int?
+  sexo                String?
+  frecuencia_semanal  Int?
+  objetivo            String?
+  es_premium          Boolean   @default(false)
+  fecha_registro      DateTime  @default(now())
+  // Recuperación de contraseña (HU-03)
+  reset_token         String?
+  reset_token_expiry  DateTime?
+
+  // Relaciones
+  rutinas             Rutina[]
+  rutina_ejercicios   Rutina_Ejercicio[]
+  entrenamientos      Entrenamiento[]
+  registro_comidas    Registro_Comidas[]
+  publicaciones       Publicacion[]
+  seguidores          Seguidor[]    @relation("UsuarioSeguidores")
+  seguidos            Seguidor[]    @relation("UsuarioSeguidos")
+  me_gusta            Me_Gusta[]
+  notificaciones      Notificacion[]
+  notificaciones_orig Notificacion[] @relation("NotificacionOrigen")
+}
+
+// ==========================================
+// 2. CATÁLOGOS BASE
+// ==========================================
+model Ejercicio {
+  id             Int       @id @default(autoincrement())
+  nombre         String    @unique
+  grupo_muscular String?
+  descripcion    String?   @db.Text
+
+  // Relaciones
+  rutina_ejercicio   Rutina_Ejercicio[]
+  serie_entrenamiento Serie_Entrenamiento[]
+}
+
+model Alimento {
+  id                 Int       @id @default(autoincrement())
+  nombre             String    @unique
+  calorias_100g      Decimal   @db.Decimal
+  proteinas_100g     Decimal   @db.Decimal
+  carbohidratos_100g Decimal   @db.Decimal
+  grasas_100g        Decimal   @db.Decimal
+
+  // Relaciones
+  registros          Registro_Comidas[]
+}
+
+// ==========================================
+// 3. PLANIFICACIÓN
+// ==========================================
+model Rutina {
+  id             Int      @id @default(autoincrement())
+  usuario_id     Int
+  nombre         String
+  tipo_rutina    String?           // "FullBody", "PPL", "Weider", "Torso/Pierna"… (HU-05)
+  es_generada    Boolean  @default(false)  // true = asignada por motor de reglas
+  descripcion    String?  @db.Text         // razón de la elección mostrada al usuario (HU-05)
+
+  usuario        Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  ejercicios     Rutina_Ejercicio[]
+  entrenamientos Entrenamiento[]
+}
+
+model Rutina_Ejercicio {
+  id                   Int       @id @default(autoincrement())
+  rutina_id            Int
+  ejercicio_id         Int
+  dia_semana           Int?
+  series_objetivo      Int?
+  repeticiones_min     Int?      // rango inferior, p.ej. 8  (antes String "8-12")
+  repeticiones_max     Int?      // rango superior, p.ej. 12
+
+  rutina               Rutina    @relation(fields: [rutina_id], references: [id], onDelete: Cascade)
+  ejercicio            Ejercicio @relation(fields: [ejercicio_id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 4. EJECUCIÓN
+// ==========================================
+model Entrenamiento {
+  id                Int       @id @default(autoincrement())
+  usuario_id        Int
+  rutina_id         Int?      
+  fecha_inicio      DateTime  @default(now())
+  fecha_fin         DateTime?
+  volumen_total_kg  Decimal?  @db.Decimal
+
+  usuario           Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  rutina            Rutina?   @relation(fields: [rutina_id], references: [id], onDelete: SetNull)
+  series            Serie_Entrenamiento[]
+  publicaciones     Publicacion[]
+}
+
+model Serie_Entrenamiento {
+  id                  Int           @id @default(autoincrement())
+  entrenamiento_id    Int
+  ejercicio_id        Int
+  numero_serie        Int
+  peso_kg             Decimal       @db.Decimal
+  repeticiones_reales Int
+
+  entrenamiento       Entrenamiento @relation(fields: [entrenamiento_id], references: [id], onDelete: Cascade)
+  ejercicio           Ejercicio     @relation(fields: [ejercicio_id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 5. NUTRICIÓN
+// ==========================================
+model Registro_Comidas {
+  id               Int       @id @default(autoincrement())
+  usuario_id       Int
+  alimento_id      Int
+  fecha            DateTime  @db.Date
+  franja_horaria   String
+  cantidad_gramos  Decimal   @db.Decimal
+
+  usuario          Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  alimento         Alimento  @relation(fields: [alimento_id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 6. RED SOCIAL
+// ==========================================
+model Seguidor {
+  seguidor_id Int
+  seguido_id  Int
+  fecha       DateTime @default(now())
+
+  seguidor    Usuario  @relation("UsuarioSeguidos", fields: [seguidor_id], references: [id], onDelete: Cascade)
+  seguido     Usuario  @relation("UsuarioSeguidores", fields: [seguido_id], references: [id], onDelete: Cascade)
+
+  @@id([seguidor_id, seguido_id])
+}
+
+model Publicacion {
+  id                Int             @id @default(autoincrement())
+  usuario_id        Int
+  entrenamiento_id  Int?
+  titulo            String
+  descripcion       String?         @db.Text
+  fecha_publicacion DateTime        @default(now())
+
+  usuario           Usuario         @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  entrenamiento     Entrenamiento?  @relation(fields: [entrenamiento_id], references: [id], onDelete: SetNull)
+  me_gusta          Me_Gusta[]
+  imagenes          Imagen_Publicacion[]   // hasta 5 imágenes por post (HU-19)
+}
+
+model Imagen_Publicacion {
+  id             Int         @id @default(autoincrement())
+  publicacion_id Int
+  url            String      // URL o path del archivo
+  orden          Int         @default(0)  // posición en el carrusel
+
+  publicacion    Publicacion @relation(fields: [publicacion_id], references: [id], onDelete: Cascade)
+}
+
+model Me_Gusta {
+  usuario_id     Int
+  publicacion_id Int
+  fecha          DateTime @default(now())
+
+  usuario        Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  publicacion    Publicacion @relation(fields: [publicacion_id], references: [id], onDelete: Cascade)
+
+  @@id([usuario_id, publicacion_id])
+}
+
+model Notificacion {
+  id                  Int          @id @default(autoincrement())
+  usuario_id          Int          // destinatario
+  tipo_notificacion   String       // "nuevo_seguidor", "me_gusta" (HU-24)
+  leida               Boolean      @default(false)
+  fecha               DateTime     @default(now())
+  // Contexto de la notificación (HU-24)
+  origen_usuario_id   Int?         // quién generó la notificación
+  publicacion_id      Int?         // post relacionado (si aplica)
+
+  usuario             Usuario      @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  origen_usuario      Usuario?     @relation("NotificacionOrigen", fields: [origen_usuario_id], references: [id], onDelete: SetNull)
+}
