@@ -1,137 +1,76 @@
 const express = require('express');
-const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
 const cors = require('cors');
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const app = express();
-app.use(express.json());
-app.use(cors());
+const prisma = new PrismaClient();
+const PORT = process.env.PORT || 3000;
 
-//CONFIGURACIÓN BD
-const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'rumbofit',
-    password: 'TU_PASSWORD_REAL',
-    port: 5432,
-});
+// --- CONFIGURACIÓN CRÍTICA (SIEMPRE ARRIBA) ---
+app.use(cors()); // Permite conexiones desde tu IP y localhost
+app.use(express.json()); // Permite leer el cuerpo de los JSON
 
-//MOTOR DE RUTINAS (HU-05)
-function generarPlan(frecuencia, objetivo) {
-    let rutina = (frecuencia <= 3)
-        ? "Full Body"
-        : "Torso-Pierna (Upper-Lower)";
+// --- RUTAS ---
 
-    let descripcion = "";
-
-    if (objetivo === "definir") {
-        descripcion = "Enfoque en quema de grasa";
-    } else if (objetivo === "volumen") {
-        descripcion = "Enfoque en hipertrofia";
-    } else {
-        descripcion = "Mantenimiento equilibrado";
-    }
-
-    return { rutina, descripcion };
-}
-
-//REGISTRO
-app.post('/register', async (req, res) => {
-    const { nombre, email, telefono, password } = req.body;
+// Registro
+app.post('/api/register', async (req, res) => {
+    console.log("Petición recibida en /api/register:", req.body); // LOG PARA DEPURAR
+    const { nombre, email, password, telefono } = req.body;
 
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
 
-        const result = await pool.query(
-            'INSERT INTO users (nombre, email, telefono, password) VALUES ($1, $2, $3, $4) RETURNING id',
-            [nombre, email, telefono, hashedPassword]
-        );
+        const nuevoUsuario = await prisma.usuario.create({
+            data: {
+                nombre: nombre,
+                email: email,
+                password_hash: passwordHash,
+                telefono: String(telefono)
+            },
+        });
 
-        res.json({ success: true, userId: result.rows[0].id });
-
-    } catch (err) {
-        res.status(400).json({ error: "Email ya existe o error en registro" });
+        res.status(201).json({ success: true, user: { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email } });
+    } catch (error) {
+        console.error("Error en Prisma:", error);
+        if (error.code === 'P2002') {
+            return res.status(400).json({ error: 'El email ya está registrado' });
+        }
+        res.status(500).json({ error: error.message });
     }
 });
 
-//LOGIN
-app.post('/login', async (req, res) => {
+// Login
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-
     try {
-        const result = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
-            [email]
-        );
+        const usuario = await prisma.usuario.findUnique({ where: { email } });
+        if (!usuario) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
-        if (result.rows.length === 0) {
-            return res.status(401).json({ error: "Credenciales incorrectas" });
-        }
+        const validPassword = await bcrypt.compare(password, usuario.password_hash);
+        if (!validPassword) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
-        const user = result.rows[0];
-        const valid = await bcrypt.compare(password, user.password);
-
-        if (!valid) {
-            return res.status(401).json({ error: "Credenciales incorrectas" });
-        }
-
-        res.json({ success: true, user });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.json({
+            success: true,
+            user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Error en el servidor' });
     }
 });
 
-//RECUPERAR CONTRASEÑA
-app.post('/recuperar-password', async (req, res) => {
-    const { email, nuevaPassword } = req.body;
-
+// Catálogo de ejercicios (Este te funcionaba porque es un GET)
+app.get('/api/ejercicios', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
-            [email]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Usuario no encontrado" });
-        }
-
-        const hashedPassword = await bcrypt.hash(nuevaPassword, 10);
-
-        await pool.query(
-            'UPDATE users SET password = $1 WHERE email = $2',
-            [hashedPassword, email]
-        );
-
-        res.json({ success: true, message: "Contraseña actualizada" });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        const ejercicios = await prisma.ejercicio.findMany();
+        res.json(ejercicios);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener catálogo' });
     }
 });
 
-//DIAGNÓSTICO + HU-05
-app.post('/diagnostico', async (req, res) => {
-    const { user_id, peso, altura, edad, sexo, frecuencia, objetivo } = req.body;
-
-    const { rutina, descripcion } = generarPlan(frecuencia, objetivo);
-
-    try {
-        await pool.query(
-            `INSERT INTO diagnostico
-            (user_id, peso, altura, edad, sexo, frecuencia, objetivo, rutina)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [user_id, peso, altura, edad, sexo, frecuencia, objetivo, rutina]
-        );
-
-        res.json({ rutina, descripcion });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-//SERVIDOR
-app.listen(3000, () => {
-    console.log('Server en http://localhost:3000');
+// --- ARRANCAR SERVIDOR ---
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor RumboFit corriendo en http://0.0.0.0:${PORT}`);
 });

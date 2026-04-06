@@ -3,39 +3,65 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+// CONFIGURACIÓN: Cambia esto por tu IP local o URL de Ngrok
+const API_URL = "http://192.168.1.22:3000/api";
+
 export default function Auth() {
     const router = useRouter();
     const [esRegistro, setEsRegistro] = useState(true);
-    // Añadimos 'telefono' al objeto inicial
     const [form, setForm] = useState({ nombre: '', email: '', password: '', telefono: '' });
     const [error, setError] = useState('');
 
     const handleAuth = async () => {
-        if (esRegistro) {
-            // Validación de todos los campos
-            if (!form.nombre || !form.email || !form.password || !form.telefono) {
-                setError("Completa todos los campos");
-                return;
-            }
+        setError(''); // Limpiar errores previos
 
-            // Validación: Mínimo 9 números para el móvil
-            const soloNumeros = form.telefono.replace(/\D/g, '');
-            if (soloNumeros.length < 9) {
-                setError("El teléfono debe tener al menos 9 dígitos");
-                return;
-            }
+        try {
+            if (esRegistro) {
+                // 1. VALIDACIÓN LOCAL
+                if (!form.nombre || !form.email || !form.password || !form.telefono) {
+                    setError("Completa todos los campos");
+                    return;
+                }
 
-            await AsyncStorage.setItem("usuario", JSON.stringify(form));
-            Alert.alert("¡Éxito!", "Usuario registrado correctamente");
-            setEsRegistro(false);
-        } else {
-            const res = await AsyncStorage.getItem("usuario");
-            const usuario = JSON.parse(res);
-            if (usuario && usuario.email === form.email && usuario.password === form.password) {
-                router.replace('/formulario');
+                // 2. LLAMADA AL BACKEND (REGISTRO)
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(form)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    Alert.alert("¡Éxito!", "Usuario guardado en la base de datos");
+                    setEsRegistro(false); // Mandar a Login
+                } else {
+                    setError(data.error || "Error al registrar");
+                }
+
             } else {
-                setError("Credenciales incorrectas");
+                // 3. LLAMADA AL BACKEND (LOGIN)
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: form.email, password: form.password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Guardamos el ID del usuario en el móvil para saber quién es en el formulario
+                    await AsyncStorage.setItem("userId", data.user.id.toString());
+                    await AsyncStorage.setItem("userName", data.user.nombre);
+
+                    router.replace('/formulario');
+                } else {
+                    setError(data.error || "Credenciales incorrectas");
+                }
             }
+        } catch (err) {
+            console.error(err);
+            setError("No se pudo conectar con el servidor. Revisa tu IP.");
         }
     };
 
@@ -53,12 +79,12 @@ export default function Auth() {
                             placeholderTextColor="#999"
                             onChangeText={(t) => setForm({...form, nombre: t})}
                         />
-                        {}
                         <TextInput
                             style={styles.input}
                             placeholder="Teléfono móvil (Ej: 600123456)"
                             placeholderTextColor="#999"
-                            keyboardType="phone-pad" // Teclado numérico de teléfono
+                            keyboardType="phone-pad"
+                            maxLength={9}
                             onChangeText={(t) => setForm({...form, telefono: t})}
                         />
                     </>
