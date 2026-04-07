@@ -4,11 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="api rest frontend-backend-bd">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="error en el docker-compose">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -118,7 +119,7 @@
       <workItem from="1775126325885" duration="1627000" />
       <workItem from="1775144770808" duration="3344000" />
       <workItem from="1775300998959" duration="3969000" />
-      <workItem from="1775556711156" duration="1408000" />
+      <workItem from="1775556711156" duration="6921000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -240,7 +241,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775512521209</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="error en el docker-compose">
+      <option name="closed" value="true" />
+      <created>1775558355015</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1775558355015</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -272,6 +281,7 @@
     <MESSAGE value="Implementación del docker compose" />
     <MESSAGE value="Implementación del frontend de la página para ver la rutina y el perfil" />
     <MESSAGE value="api rest frontend-backend-bd" />
-    <option name="LAST_COMMIT_MESSAGE" value="api rest frontend-backend-bd" />
+    <MESSAGE value="error en el docker-compose" />
+    <option name="LAST_COMMIT_MESSAGE" value="error en el docker-compose" />
   </component>
 </project>

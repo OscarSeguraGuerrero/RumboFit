@@ -50,12 +50,23 @@ export default function Auth() {
                 const data = await response.json();
 
                 if (data.success) {
-                    // Guardamos el ID del usuario en el móvil para saber quién es en el formulario
+                    // Guardamos los datos de sesión esenciales
                     await AsyncStorage.setItem("userId", data.user.id.toString());
                     await AsyncStorage.setItem("userName", data.user.nombre);
 
-                    router.replace('/formulario');
+                    // LÓGICA DE NAVEGACIÓN INTELIGENTE:
+                    // Si el backend nos dice que ya tiene peso (tieneDatos: true), vamos a rutina
+                    if (data.user.tieneDatos === true) {
+                        console.log("Usuario con perfil completo, enviando a Rutina...");
+                        router.replace('/rutina');
+                    } else {
+                        // Si no tiene datos o es la primera vez, vamos al formulario
+                        console.log("Usuario nuevo o incompleto, enviando a Formulario...");
+                        router.replace('/formulario');
+                    }
+
                 } else {
+                    // Si el backend devuelve success: false (contraseña mal, etc.)
                     setError(data.error || "Credenciales incorrectas");
                 }
             }
