@@ -1,122 +1,67 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
-
-// CONFIGURACIÓN: Tu IP local
-const API_URL = "http://192.168.1.20:3000/api";
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function Formulario() {
     const router = useRouter();
-
-    // Estados para todos los datos del formulario
-    const [datos, setDatos] = useState({
-        peso: '',
-        altura: '',
-        edad: '',
-        frecuencia: ''
-    });
-    const [sexo, setSexo] = useState('');
-    const [objetivo, setObjetivo] = useState('');
+    const [sexo, setSexo] = useState(null);
+    const [objetivo, setObjetivo] = useState(null);
+    const [datos, setDatos] = useState({ peso: '', altura: '', edad: '', dias: '' });
 
     const enviar = async () => {
-        try {
-            const userId = await AsyncStorage.getItem("userId");
-
-            if (!userId) {
-                Alert.alert("Error", "No se encontró sesión de usuario.");
-                router.replace('/');
-                return;
-            }
-
-            if (!datos.peso || !datos.altura || !datos.edad || !datos.frecuencia || !sexo || !objetivo) {
-                Alert.alert("Atención", "Por favor completa todos los campos del formulario.");
-                return;
-            }
-
-            // Lógica para transformar el valor del objetivo antes de enviar
-            let objetivoTexto = '';
-            if (objetivo === 'masa') objetivoTexto = 'Subir masa muscular';
-            else if (objetivo === 'definicion') objetivoTexto = 'Bajar de peso';
-            else if (objetivo === 'mantenimiento') objetivoTexto = 'Mantener peso';
-
-            const response = await fetch(`${API_URL}/diagnostico`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: userId,
-                    peso: datos.peso,
-                    altura: datos.altura,
-                    edad: datos.edad,
-                    frecuencia_semanal: datos.frecuencia,
-                    sexo: sexo,
-                    objetivo: objetivoTexto
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                Alert.alert("¡Éxito!", "Tu plan ha sido generado correctamente.");
-                router.replace('/rutina');
-            } else {
-                Alert.alert("Error", data.error || "No se pudo guardar.");
-            }
-
-        } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "No hay conexión con el servidor.");
+        // Validación: Ahora incluimos 'datos.dias' en la comprobación
+        if (!datos.peso || !objetivo || !sexo || !datos.dias) {
+            Alert.alert("Campos incompletos", "Por favor, completa todos los campos, incluyendo los días disponibles.");
+            return;
         }
+
+        const numDias = parseInt(datos.dias);
+        if (isNaN(numDias) || numDias < 1 || numDias > 7) {
+            Alert.alert("Dato inválido", "Por favor, introduce un número de días entre 1 y 7.");
+            return;
+        }
+
+        // Simulación de rutina ampliada (Estructura de 7 días)
+        const dataSimulada = {
+            metodo: `Plan para ${objetivo === 'masa' ? 'Subir Masa' : objetivo === 'definicion' ? 'Definición' : 'Mantenimiento'}`,
+            rutina: {
+                "Lunes (Empuje)": ["Press Banca 4x8", "Press Militar 3x10", "Aperturas Mancuerna 3x12", "Tríceps Polea 3x15"],
+                "Martes (Tracción)": ["Dominadas 3xMAX", "Remo con Barra 4x8", "Facepull 3x15", "Curl de Bíceps 3x12"],
+                "Miércoles (Pierna)": ["Sentadilla 4x6", "Prensa 3x10", "Curl Femoral 3x12", "Extensiones Cuádriceps 3x15"],
+                "Jueves (Torso)": ["Press Inclinado 3x10", "Remo en Polea 3x10", "Elevaciones Laterales 4x15", "Fondos 3x12"],
+                "Viernes (Pierna/Core)": ["Peso Muerto 3x6", "Zancadas 3x12", "Gemelos 4x20", "Plancha Abdominal 3x1min"],
+                "Sábado (Fullbody)": ["Burpees 3x15", "Press Mancuernas 3x10", "Copa Tríceps 3x12", "Dominadas Supinas 3x8"],
+                "Domingo (Descanso Activo)": ["Caminar 30-40 min", "Estiramientos dinámicos", "Movilidad articular"]
+            }
+        };
+
+        // Guardamos en AsyncStorage
+        await AsyncStorage.setItem("rutina", JSON.stringify(dataSimulada));
+        router.push('/rutina');
     };
 
     return (
         <ScrollView contentContainerStyle={styles.scroll}>
             <View style={styles.card}>
                 <Text style={styles.h1}>¡Bienvenido!</Text>
-                <Text style={styles.subtitle}>Configura tu perfil para empezar</Text>
+                <Text style={styles.subtitle}>Cuéntanos sobre ti para crear tu plan personalizado</Text>
 
-                <View style={styles.row}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.label}>Peso (kg)</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            placeholder="70"
-                            onChangeText={(t) => setDatos({...datos, peso: t})}
-                        />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.label}>Altura (cm)</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            placeholder="175"
-                            onChangeText={(t) => setDatos({...datos, altura: t})}
-                        />
-                    </View>
-                </View>
+                <Text style={styles.label}>Peso (kg)</Text>
+                <TextInput
+                    style={styles.input}
+                    keyboardType="numeric"
+                    placeholder="Ej: 70"
+                    onChangeText={(t) => setDatos({...datos, peso: t})}
+                />
 
-                <View style={styles.row}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.label}>Edad</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            placeholder="25"
-                            onChangeText={(t) => setDatos({...datos, edad: t})}
-                        />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.label}>Días/Semana</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            placeholder="1-7"
-                            maxLength={1}
-                            onChangeText={(t) => setDatos({...datos, frecuencia: t})}
-                        />
-                    </View>
-                </View>
+                <Text style={styles.label}>Altura (cm)</Text>
+                <TextInput
+                    style={styles.input}
+                    keyboardType="numeric"
+                    placeholder="Ej: 175"
+                    onChangeText={(t) => setDatos({...datos, altura: t})}
+                />
 
                 <Text style={styles.label}>Sexo</Text>
                 <View style={styles.row}>
@@ -126,7 +71,6 @@ export default function Formulario() {
                     >
                         <Text style={sexo === 'masculino' ? styles.textWhite : {}}>Masculino</Text>
                     </TouchableOpacity>
-
                     <TouchableOpacity
                         style={[styles.btnSex, sexo === 'femenino' && styles.active]}
                         onPress={() => setSexo('femenino')}
@@ -135,27 +79,34 @@ export default function Formulario() {
                     </TouchableOpacity>
                 </View>
 
+                {/* NUEVO CAMPO: DÍAS DISPONIBLES */}
+                <Text style={styles.label}>Días disponibles (1-7)</Text>
+                <TextInput
+                    style={styles.input}
+                    keyboardType="numeric"
+                    placeholder="Ej: 4"
+                    maxLength={1} // Solo permitimos un carácter
+                    onChangeText={(t) => setDatos({...datos, dias: t})}
+                />
+
                 <Text style={styles.label}>Objetivo</Text>
                 <TouchableOpacity
                     style={[styles.btnObj, objetivo === 'masa' && styles.active]}
                     onPress={() => setObjetivo('masa')}
                 >
-                    <Text style={objetivo === 'masa' ? styles.textWhite : {}}>💪 Subir masa muscular</Text>
+                    <Text style={objetivo === 'masa' && styles.textWhite}>💪 Subir masa muscular</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                     style={[styles.btnObj, objetivo === 'definicion' && styles.active]}
                     onPress={() => setObjetivo('definicion')}
                 >
-                    <Text style={objetivo === 'definicion' ? styles.textWhite : {}}>🔥 Bajar de peso</Text>
+                    <Text style={objetivo === 'definicion' && styles.textWhite}>🔥 Bajar de peso</Text>
                 </TouchableOpacity>
-
-                {/* NUEVO BOTÓN DE MANTENIMIENTO */}
                 <TouchableOpacity
                     style={[styles.btnObj, objetivo === 'mantenimiento' && styles.active]}
                     onPress={() => setObjetivo('mantenimiento')}
                 >
-                    <Text style={objetivo === 'mantenimiento' ? styles.textWhite : {}}>⚖️ Mantener peso</Text>
+                    <Text style={objetivo === 'mantenimiento' && styles.textWhite}>⚖️ Mantenimiento</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.submit} onPress={enviar}>
@@ -168,12 +119,12 @@ export default function Formulario() {
 
 const styles = StyleSheet.create({
     scroll: { flexGrow: 1, backgroundColor: '#ff7a00', padding: 20, justifyContent: 'center' },
-    card: { backgroundColor: '#f3f3f3', padding: 20, borderRadius: 20, elevation: 5 },
+    card: { backgroundColor: '#f3f3f3', padding: 20, borderRadius: 20 },
     h1: { fontSize: 24, fontWeight: 'bold', color: '#ff7a00', textAlign: 'center' },
-    subtitle: { textAlign: 'center', color: '#666', marginBottom: 20 },
-    label: { fontSize: 13, color: '#333', marginBottom: 5, fontWeight: 'bold' },
-    input: { backgroundColor: '#fff', padding: 10, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#ccc' },
-    row: { flexDirection: 'row', gap: 10, marginBottom: 5 },
+    subtitle: { textAlign: 'center', color: '#666', marginBottom: 20, marginTop: 15 },
+    label: { fontSize: 14, color: '#333', marginBottom: 5, fontWeight: 'bold' },
+    input: { backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#ccc' },
+    row: { flexDirection: 'row', gap: 10, marginBottom: 15 },
     btnSex: { flex: 1, padding: 12, backgroundColor: '#ddd', borderRadius: 10, alignItems: 'center' },
     btnObj: { padding: 15, backgroundColor: '#ddd', borderRadius: 10, marginBottom: 10 },
     active: { backgroundColor: '#ff7a00' },
