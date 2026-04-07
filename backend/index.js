@@ -129,7 +129,7 @@ async function buscarEjercicioInteligente(grupo, nivelUsuario, edad) {
 
 
 app.post('/api/rutinas/generar', async (req, res) => {
-    const { userId, peso, altura, edad, objetivo, dias, experiencia } = req.body;
+    const { userId, peso, altura, edad, objetivo, dias, experiencia, sexo } = req.body;
 
     try {
         // --- VALIDACIÓN DE RANGOS (HU-04 Oficial) ---
@@ -199,7 +199,7 @@ app.post('/api/rutinas/generar', async (req, res) => {
         // --- PERSISTENCIA ---
         await prisma.usuario.update({
             where: { id: parseInt(userId) },
-            data: { peso: weightNum, altura: heightNum, edad: ageNum, nivel: nivel, objetivo: objetivo }
+            data: { peso: weightNum, altura: heightNum, edad: ageNum, nivel: nivel, objetivo: objetivo, frecuencia_semanal: daysNum, sexo: sexo }
         });
 
         const rutinaExistente = await prisma.rutina.findFirst({ where: { usuario_id: parseInt(userId) } });
@@ -295,7 +295,21 @@ app.post('/api/reset-password', async (req, res) => {
         res.status(500).json({ error: 'Error al resetear contraseña' });
     }
 });
+// Obtener perfil completo
+app.get('/api/usuario/:id', async (req, res) => {
+    try {
+        const usuario = await prisma.usuario.findUnique({
+            where: { id: parseInt(req.params.id) }
+        });
+        if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
 
+        // No enviamos el password_hash por seguridad
+        const { password_hash, ...datosPublicos } = usuario;
+        res.json(datosPublicos);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // --- ARRANCAR SERVIDOR ---
 app.listen(PORT, '0.0.0.0', () => {

@@ -6,9 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Mejorar la visualización de rutinas y añade ilustraciones de ejercicios">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/recuperar.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/recuperar.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -41,12 +44,12 @@
     &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit&quot;,
-    &quot;accountId&quot;: &quot;0b7d5ea8-0bce-45af-b171-3013f48abcb3&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/OscarSeguraGuerrero/RumboFit.git",
+    "accountId": "5171907a-7895-4994-a74b-f77553eb9f4d"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -120,6 +123,7 @@
       <workItem from="1775300998959" duration="3969000" />
       <workItem from="1775578487095" duration="28000" />
       <workItem from="1775584730140" duration="3039000" />
+      <workItem from="1775596606163" duration="4146000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />

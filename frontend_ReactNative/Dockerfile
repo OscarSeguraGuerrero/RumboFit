@@ -28,4 +28,4 @@ EXPOSE 8081
 # 1. Registra el token de Ngrok en el config del sistema
 # 2. Lanza expo con el túnel
 CMD ngrok config add-authtoken $EXPO_NGROK_AUTHTOKEN && \
-    npx expo start --lan
+    npx expo start --tunnel

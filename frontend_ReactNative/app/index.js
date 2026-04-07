@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 
 // CONFIGURACIÓN: Cambia esto por tu IP local o URL de Ngrok
-const API_URL = "http://10.195.230.226:3000/api";
+const API_URL = "http://192.168.1.20:3000/api";
 
 export default function Auth() {
     const router = useRouter();

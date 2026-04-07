@@ -16,3 +16,9 @@ docker-compose down
 docker-compose up
 
 
+
+VER BASE DE DATOS CON INTERFAZ GRÁFICA
+
+npx prisma studio --url "postgresql://rumbofit:password123@localhost:5432/rumbofit?schema=public"
+
+

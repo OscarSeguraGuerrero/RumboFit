@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_URL = "http://10.195.230.226:3000/api";
+const API_URL = "http://192.168.1.20:3000/api";
 
 export default function Formulario() {
     const router = useRouter();
@@ -42,7 +42,8 @@ export default function Formulario() {
                     edad: datos.edad,
                     experiencia: nivel,
                     objetivo: objetivo,
-                    dias: numDias
+                    dias: numDias,
+                    sexo: sexo
                 })
             });
 
@@ -142,10 +143,10 @@ export default function Formulario() {
 
                 <Text style={styles.label}>Objetivo</Text>
                 <TouchableOpacity
-                    style={[styles.btnObj, objetivo === 'masa' && styles.active]}
-                    onPress={() => setObjetivo('masa')}
+                    style={[styles.btnObj, objetivo === 'Subir masa muscular' && styles.active]}
+                    onPress={() => setObjetivo('Subir masa muscular')}
                 >
-                    <Text style={objetivo === 'masa' && styles.textWhite}>Subir masa muscular</Text>
+                    <Text style={objetivo === 'Subir masa muscular' && styles.textWhite}>Subir masa muscular</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.btnObj, objetivo === 'definicion' && styles.active]}
