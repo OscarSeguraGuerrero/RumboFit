@@ -53,45 +53,10 @@ app.post('/api/login', async (req, res) => {
 
         res.json({
             success: true,
-            user: {
-                id: usuario.id,
-                nombre: usuario.nombre,
-                email: usuario.email,
-                tieneDatos: usuario.peso !== null
-            }
+            user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
         });
     } catch (error) {
         res.status(500).json({ error: 'Error en el servidor' });
-    }
-});
-
-// Formulario de diagnóstico
-app.post('/api/diagnostico', async (req, res) => {
-    const { userId, peso, altura, edad, sexo, frecuencia_semanal, objetivo } = req.body;
-
-    console.log("Recibiendo diagnóstico para usuario:", userId);
-
-    try {
-        const usuarioActualizado = await prisma.usuario.update({
-            where: { id: parseInt(userId) },
-            data: {
-                peso: peso ? parseFloat(peso) : null,
-                altura: altura ? parseInt(altura) : null,
-                edad: edad ? parseInt(edad) : null,
-                sexo: sexo,
-                frecuencia_semanal: frecuencia_semanal ? parseInt(frecuencia_semanal) : null,
-                objetivo: objetivo,
-            },
-        });
-
-        res.json({
-            success: true,
-            message: "Perfil actualizado correctamente",
-            user: usuarioActualizado
-        });
-    } catch (error) {
-        console.error("Error al actualizar diagnóstico:", error);
-        res.status(500).json({ success: false, error: error.message });
     }
 });
 
