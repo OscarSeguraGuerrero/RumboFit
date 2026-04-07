@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_URL = "http://10.195.88.35:3000/api";
+const API_URL = "http://10.195.230.226:3000/api";
 
 export default function Formulario() {
     const router = useRouter();
