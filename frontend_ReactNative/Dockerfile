@@ -15,7 +15,7 @@ WORKDIR /app
 # Copiamos archivos de dependencias
 COPY package*.json ./
 
-# Instalamos dependencias (incluyendo el conector de expo)
+# Instalamos dependencias
 RUN npm install && npm install -D @expo/ngrok
 
 # Copiamos el resto del código
@@ -25,7 +25,8 @@ COPY . .
 EXPOSE 8081
 
 # Script de arranque mejorado:
-# 1. Registra el token de Ngrok en el config del sistema
-# 2. Lanza expo con el túnel
-CMD ngrok config add-authtoken $EXPO_NGROK_AUTHTOKEN && \
-    npx expo start --tunnel --clear
+# 1. Configura el token de Ngrok.
+# 2. El comando 'npx expo login' no es interactivo si se usa la variable EXPO_TOKEN.
+# 3. Lanzamos expo con tunnel.
+CMD ngrok config add-authtoken $NGROK_AUTHTOKEN && \
+    EXPO_TOKEN=$EXPO_TOKEN npx expo start --tunnel --clear

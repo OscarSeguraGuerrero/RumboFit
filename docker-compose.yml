@@ -9,7 +9,10 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - EXPO_NGROK_AUTHTOKEN=3Bl3MFAoTLqxKPwYzFZJAdiL3YY_V3XeWJhsY9Xc4PqWyFHF
+      # Variable para el binario de Ngrok
+      - NGROK_AUTHTOKEN=3Bl3MFAoTLqxKPwYzFZJAdiL3YY_V3XeWJhsY9Xc4PqWyFHF
+      # Variable para que Expo se loguee automáticamente
+      - EXPO_TOKEN=JyDQFLOk7e_5TQB460BNay1ZE3JjWaWmnyg6LIYE
     stdin_open: true
     tty: true
     init: true
