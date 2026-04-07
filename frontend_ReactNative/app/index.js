@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 
 // CONFIGURACIÓN: Cambia esto por tu IP local o URL de Ngrok
-const API_URL = "http://10.195.230.226:3000/api";
+const API_URL = "http://192.168.1.39:3000/api";
 
 export default function Auth() {
     const router = useRouter();
@@ -17,9 +17,32 @@ export default function Auth() {
 
         try {
             if (esRegistro) {
-                // 1. VALIDACIÓN LOCAL
-                if (!form.nombre || !form.email || !form.password || !form.telefono) {
+                // 1. VALIDACIÓN LOCAL (HU-01)
+                const { nombre, email, password, telefono } = form;
+
+                if (!nombre || !email || !password || !telefono) {
                     setError("Completa todos los campos");
+                    return;
+                }
+
+                // Email: Formato con @ y dominio
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    setError("Introduce un email válido");
+                    return;
+                }
+
+                // Teléfono: Exactamente 9 dígitos
+                const telRegex = /^\d{9}$/;
+                if (!telRegex.test(telefono)) {
+                    setError("El teléfono debe tener exactamente 9 dígitos");
+                    return;
+                }
+
+                // Contraseña: Mínimo 8 caracteres, una mayúscula y un número
+                const passRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+                if (!passRegex.test(password)) {
+                    setError("La contraseña requiere 8+ caracteres, una mayúscula y un número");
                     return;
                 }
 

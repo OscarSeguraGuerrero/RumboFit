@@ -3,20 +3,35 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
+const API_URL = "http://192.168.1.39:3000/api";
+
 export default function Perfil() {
     const router = useRouter();
     const [usuario, setUsuario] = useState(null);
-    const [verPassword, setVerPassword] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const cargarUsuario = async () => {
-            const res = await AsyncStorage.getItem("usuario");
-            if (res) setUsuario(JSON.parse(res));
+            try {
+                const userId = await AsyncStorage.getItem("userId");
+                if (userId) {
+                    const response = await fetch(`${API_URL}/usuarios/${userId}`);
+                    const result = await response.json();
+                    if (result.success) {
+                        setUsuario(result.usuario);
+                    }
+                }
+            } catch (error) {
+                console.error("Error cargando perfil:", error);
+            } finally {
+                setLoading(false);
+            }
         };
         cargarUsuario();
     }, []);
 
-    if (!usuario) return <View style={styles.container}><Text style={{color:'white'}}>Cargando...</Text></View>;
+    if (loading) return <View style={styles.container}><Text style={{color:'white'}}>Cargando...</Text></View>;
+    if (!usuario) return <View style={styles.container}><Text style={{color:'white'}}>No se pudo cargar el perfil</Text></View>;
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -41,21 +56,40 @@ export default function Perfil() {
 
                 <View style={styles.divider} />
 
-                <Text style={styles.label}>Teléfono Móvil</Text>
-                <Text style={styles.valor}>+34 {usuario.telefono}</Text>
+                <Text style={styles.label}>Teléfono</Text>
+                <Text style={styles.valor}>{usuario.telefono || 'No especificado'}</Text>
 
                 <View style={styles.divider} />
 
-                <Text style={styles.label}>Contraseña</Text>
-                <TouchableOpacity onPress={() => setVerPassword(!verPassword)}>
-                    <Text style={styles.valor}>
-                        {verPassword ? usuario.password : '•••••••• (toca para ver)'}
-                    </Text>
-                </TouchableOpacity>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                    <View style={{flex: 1}}>
+                        <Text style={styles.label}>Peso</Text>
+                        <Text style={styles.valor}>{usuario.peso} kg</Text>
+                    </View>
+                    <View style={{flex: 1}}>
+                        <Text style={styles.label}>Altura</Text>
+                        <Text style={styles.valor}>{usuario.altura} cm</Text>
+                    </View>
+                    <View style={{flex: 1}}>
+                        <Text style={styles.label}>Edad</Text>
+                        <Text style={styles.valor}>{usuario.edad} años</Text>
+                    </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                <Text style={styles.label}>Objetivo</Text>
+                <Text style={styles.valor}>{usuario.objetivo}</Text>
+
+                <View style={styles.divider} />
+
+                <Text style={styles.label}>Nivel de Experiencia</Text>
+                <Text style={styles.valor}>{usuario.nivel}</Text>
             </View>
         </ScrollView>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: { flexGrow: 1, backgroundColor: '#1a1a1a', alignItems: 'center', padding: 30, paddingTop: 60 },
