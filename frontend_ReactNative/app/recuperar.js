@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 
-const API_URL = "http://192.168.1.39:3000/api";
+const API_URL = "http://10.195.88.35:3000/api";
 
 export default function RecuperarPassword() {
     const router = useRouter();
@@ -67,74 +67,86 @@ export default function RecuperarPassword() {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.card}>
-                <Text style={styles.h1}>Recuperar Contraseña</Text>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1 }}
+        >
+            <ScrollView 
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.container}>
+                    <View style={styles.card}>
+                        <Text style={styles.h1}>Recuperar Contraseña</Text>
 
-                {paso === 1 ? (
-                    <>
-                        <Text style={styles.subtitle}>
-                            Introduce tu correo para recibir un código de recuperación.
-                        </Text>
+                        {paso === 1 ? (
+                            <>
+                                <Text style={styles.subtitle}>
+                                    Introduce tu correo para recibir un código de recuperación.
+                                </Text>
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Email registrado"
-                            placeholderTextColor="#999"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={email}
-                            onChangeText={setEmail}
-                        />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Email registrado"
+                                    placeholderTextColor="#999"
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                />
 
-                        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                                {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-                        <TouchableOpacity style={styles.button} onPress={solicitarCodigo}>
-                            <Text style={styles.buttonText}>Enviar Código</Text>
+                                <TouchableOpacity style={styles.button} onPress={solicitarCodigo}>
+                                    <Text style={styles.buttonText}>Enviar Código</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <Text style={styles.subtitle}>
+                                    Introduce el código que has recibido y tu nueva contraseña.
+                                </Text>
+
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Código de 6 dígitos"
+                                    placeholderTextColor="#999"
+                                    keyboardType="numeric"
+                                    value={codigo}
+                                    onChangeText={setCodigo}
+                                />
+
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Nueva contraseña segura"
+                                    placeholderTextColor="#999"
+                                    secureTextEntry
+                                    value={nuevaPassword}
+                                    onChangeText={setNuevaPassword}
+                                />
+
+                                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                                <TouchableOpacity style={styles.button} onPress={cambiarPassword}>
+                                    <Text style={styles.buttonText}>Actualizar Contraseña</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                        <TouchableOpacity onPress={() => router.replace('/')}>
+                            <Text style={styles.switchText}>Volver al inicio</Text>
                         </TouchableOpacity>
-                    </>
-                ) : (
-                    <>
-                        <Text style={styles.subtitle}>
-                            Introduce el código que has recibido y tu nueva contraseña.
-                        </Text>
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Código de 6 dígitos"
-                            placeholderTextColor="#999"
-                            keyboardType="numeric"
-                            value={codigo}
-                            onChangeText={setCodigo}
-                        />
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Nueva contraseña segura"
-                            placeholderTextColor="#999"
-                            secureTextEntry
-                            value={nuevaPassword}
-                            onChangeText={setNuevaPassword}
-                        />
-
-                        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                        <TouchableOpacity style={styles.button} onPress={cambiarPassword}>
-                            <Text style={styles.buttonText}>Actualizar Contraseña</Text>
-                        </TouchableOpacity>
-                    </>
-                )}
-
-                <TouchableOpacity onPress={() => router.replace('/')}>
-                    <Text style={styles.switchText}>Volver al inicio</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+                    </View>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
+    container: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+    scrollContainer: { flexGrow: 1, backgroundColor: '#ff7a00' },
     card: { backgroundColor: '#f3f3f3', padding: 25, borderRadius: 20, width: '85%', alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
     h1: { fontSize: 24, fontWeight: 'bold', color: '#ff7a00', textAlign: 'center', marginBottom: 10 },
     subtitle: { color: '#666', marginBottom: 20, textAlign: 'center', fontSize: 13 },

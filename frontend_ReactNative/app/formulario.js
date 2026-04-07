@@ -3,10 +3,13 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+const API_URL = "http://10.195.88.35:3000/api";
+
 export default function Formulario() {
     const router = useRouter();
     const [sexo, setSexo] = useState(null);
     const [objetivo, setObjetivo] = useState(null);
+    const [nivel, setNivel] = useState('Principiante');
     const [datos, setDatos] = useState({ peso: '', altura: '', edad: '', dias: '' });
 
     const enviar = async () => {
@@ -22,24 +25,43 @@ export default function Formulario() {
             return;
         }
 
-        // Simulación de rutina ampliada (Estructura de 7 días)
-        const dataSimulada = {
-            metodo: `Plan para ${objetivo === 'masa' ? 'Subir Masa' : objetivo === 'definicion' ? 'Definición' : 'Mantenimiento'}`,
-            rutina: {
-                "Lunes (Empuje)": ["Press Banca 4x8", "Press Militar 3x10", "Aperturas Mancuerna 3x12", "Tríceps Polea 3x15"],
-                "Martes (Tracción)": ["Dominadas 3xMAX", "Remo con Barra 4x8", "Facepull 3x15", "Curl de Bíceps 3x12"],
-                "Miércoles (Pierna)": ["Sentadilla 4x6", "Prensa 3x10", "Curl Femoral 3x12", "Extensiones Cuádriceps 3x15"],
-                "Jueves (Torso)": ["Press Inclinado 3x10", "Remo en Polea 3x10", "Elevaciones Laterales 4x15", "Fondos 3x12"],
-                "Viernes (Pierna/Core)": ["Peso Muerto 3x6", "Zancadas 3x12", "Gemelos 4x20", "Plancha Abdominal 3x1min"],
-                "Sábado (Fullbody)": ["Burpees 3x15", "Press Mancuernas 3x10", "Copa Tríceps 3x12", "Dominadas Supinas 3x8"],
-                "Domingo (Descanso Activo)": ["Caminar 30-40 min", "Estiramientos dinámicos", "Movilidad articular"]
+        try {
+            const userId = await AsyncStorage.getItem("userId");
+            if (!userId) {
+                Alert.alert("Error de sesión", "No se encontró el ID de usuario. Por favor, re-inicia sesión.");
+                return;
             }
-        };
 
-        // Guardamos en AsyncStorage
-        await AsyncStorage.setItem("rutina", JSON.stringify(dataSimulada));
-        router.push('/rutina');
+            const response = await fetch(`${API_URL}/rutinas/generar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userId,
+                    peso: datos.peso,
+                    altura: datos.altura,
+                    edad: datos.edad,
+                    experiencia: nivel,
+                    objetivo: objetivo,
+                    dias: numDias
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Guardamos la rutina real en el móvil
+                await AsyncStorage.setItem("rutina", JSON.stringify(result));
+                router.push('/rutina');
+            } else {
+                Alert.alert("Error", result.error || "No se pudo generar la rutina.");
+            }
+
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error de conexión", "No se pudo conectar con el servidor.");
+        }
     };
+
 
     return (
         <ScrollView contentContainerStyle={styles.scroll}>
@@ -63,6 +85,14 @@ export default function Formulario() {
                     onChangeText={(t) => setDatos({...datos, altura: t})}
                 />
 
+                <Text style={styles.label}>Edad</Text>
+                <TextInput
+                    style={styles.input}
+                    keyboardType="numeric"
+                    placeholder="Ej: 25"
+                    onChangeText={(t) => setDatos({...datos, edad: t})}
+                />
+
                 <Text style={styles.label}>Sexo</Text>
                 <View style={styles.row}>
                     <TouchableOpacity
@@ -79,7 +109,28 @@ export default function Formulario() {
                     </TouchableOpacity>
                 </View>
 
-                {/* NUEVO CAMPO: DÍAS DISPONIBLES */}
+                <Text style={styles.label}>Experiencia</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginBottom: 15, paddingBottom: 5}}>
+                    <TouchableOpacity
+                        style={[styles.btnExp, nivel === 'Principiante' && styles.active]}
+                        onPress={() => setNivel('Principiante')}
+                    >
+                        <Text style={nivel === 'Principiante' && styles.textWhite}>Principiante</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.btnExp, nivel === 'Intermedio' && styles.active]}
+                        onPress={() => setNivel('Intermedio')}
+                    >
+                        <Text style={nivel === 'Intermedio' && styles.textWhite}>Intermedio</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.btnExp, nivel === 'Atleta' && styles.active]}
+                        onPress={() => setNivel('Atleta')}
+                    >
+                        <Text style={nivel === 'Atleta' && styles.textWhite}>Atleta</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+
                 <Text style={styles.label}>Días disponibles (1-7)</Text>
                 <TextInput
                     style={styles.input}
@@ -94,19 +145,19 @@ export default function Formulario() {
                     style={[styles.btnObj, objetivo === 'masa' && styles.active]}
                     onPress={() => setObjetivo('masa')}
                 >
-                    <Text style={objetivo === 'masa' && styles.textWhite}>💪 Subir masa muscular</Text>
+                    <Text style={objetivo === 'masa' && styles.textWhite}>Subir masa muscular</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.btnObj, objetivo === 'definicion' && styles.active]}
                     onPress={() => setObjetivo('definicion')}
                 >
-                    <Text style={objetivo === 'definicion' && styles.textWhite}>🔥 Bajar de peso</Text>
+                    <Text style={objetivo === 'definicion' && styles.textWhite}>Bajar de peso</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.btnObj, objetivo === 'mantenimiento' && styles.active]}
                     onPress={() => setObjetivo('mantenimiento')}
                 >
-                    <Text style={objetivo === 'mantenimiento' && styles.textWhite}>⚖️ Mantenimiento</Text>
+                    <Text style={objetivo === 'mantenimiento' && styles.textWhite}>Mantenimiento</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.submit} onPress={enviar}>
@@ -126,6 +177,7 @@ const styles = StyleSheet.create({
     input: { backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#ccc' },
     row: { flexDirection: 'row', gap: 10, marginBottom: 15 },
     btnSex: { flex: 1, padding: 12, backgroundColor: '#ddd', borderRadius: 10, alignItems: 'center' },
+    btnExp: { paddingVertical: 10, paddingHorizontal: 15, backgroundColor: '#ddd', borderRadius: 10, marginRight: 10, height: 45, justifyContent: 'center' },
     btnObj: { padding: 15, backgroundColor: '#ddd', borderRadius: 10, marginBottom: 10 },
     active: { backgroundColor: '#ff7a00' },
     textWhite: { color: 'white', fontWeight: 'bold' },
