@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Mejorar la visualización de rutinas y añade ilustraciones de ejercicios">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/recuperar.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/recuperar.js" afterDir="false" />
-    </list>
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Página de perfil con todos los datos del usuario" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -123,7 +114,7 @@
       <workItem from="1775300998959" duration="3969000" />
       <workItem from="1775578487095" duration="28000" />
       <workItem from="1775584730140" duration="3039000" />
-      <workItem from="1775596606163" duration="4146000" />
+      <workItem from="1775596606163" duration="4167000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -261,7 +252,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775574175744</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Página de perfil con todos los datos del usuario">
+      <option name="closed" value="true" />
+      <created>1775600786028</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1775600786028</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -295,6 +294,7 @@
     <MESSAGE value="Ampliar el catálogo de ejercicios y enriquece metadatos para selección inteligente." />
     <MESSAGE value="Implementar motor dinámico de generación de rutinas basado en datos." />
     <MESSAGE value="Meorar la visualización de rutinas y añade ilustraciones de ejercicios" />
-    <option name="LAST_COMMIT_MESSAGE" value="Meorar la visualización de rutinas y añade ilustraciones de ejercicios" />
+    <MESSAGE value="Página de perfil con todos los datos del usuario" />
+    <option name="LAST_COMMIT_MESSAGE" value="Página de perfil con todos los datos del usuario" />
   </component>
 </project>
