@@ -25,9 +25,11 @@ model Usuario {
   sexo                String?
   frecuencia_semanal  Int?
   objetivo            String?
+  nivel               String?   // Principiante, Intermedio, Atleta
   es_premium          Boolean   @default(false)
   fecha_registro      DateTime  @default(now())
-
+  codigo_recuperacion String?
+  expiracion_codigo   DateTime?
 
   // Relaciones
   rutinas             Rutina[]
@@ -50,6 +52,14 @@ model Ejercicio {
   nombre         String    @unique
   grupo_muscular String?
   descripcion    String?   @db.Text
+  
+  // Metadatos Inteligentes (Punto 1)
+  material       String?   // Barra, Mancuerna, Maquina, Peso Corporal, Polea
+  nivel_minimo   String?   // Principiante, Intermedio, Atleta
+  es_senior_safe Boolean   @default(false)
+  dificultad     Int       @default(1) // 1 a 5
+  video_url      String?
+  categoria      String?   // Fuerza, Movilidad, Cardio, Estiramiento
 
   // Relaciones
   rutina_ejercicio   Rutina_Ejercicio[]

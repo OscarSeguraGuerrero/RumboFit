@@ -4,59 +4,73 @@ const prisma = new PrismaClient();
 
 async function main() {
   const ejercicios = [
-    // --- PECHO ---
-    { nombre: 'Press de Banca Plano', grupo_muscular: 'Pecho', descripcion: 'Ejercicio compuesto principal con barra plana.' },
-    { nombre: 'Press de Banca Inclinado', grupo_muscular: 'Pecho', descripcion: 'Variante con banco inclinado para énfasis en haz clavicular.' },
-    { nombre: 'Aperturas con Mancuernas', grupo_muscular: 'Pecho', descripcion: 'Ejercicio de aislamiento para pectoral en banco plano.' },
-    { nombre: 'Cruce de Poleas', grupo_muscular: 'Pecho', descripcion: 'Ejercicio de tensión continua en polea alta.' },
-    { nombre: 'Flexiones (Push-ups)', grupo_muscular: 'Pecho', descripcion: 'Ejercicio con peso corporal para empuje horizontal.' },
+    // --- PECHO (Fuerza) ---
+    { nombre: 'Press de Banca Plano', grupo_muscular: 'Pecho', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 3, categoria: 'Fuerza', descripcion: 'Ejercicio compuesto principal con barra plana.' },
+    { nombre: 'Press de Banca con Mancuernas', grupo_muscular: 'Pecho', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Variante segura y funcional con mancuernas.' },
+    { nombre: 'Press Inclinado', grupo_muscular: 'Pecho', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 3, categoria: 'Fuerza', descripcion: 'Énfasis en la parte superior del pectoral.' },
+    { nombre: 'Aperturas con Mancuernas', grupo_muscular: 'Pecho', material: 'Mancuerna', nivel_minimo: 'Intermedio', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Aislamiento pectoral en banco.' },
+    { nombre: 'Cruce de Poleas', grupo_muscular: 'Pecho', material: 'Polea', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Tensión constante en poleas.' },
+    { nombre: 'Flexiones (Push-ups)', grupo_muscular: 'Pecho', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Empuje horizontal básico.' },
+    { nombre: 'Press en Máquina', grupo_muscular: 'Pecho', material: 'Maquina', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Empuje guiado muy seguro para iniciación.' },
 
-    // --- ESPALDA ---
-    { nombre: 'Dominadas', grupo_muscular: 'Espalda', descripcion: 'Tracción vertical con peso corporal.' },
-    { nombre: 'Jalón al Pecho', grupo_muscular: 'Espalda', descripcion: 'Tracción vertical en máquina de polea.' },
-    { nombre: 'Remo con Barra', grupo_muscular: 'Espalda', descripcion: 'Tracción horizontal pesada con barra.' },
-    { nombre: 'Remo Gironda', grupo_muscular: 'Espalda', descripcion: 'Tracción horizontal en polea baja.' },
-    { nombre: 'Peso Muerto', grupo_muscular: 'Espalda/Piernas', descripcion: 'Levantamiento compuesto pesado desde el suelo.' },
+    // --- ESPALDA (Tracción) ---
+    { nombre: 'Dominadas', grupo_muscular: 'Espalda', material: 'Peso Corporal', nivel_minimo: 'Atleta', es_senior_safe: false, dificultad: 5, categoria: 'Fuerza', descripcion: 'Tracción vertical avanzada.' },
+    { nombre: 'Jalón al Pecho', grupo_muscular: 'Espalda', material: 'Polea', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Sustituto seguro de las dominadas.' },
+    { nombre: 'Remo con Barra', grupo_muscular: 'Espalda', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 4, categoria: 'Fuerza', descripcion: 'Tracción horizontal pesada.' },
+    { nombre: 'Remo con Mancuerna', grupo_muscular: 'Espalda', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Remo unilateral más manejable.' },
+    { nombre: 'Remo Gironda', grupo_muscular: 'Espalda', material: 'Polea', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Remo en polea baja, gran control.' },
+    { nombre: 'Peso Muerto', grupo_muscular: 'Espalda/Piernas', material: 'Barra', nivel_minimo: 'Atleta', es_senior_safe: false, dificultad: 5, categoria: 'Fuerza', descripcion: 'El rey de los ejercicios de cadena posterior.' },
+    { nombre: 'Extensiones de Espalda', grupo_muscular: 'Espalda', material: 'Maquina', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Refuerzo lumbar seguro.' },
 
     // --- PIERNAS ---
-    { nombre: 'Sentadilla Libre', grupo_muscular: 'Piernas', descripcion: 'Flexión profunda de rodillas con barra en la espalda.' },
-    { nombre: 'Prensa de Piernas', grupo_muscular: 'Piernas', descripcion: 'Empuje de piernas en máquina a 45 grados.' },
-    { nombre: 'Zancadas (Lunges)', grupo_muscular: 'Piernas', descripcion: 'Flexión de piernas unilateral con mancuernas.' },
-    { nombre: 'Peso Muerto Rumano', grupo_muscular: 'Piernas', descripcion: 'Énfasis en isquiosurales y glúteos con piernas semirrígidas.' },
-    { nombre: 'Curl Femoral', grupo_muscular: 'Piernas', descripcion: 'Aislamiento de isquios en máquina.' },
-    { nombre: 'Extensión de Cuádriceps', grupo_muscular: 'Piernas', descripcion: 'Aislamiento de cuádriceps en máquina.' },
-    { nombre: 'Elevación de Talones', grupo_muscular: 'Piernas', descripcion: 'Ejercicio de aislamiento para gemelos.' },
+    { nombre: 'Sentadilla Libre', grupo_muscular: 'Piernas', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 4, categoria: 'Fuerza', descripcion: 'Pilar del entrenamiento de pierna.' },
+    { nombre: 'Sentadilla con Mancuernas', grupo_muscular: 'Piernas', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Sentadilla más segura para seniors.' },
+    { nombre: 'Prensa de Piernas', grupo_muscular: 'Piernas', material: 'Maquina', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Empuje guiado de pierna.' },
+    { nombre: 'Zancadas (Lunges)', grupo_muscular: 'Piernas', material: 'Mancuerna', nivel_minimo: 'Intermedio', es_senior_safe: true, dificultad: 3, categoria: 'Fuerza', descripcion: 'Trabajo unilateral y de equilibrio.' },
+    { nombre: 'Peso Muerto Rumano', grupo_muscular: 'Piernas', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 3, categoria: 'Fuerza', descripcion: 'Énfasis en isquios.' },
+    { nombre: 'Curl Femoral', grupo_muscular: 'Piernas', material: 'Maquina', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Aislamiento de isquios.' },
+    { nombre: 'Extensión de Cuádriceps', grupo_muscular: 'Piernas', material: 'Maquina', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Aislamiento de cuádriceps.' },
+    { nombre: 'Elevación de Talones', grupo_muscular: 'Piernas', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Trabajo de gemelos.' },
 
     // --- HOMBROS ---
-    { nombre: 'Press Militar con Barra', grupo_muscular: 'Hombros', descripcion: 'Empuje vertical por encima de la cabeza.' },
-    { nombre: 'Press Arnold', grupo_muscular: 'Hombros', descripcion: 'Variante de empuje con mancuernas y rotación.' },
-    { nombre: 'Elevaciones Laterales', grupo_muscular: 'Hombros', descripcion: 'Aislamiento para la cabeza lateral del deltoides.' },
-    { nombre: 'Pájaros (Deltoides Posterior)', grupo_muscular: 'Hombros', descripcion: 'Aislamiento para la parte posterior del hombro.' },
-    { nombre: 'Encogimientos', grupo_muscular: 'Hombros', descripcion: 'Énfasis en los trapecios superior.' },
+    { nombre: 'Press Militar con Barra', grupo_muscular: 'Hombros', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 4, categoria: 'Fuerza', descripcion: 'Empuje vertical puro.' },
+    { nombre: 'Press Militar con Mancuernas', grupo_muscular: 'Hombros', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Empuje vertical más equilibrado.' },
+    { nombre: 'Press Arnold', grupo_muscular: 'Hombros', material: 'Mancuerna', nivel_minimo: 'Atleta', es_senior_safe: false, dificultad: 4, categoria: 'Fuerza', descripcion: 'Variante avanzada con giro.' },
+    { nombre: 'Elevaciones Laterales', grupo_muscular: 'Hombros', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Aislamiento hombro lateral.' },
+    { nombre: 'Pájaros (Deltoides Posterior)', grupo_muscular: 'Hombros', material: 'Mancuerna', nivel_minimo: 'Intermedio', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Aislamiento hombro posterior.' },
+    { nombre: 'Encogimientos', grupo_muscular: 'Hombros', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Trabajo de trapecio.' },
 
-    // --- BRAZOS (BÍCEPS Y TRÍCEPS) ---
-    { nombre: 'Curl de Bíceps con Barra', grupo_muscular: 'Brazos', descripcion: 'Flexión de codo pesada para bíceps.' },
-    { nombre: 'Curl Martillo', grupo_muscular: 'Brazos', descripcion: 'Flexión con agarre neutro para braquial.' },
-    { nombre: 'Curl en Banco Scott', grupo_muscular: 'Brazos', descripcion: 'Flexión aislada en pupitre.' },
-    { nombre: 'Press Francés', grupo_muscular: 'Brazos', descripcion: 'Extensión de codo tumbado para tríceps.' },
-    { nombre: 'Extensión en Polea Alta', grupo_muscular: 'Brazos', descripcion: 'Aislamiento de tríceps en polea.' },
-    { nombre: 'Fondos en Paralelas (Dips)', grupo_muscular: 'Brazos', descripcion: 'Empuje compuesto para tríceps y pecho bajo.' },
+    // --- BRAZOS ---
+    { nombre: 'Curl de Bíceps con Barra', grupo_muscular: 'Brazos', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 2, categoria: 'Fuerza', descripcion: 'Clásico de bíceps.' },
+    { nombre: 'Curl de Bíceps con Mancuernas', grupo_muscular: 'Brazos', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Bíceps con giro, muy manejable.' },
+    { nombre: 'Curl Martillo', grupo_muscular: 'Brazos', material: 'Mancuerna', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Énfasis en braquial.' },
+    { nombre: 'Press Francés', grupo_muscular: 'Brazos', material: 'Barra', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 3, categoria: 'Fuerza', descripcion: 'Tríceps pesado.' },
+    { nombre: 'Extensión en Polea Alta', grupo_muscular: 'Brazos', material: 'Polea', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Aislamiento de tríceps.' },
+    { nombre: 'Fondos en Paralelas (Dips)', grupo_muscular: 'Brazos', material: 'Peso Corporal', nivel_minimo: 'Atleta', es_senior_safe: false, dificultad: 4, categoria: 'Fuerza', descripcion: 'Empuje potente de tríceps.' },
 
-    // --- CORE / ABDOMEN ---
-    { nombre: 'Crunch Abdominal', grupo_muscular: 'Core', descripcion: 'Flexión de tronco en el suelo.' },
-    { nombre: 'Plancha (Plank)', grupo_muscular: 'Core', descripcion: 'Ejercicio isométrico para estabilización del core.' },
-    { nombre: 'Rueda Abdominal (Ab Wheel)', grupo_muscular: 'Core', descripcion: 'Extensión y flexión resistida del core.' },
-    { nombre: 'Elevación de Piernas Colgado', grupo_muscular: 'Core', descripcion: 'Flexión de cadera y abdomen en barra.' }
+    // --- CORE / ABDOMINALES ---
+    { nombre: 'Plancha (Plank)', grupo_muscular: 'Core', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 2, categoria: 'Fuerza', descripcion: 'Estabilidad isométrica.' },
+    { nombre: 'Deadbug', grupo_muscular: 'Core', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Core Funcional', descripcion: 'Coordinación y estabilidad lumbar segura.' },
+    { nombre: 'Bird-Dog', grupo_muscular: 'Core', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Core Funcional', descripcion: 'Mejora del equilibrio y control de espalda.' },
+    { nombre: 'Crunch Abdominal', grupo_muscular: 'Core', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Fuerza', descripcion: 'Flexión abdominal básica.' },
+    { nombre: 'Elevación de Piernas Colgado', grupo_muscular: 'Core', material: 'Peso Corporal', nivel_minimo: 'Intermedio', es_senior_safe: false, dificultad: 3, categoria: 'Fuerza', descripcion: 'Flexión de cadera y abdomen en barra.' },
+
+    // --- MOVILIDAD Y ESTIRAMIENTO ---
+    { nombre: 'Gato-Camello', grupo_muscular: 'Espalda/Core', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Movilidad', descripcion: 'Movilidad vertebral y alivio de tensión.' },
+    { nombre: 'Apertura de Cadera', grupo_muscular: 'Piernas', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Movilidad', descripcion: 'Libera tensión en psoas y glúteos.' },
+    { nombre: 'Rotación de Tronco', grupo_muscular: 'Espalda', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Movilidad', descripcion: 'Mejora la torsión de la columna.' },
+    { nombre: 'Caminar', grupo_muscular: 'Global', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Cardio', descripcion: 'Actividad aeróbica de bajo impacto.' },
+    { nombre: 'Estiramiento dinámico', grupo_muscular: 'Global', material: 'Peso Corporal', nivel_minimo: 'Principiante', es_senior_safe: true, dificultad: 1, categoria: 'Estiramiento', descripcion: 'Preparación articular previa al entreno.' }
   ];
 
   for (const ej of ejercicios) {
     await prisma.ejercicio.upsert({
       where: { nombre: ej.nombre },
-      update: {},
+      update: ej,
       create: ej,
     });
   }
-  console.log('Seed exitoso: Ejercicios iniciales creados.');
+  console.log('Seed exitoso: Catálogo maestro de ejercicios enriquecido.');
 }
 
 main()
