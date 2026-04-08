@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
-const API_URL = "http://192.168.1.22:3000/api";
+const API_URL = "http://192.168.1.39:3000/api";
 
 export default function Perfil() {
     const router = useRouter();

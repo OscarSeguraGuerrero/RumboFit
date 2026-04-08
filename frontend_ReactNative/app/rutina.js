@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
-const API_URL = "http://192.168.1.22:3000/api";
+const API_URL = "http://192.168.1.39:3000/api";
 
 
 export default function Rutina() {

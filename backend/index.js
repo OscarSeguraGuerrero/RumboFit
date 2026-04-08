@@ -2,10 +2,25 @@ const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
+
+// Configuración de Email (Nodemailer)
+const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT) || 465,
+    secure: (process.env.EMAIL_PORT == 465), // true para 465, false para otros
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
 
 // --- CONFIGURACIÓN CRÍTICA (SIEMPRE ARRIBA) ---
 app.use(cors()); // Permite conexiones desde tu IP y localhost
@@ -375,9 +390,42 @@ app.post('/api/forgot-password', async (req, res) => {
             }
         });
 
-        console.log(`[RECOVERY] Código para ${email}: ${codigo}`); // LOG PARA PRUEBAS (En producción se enviaría un email)
+        // --- ENVÍO DE EMAIL REAL CON NODEMAILER ---
+        const mailOptions = {
+            from: `"RumboFit Support" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Recuperación de Contraseña - RumboFit',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ff7a00; border-radius: 10px; overflow: hidden;">
+                    <div style="background-color: #ff7a00; color: white; padding: 20px; text-align: center;">
+                        <h1>RumboFit</h1>
+                    </div>
+                    <div style="padding: 20px; color: #333;">
+                        <p>Hola,</p>
+                        <p>Has solicitado restablecer tu contraseña en <strong>RumboFit</strong>. Utiliza el siguiente código para completar el proceso:</p>
+                        <div style="background-color: #f3f3f3; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #ff7a00; border-radius: 5px; margin: 20px 0;">
+                            ${codigo}
+                        </div>
+                        <p>Este código expirará en 15 minutos.</p>
+                        <p>Si no has solicitado este cambio, puedes ignorar este correo de forma segura.</p>
+                        <br>
+                        <p>¡A por tus objetivos!</p>
+                        <p>El equipo de RumboFit</p>
+                    </div>
+                </div>
+            `
+        };
 
-        res.json({ success: true });
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log(`[RECOVERY] Email enviado con éxito a ${email}`);
+            res.json({ success: true });
+        } catch (emailError) {
+            console.error("Error al enviar email:", emailError);
+            // Si falla el envío de email, mostramos el código en consola como backup para el desarrollador
+            console.log(`[RECOVERY] BACKUP - Código para ${email}: ${codigo}`);
+            res.status(500).json({ error: 'No se pudo enviar el correo de recuperación' });
+        }
     } catch (error) {
         res.status(500).json({ error: 'Error al procesar solicitud' });
     }
