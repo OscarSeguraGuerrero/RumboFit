@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import React from 'react';
+
 import {
     Image,
     Modal,
@@ -15,6 +17,8 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
+const API_URL = "http://192.168.1.39:3000/api";
+
 
 export default function Rutina() {
     const router = useRouter();
@@ -22,6 +26,7 @@ export default function Rutina() {
     const [diaActual, setDiaActual] = useState(null);
     const [usuario, setUsuario] = useState({ nombre: 'Usuario' });
     const [menuVisible, setMenuVisible] = useState(false);
+
 
     // --- MAPEO DE IMÁGENES POR GRUPO MUSCULAR (cabecera del día) ---
     const imagenesMusculos = {
@@ -60,32 +65,87 @@ export default function Rutina() {
         triceps:       require('../assets/images/ej_triceps.png'),
         elevaciones:   require('../assets/images/ej_elevaciones.png'),
         zancadas:      require('../assets/images/ej_zancadas.png'),
-        core:          require('../assets/images/ej_core.png'),       // plancha
-        crunch:        require('../assets/images/ej_crunch.png'),     // crunch abdominal
+        core:          require('../assets/images/ej_core.png'),
+        crunch:        require('../assets/images/ej_crunch.png'),
         descanso:      require('../assets/images/ej_descanso.png'),
         caminar:       require('../assets/images/ej_caminar.png'),
         prensa:        require('../assets/images/ej_prensa_piernas.png'),
+        flexiones:     require('../assets/images/ej_flexiones.png'),
+        jalon:         require('../assets/images/ej_jalon_pecho.png'),
+        ext_cuad:      require('../assets/images/ej_extension_cuadriceps.png'),
+        femoral:       require('../assets/images/ej_curl_femoral.png'),
+        martillo:      require('../assets/images/ej_martillo.png'),
+        fondos:        require('../assets/images/ej_fondos.png'),
+        aperturas:     require('../assets/images/ej_aperturas.png'),
+        pajaro:        require('../assets/images/ej_pajaro.png'),
+        abd_piernas:   require('../assets/images/ej_abdominales_piernas.png'),
+        estiramiento:  require('../assets/images/ej_estiramientos.png'),
+        gato:          require('../assets/images/ej_gato_camello.png'),
+        bird:          require('../assets/images/ej_bird_dog.png'),
+        gemelos:       require('../assets/images/ej_gemelos.png'),
+        trapecio:      require('../assets/images/ej_trapecio.png'),
+        lumbares:      require('../assets/images/ej_lumbares.png'),
+        deadbug:       require('../assets/images/ej_deadbug.png'),
     };
 
-    const obtenerFotoEjercicio = (nombreEjercicio) => {
+    const obtenerFotoEjercicio = (nombreEjercicio) => {
         const ej = nombreEjercicio.toLowerCase();
-        if (ej.includes('sentadilla') && !ej.includes('prensa')) return imagenesEjercicios.sentadilla;
+        
+        // --- NIVEL 1: ALTA ESPECIFICIDAD / IMÁGENES DEDICADAS ---
+        if (ej.includes('peso muerto rumano')) return imagenesEjercicios.femoral;
+        if (ej.includes('talones') || ej.includes('gemelo')) return imagenesEjercicios.gemelos;
+        if (ej.includes('encogimiento') || ej.includes('trapecio')) return imagenesEjercicios.trapecio;
+        if (ej.includes('lumbares') || ej.includes('extensión de espalda') || ej.includes('extension de espalda')) return imagenesEjercicios.lumbares;
+        if (ej.includes('elevación de piernas') || ej.includes('elevacion de piernas')) return imagenesEjercicios.abd_piernas;
+        if (ej.includes('deadbug')) return imagenesEjercicios.deadbug;
+        if (ej.includes('gato') || ej.includes('camello')) return imagenesEjercicios.gato;
+        if (ej.includes('bird')) return imagenesEjercicios.bird;
+
+        // --- NIVEL 2: EJERCICIOS POR NOMBRE CLAVE ---
+        if (ej.includes('flexiones') || ej.includes('push-ups')) return imagenesEjercicios.flexiones;
+        if (ej.includes('jalón') || ej.includes('jalon')) return imagenesEjercicios.jalon;
+        if (ej.includes('extensión de cuádriceps') || ej.includes('extension de cuadriceps')) return imagenesEjercicios.ext_cuad;
+        if (ej.includes('femoral')) return imagenesEjercicios.femoral;
+        if (ej.includes('martillo')) return imagenesEjercicios.martillo;
+        if (ej.includes('fondos') || ej.includes('dips')) return imagenesEjercicios.fondos;
+        if (ej.includes('aperturas') || ej.includes('cruce')) return imagenesEjercicios.aperturas;
+        if (ej.includes('pájaro') || ej.includes('pajaro')) return imagenesEjercicios.pajaro;
+
+        // --- NIVEL 3: CATEGORÍAS GENERALES ---
+        // Pecho
+        if (ej.includes('press') && (ej.includes('banca') || ej.includes('inclinado') || ej.includes('máquina') || ej.includes('maquina'))) return imagenesEjercicios.press_banca;
+        
+        // Pierna
         if (ej.includes('prensa')) return imagenesEjercicios.prensa;
-        if (ej.includes('press de banca') || ej.includes('press inclinado') || ej.includes('aperturas') || ej.includes('cruce') || ej.includes('fondos')) return imagenesEjercicios.press_banca;
+        if (ej.includes('sentadilla')) return imagenesEjercicios.sentadilla;
+        if (ej.includes('zancada')) return imagenesEjercicios.zancadas;
+        
+        // Espalda / Hombro
         if (ej.includes('peso muerto')) return imagenesEjercicios.peso_muerto;
-        if (ej.includes('dominadas') || ej.includes('jalón') || ej.includes('jalon')) return imagenesEjercicios.dominadas;
-        if (ej.includes('remo') || ej.includes('encogimiento') || ej.includes('pájaro') || ej.includes('pajaro')) return imagenesEjercicios.remo;
+        if (ej.includes('dominadas')) return imagenesEjercicios.dominadas;
+        if (ej.includes('remo')) return imagenesEjercicios.remo;
         if (ej.includes('press militar') || ej.includes('press arnold')) return imagenesEjercicios.press_militar;
-        if (ej.includes('curl') || ej.includes('bíceps') || ej.includes('biceps')) return imagenesEjercicios.curl;
-        if (ej.includes('tríceps') || ej.includes('triceps') || ej.includes('francés') || ej.includes('frances') || ej.includes('extensión en') || ej.includes('extension en')) return imagenesEjercicios.triceps;
         if (ej.includes('elevacion') || ej.includes('elevación') || ej.includes('lateral')) return imagenesEjercicios.elevaciones;
-        if (ej.includes('zancada') || ej.includes('curl femoral') || ej.includes('extensión de') || ej.includes('talones')) return imagenesEjercicios.zancadas;
-        if (ej.includes('crunch') || ej.includes('abdominal') || ej.includes('elevación de pierna')) return imagenesEjercicios.crunch;
-        if (ej.includes('plancha')) return imagenesEjercicios.core;
+
+        // Brazos
+        if (ej.includes('curl') || ej.includes('bíceps') || ej.includes('biceps')) return imagenesEjercicios.curl;
+        if (ej.includes('tríceps') || ej.includes('triceps') || ej.includes('francés') || ej.includes('frances')) return imagenesEjercicios.triceps;
+        if (ej.includes('extensión') || ej.includes('extension')) {
+            if (ej.includes('polea') || ej.includes('tras nuca')) return imagenesEjercicios.triceps;
+            return imagenesEjercicios.zancadas; 
+        }
+
+        // Core / Flexibilidad / Otros
+        if (ej.includes('crunch') || ej.includes('abdominal')) return imagenesEjercicios.crunch;
+        if (ej.includes('plancha') || ej.includes('plank')) return imagenesEjercicios.core;
         if (ej.includes('caminar')) return imagenesEjercicios.caminar;
-        if (ej.includes('estiramientos') || ej.includes('descanso') || ej.includes('movilidad')) return imagenesEjercicios.descanso;
+        if (ej.includes('estiramiento') || ej.includes('movilidad') || ej.includes('cadera') || ej.includes('tronco')) return imagenesEjercicios.estiramiento;
+
         return imagenesEjercicios.descanso;
     };
+
+
+
 
     // Parsear nombre y series del texto (ej: "Sentadilla Libre 4x6" -> {nombre, series})
     const parsearEjercicio = (texto) => {
@@ -95,28 +155,47 @@ export default function Rutina() {
         return { nombre, series };
     };
 
-    const fadeAnim = new Animated.Value(0);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         const cargarData = async () => {
-            const resRutina = await AsyncStorage.getItem("rutina");
-            if (resRutina) {
-                const parsed = JSON.parse(resRutina);
-                setData(parsed);
-                setDiaActual(Object.keys(parsed.rutina)[0]);
+            try {
+                let resRutina = await AsyncStorage.getItem("rutina");
+                const userId = await AsyncStorage.getItem("userId");
+
+                if (!resRutina && userId) {
+                    const response = await fetch(`${API_URL}/usuarios/${userId}/rutina`);
+                    const result = await response.json();
+                    if (result.success) {
+                        await AsyncStorage.setItem("rutina", JSON.stringify(result));
+                        resRutina = JSON.stringify(result);
+                    }
+                }
+
+                if (resRutina) {
+                    const parsed = JSON.parse(resRutina);
+                    setData(parsed);
+                    setDiaActual(Object.keys(parsed.rutina)[0]);
+                }
+
+                const userName = await AsyncStorage.getItem("userName");
+                if (userName) setUsuario({ nombre: userName });
+
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 800,
+                    useNativeDriver: false,
+                }).start();
+
+            } catch (err) {
+                console.error("Error al cargar datos:", err);
             }
-
-            const userName = await AsyncStorage.getItem("userName");
-            if (userName) setUsuario({ nombre: userName });
-
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 800,
-                useNativeDriver: true,
-            }).start();
         };
         cargarData();
     }, []);
+
+
+
 
     const cerrarSesion = async () => {
         await AsyncStorage.removeItem("userToken");
@@ -133,6 +212,8 @@ export default function Rutina() {
             <Text style={{color:'white', fontSize: 18, fontWeight: '300'}}>Preparando entrenamiento...</Text>
         </View>
     );
+
+
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>

@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_URL = "http://192.168.1.22:3000/api";
+const API_URL = "http://192.168.1.39:3000/api";
 
 export default function Formulario() {
     const router = useRouter();
@@ -42,8 +42,7 @@ export default function Formulario() {
                     edad: datos.edad,
                     experiencia: nivel,
                     objetivo: objetivo,
-                    dias: numDias,
-                    sexo: sexo
+                    dias: numDias
                 })
             });
 
@@ -143,16 +142,16 @@ export default function Formulario() {
 
                 <Text style={styles.label}>Objetivo</Text>
                 <TouchableOpacity
-                    style={[styles.btnObj, objetivo === 'Subir masa muscular' && styles.active]}
-                    onPress={() => setObjetivo('Subir masa muscular')}
+                    style={[styles.btnObj, objetivo === 'masa' && styles.active]}
+                    onPress={() => setObjetivo('masa')}
                 >
-                    <Text style={objetivo === 'Subir masa muscular' && styles.textWhite}>Subir masa muscular</Text>
+                    <Text style={objetivo === 'masa' && styles.textWhite}>Subir masa muscular</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.btnObj, objetivo === 'Bajar de peso' && styles.active]}
-                    onPress={() => setObjetivo('Bajar de peso')}
+                    style={[styles.btnObj, objetivo === 'definicion' && styles.active]}
+                    onPress={() => setObjetivo('definicion')}
                 >
-                    <Text style={objetivo === 'Bajar de peso' && styles.textWhite}>Bajar de peso</Text>
+                    <Text style={objetivo === 'definicion' && styles.textWhite}>Bajar de peso</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.btnObj, objetivo === 'mantenimiento' && styles.active]}
