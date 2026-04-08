@@ -135,7 +135,7 @@ function formatEjercicio(ejercicio, objetivo) {
     if (obj.includes("masa") || obj.includes("hipertrofia")) {
         series = 4;
         reps = "8-12";
-    } else if (obj.includes("peso") || obj.includes("definir")) {
+    } else if (obj.includes("peso") || obj.includes("bajar de peso")) {
         series = 3;
         reps = "15-20";
     } else if (obj.includes("fuerza")) {

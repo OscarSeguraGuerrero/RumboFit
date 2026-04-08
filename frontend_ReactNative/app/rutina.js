@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
-const API_URL = "http://192.168.1.39:3000/api";
+const API_URL = "http://192.168.1.22:3000/api";
 
 
 export default function Rutina() {
@@ -88,7 +88,8 @@ export default function Rutina() {
         deadbug:       require('../assets/images/ej_deadbug.png'),
     };
 
-    const obtenerFotoEjercicio = (nombreEjercicio) => {
+
+    const obtenerFotoEjercicio = (nombreEjercicio) => {
         const ej = nombreEjercicio.toLowerCase();
         
         // --- NIVEL 1: ALTA ESPECIFICIDAD / IMÁGENES DEDICADAS ---
