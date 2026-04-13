@@ -4,17 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="..">
-      <change afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_06_04_2026_13_02_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_06_04_2026_13_02__Changes_.xml" beforeDir="false" />
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="implementación de la barra del menu, para las dietas y rutina personal, gráfica imc en el perfil.js">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/formulario.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/recuperar.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/recuperar.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -130,7 +121,7 @@
       <workItem from="1775756708518" duration="6000" />
       <workItem from="1775812746447" duration="965000" />
       <workItem from="1775836866055" duration="2222000" />
-      <workItem from="1776096582845" duration="4297000" />
+      <workItem from="1776096582845" duration="5153000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -268,7 +259,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775574175744</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="implementación de la barra del menu, para las dietas y rutina personal, gráfica imc en el perfil.js">
+      <option name="closed" value="true" />
+      <created>1776100983164</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1776100983164</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -302,6 +301,9 @@
     <MESSAGE value="Ampliar el catálogo de ejercicios y enriquece metadatos para selección inteligente." />
     <MESSAGE value="Implementar motor dinámico de generación de rutinas basado en datos." />
     <MESSAGE value="Meorar la visualización de rutinas y añade ilustraciones de ejercicios" />
-    <option name="LAST_COMMIT_MESSAGE" value="Meorar la visualización de rutinas y añade ilustraciones de ejercicios" />
+    <MESSAGE value="últimos errores" />
+    <MESSAGE value=".." />
+    <MESSAGE value="implementación de la barra del menu, para las dietas y rutina personal, gráfica imc en el perfil.js" />
+    <option name="LAST_COMMIT_MESSAGE" value="implementación de la barra del menu, para las dietas y rutina personal, gráfica imc en el perfil.js" />
   </component>
 </project>
