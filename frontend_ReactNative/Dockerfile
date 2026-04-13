@@ -16,7 +16,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalamos dependencias (incluyendo el conector de expo)
-RUN npm install && npm install -D @expo/ngrok
+RUN npm install && npm install -D @expo/ngrok && npx expo install react-native-svg
 
 # Copiamos el resto del código
 COPY . .

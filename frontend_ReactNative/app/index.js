@@ -2,9 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
-
-// CONFIGURACIÓN: Cambia esto por tu IP local o URL de Ngrok
-const API_URL = "http://192.168.1.22:3000/api";
+import { API_URL } from '../config';
 
 export default function Auth() {
     const router = useRouter();

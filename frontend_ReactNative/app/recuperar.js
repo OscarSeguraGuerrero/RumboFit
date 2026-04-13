@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { API_URL } from '../config';
 
-const API_URL = "http://192.168.1.22:3000/api";
 
 export default function RecuperarPassword() {
     const router = useRouter();
