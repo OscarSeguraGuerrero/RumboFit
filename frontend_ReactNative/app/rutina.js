@@ -13,7 +13,8 @@ import {
     TouchableWithoutFeedback,
     View,
     Dimensions,
-    Animated
+    Animated,
+    TextInput
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -25,19 +26,22 @@ export default function Rutina() {
     const [usuario, setUsuario] = useState({ nombre: 'Usuario' });
     const [menuVisible, setMenuVisible] = useState(false);
 
-    // --- ESTADO PARA LA NAVEGACIÓN INFERIOR ---
-    const [vistaActiva, setVistaActiva] = useState('automatica'); // 'automatica', 'propia', 'dieta'
+    // --- ESTADOS RUTINA PROPIA Y NAVEGACIÓN ---
+    const [vistaActiva, setVistaActiva] = useState('automatica');
+    const [rutinaPropia, setRutinaPropia] = useState({});
+    const [diaPropioActivo, setDiaPropioActivo] = useState('Lunes');
+    const [modalEjercicios, setModalEjercicios] = useState(false);
+    const [ejerciciosCatalogo, setEjerciciosCatalogo] = useState([]);
+    const [busqueda, setBusqueda] = useState('');
 
-    // --- MAPEOS DE IMÁGENES ---
+    const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    // --- MAPEOS DE IMÁGENES (Mantenidos) ---
     const imagenesMusculos = {
         empuje:   require('../assets/images/musculo_pecho.png'),
         traccion: require('../assets/images/musculo_traccion.png'),
         pierna:   require('../assets/images/musculo_pierna.png'),
         fullbody: require('../assets/images/fullbody.png'),
-        core:     require('../assets/images/musculo_core.png'),
-        torso:    require('../assets/images/musculo_torso.png'),
-        hombros:  require('../assets/images/musculo_hombros.png'),
-        descanso: require('../assets/images/descanso.png'),
     };
 
     const imagenesEjercicios = {
@@ -74,67 +78,16 @@ export default function Rutina() {
         deadbug:       require('../assets/images/ej_deadbug.png'),
     };
 
-    const obtenerImagenMusculo = (textoDia) => {
-        const dia = (textoDia || "").toLowerCase();
-        if (dia.includes('empuje ligero')) return imagenesMusculos.hombros;
-        if (dia.includes('empuje'))   return imagenesMusculos.empuje;
-        if (dia.includes('tracción') || dia.includes('traccion')) return imagenesMusculos.traccion;
-        if (dia.includes('core'))     return imagenesMusculos.core;
-        if (dia.includes('pierna') || dia.includes('legs')) return imagenesMusculos.pierna;
-        if (dia.includes('torso'))    return imagenesMusculos.torso;
-        if (dia.includes('fullbody') || dia.includes('full body')) return imagenesMusculos.fullbody;
-        if (dia.includes('descanso') || dia.includes('sesión') || dia.includes('sesion')) return imagenesMusculos.descanso;
-        return imagenesMusculos.fullbody;
-    };
-
     const obtenerFotoEjercicio = (nombreEjercicio) => {
         const ej = nombreEjercicio.toLowerCase();
-
-        // --- PECHO ---
-        if (ej.includes('press') && (ej.includes('banca') || ej.includes('pecho') || ej.includes('plano') || ej.includes('superior') || ej.includes('inclinado'))) return imagenesEjercicios.press_banca;
-        if (ej.includes('aperturas') || ej.includes('contractor') || ej.includes('cruce')) return imagenesEjercicios.aperturas;
-        if (ej.includes('flexiones') || ej.includes('push up')) return imagenesEjercicios.flexiones;
-        if (ej.includes('fondos') && (ej.includes('pecho') || ej.includes('paralelas'))) return imagenesEjercicios.fondos;
-
-        // --- ESPALDA ---
-        if (ej.includes('dominadas') || ej.includes('pull up')) return imagenesEjercicios.dominadas;
+        if (ej.includes('press') && ej.includes('banca')) return imagenesEjercicios.press_banca;
+        if (ej.includes('sentadilla')) return imagenesEjercicios.sentadilla;
+        if (ej.includes('peso muerto')) return imagenesEjercicios.peso_muerto;
         if (ej.includes('remo')) return imagenesEjercicios.remo;
-        if (ej.includes('jalón') || ej.includes('jalon')) return imagenesEjercicios.jalon;
-        if (ej.includes('peso muerto') && !ej.includes('rumano')) return imagenesEjercicios.peso_muerto;
-        if (ej.includes('lumbares') || ej.includes('hiperextensiones')) return imagenesEjercicios.lumbares;
-
-        // --- PIERNAS ---
-        if (ej.includes('sentadilla') || ej.includes('squat')) return imagenesEjercicios.sentadilla;
+        if (ej.includes('curl')) return imagenesEjercicios.curl;
+        if (ej.includes('jalón')) return imagenesEjercicios.jalon;
         if (ej.includes('prensa')) return imagenesEjercicios.prensa;
-        if (ej.includes('zancada') || ej.includes('lunge') || ej.includes('estocada')) return imagenesEjercicios.zancadas;
-        if (ej.includes('extensión') && ej.includes('cuádriceps')) return imagenesEjercicios.ext_cuad;
-        if (ej.includes('curl femoral') || ej.includes('peso muerto rumano')) return imagenesEjercicios.femoral;
-        if (ej.includes('gemelo') || ej.includes('pantorrilla') || ej.includes('talones')) return imagenesEjercicios.gemelos;
-
-        // --- HOMBROS ---
-        if (ej.includes('press militar') || ej.includes('press hombro') || ej.includes('press arnold')) return imagenesEjercicios.press_militar;
-        if (ej.includes('elevación lateral') || ej.includes('elevacion lateral') || ej.includes('laterales')) return imagenesEjercicios.elevaciones;
-        if (ej.includes('pájaro') || ej.includes('pajaro') || ej.includes('deltoide posterior')) return imagenesEjercicios.pajaro;
-        if (ej.includes('trapecio') || ej.includes('encogimiento')) return imagenesEjercicios.trapecio;
-
-        // --- BRAZOS ---
-        if (ej.includes('curl') && (ej.includes('bíceps') || ej.includes('biceps'))) return imagenesEjercicios.curl;
-        if (ej.includes('martillo')) return imagenesEjercicios.martillo;
-        if (ej.includes('tríceps') || ej.includes('triceps') || ej.includes('francés') || ej.includes('frances')) return imagenesEjercicios.triceps;
-        if (ej.includes('fondos') && ej.includes('banco')) return imagenesEjercicios.fondos;
-
-        // --- CORE / ABDOMEN ---
-        if (ej.includes('crunch') || ej.includes('abdominal')) return imagenesEjercicios.crunch;
-        if (ej.includes('plancha') || ej.includes('plank') || ej.includes('core')) return imagenesEjercicios.core;
-        if (ej.includes('piernas') && ej.includes('elevación')) return imagenesEjercicios.abd_piernas;
-        if (ej.includes('deadbug')) return imagenesEjercicios.deadbug;
-        if (ej.includes('bird dog')) return imagenesEjercicios.bird;
-
-        // --- SALUD / MOVILIDAD ---
-        if (ej.includes('estiramiento') || ej.includes('movilidad')) return imagenesEjercicios.estiramiento;
-        if (ej.includes('gato') || ej.includes('camello')) return imagenesEjercicios.gato;
-        if (ej.includes('caminar') || ej.includes('pasos')) return imagenesEjercicios.caminar;
-
+        if (ej.includes('zancada')) return imagenesEjercicios.zancadas;
         return imagenesEjercicios.descanso;
     };
 
@@ -152,6 +105,8 @@ export default function Rutina() {
             try {
                 let resRutina = await AsyncStorage.getItem("rutina");
                 const userId = await AsyncStorage.getItem("userId");
+                const userName = await AsyncStorage.getItem("userName");
+                if (userName) setUsuario({ nombre: userName });
 
                 if (!resRutina && userId) {
                     const response = await fetch(`${API_URL}/usuarios/${userId}/rutina`);
@@ -161,43 +116,53 @@ export default function Rutina() {
                         resRutina = JSON.stringify(result);
                     }
                 }
-
                 if (resRutina) {
                     const parsed = JSON.parse(resRutina);
                     setData(parsed);
                     setDiaActual(Object.keys(parsed.rutina)[0]);
                 }
 
-                const userName = await AsyncStorage.getItem("userName");
-                if (userName) setUsuario({ nombre: userName });
+                const propiaGuardada = await AsyncStorage.getItem("rutina_propia");
+                if (propiaGuardada) setRutinaPropia(JSON.parse(propiaGuardada));
+                else {
+                    let inicial = {};
+                    diasSemana.forEach(d => inicial[d] = []);
+                    setRutinaPropia(inicial);
+                }
 
-                Animated.timing(fadeAnim, {
-                    toValue: 1,
-                    duration: 800,
-                    useNativeDriver: false,
-                }).start();
+                const resCat = await fetch(`${API_URL}/ejercicios`);
+                const dataCat = await resCat.json();
+                setEjerciciosCatalogo(dataCat);
 
-            } catch (err) {
-                console.error("Error al cargar datos:", err);
-            }
+                Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: false }).start();
+            } catch (err) { console.error(err); }
         };
         cargarData();
     }, []);
 
+    const irAPerfil = () => router.push('/perfil');
+
     const cerrarSesion = async () => {
-        await AsyncStorage.removeItem("userId");
-        await AsyncStorage.removeItem("userName");
-        await AsyncStorage.removeItem("rutina");
+        await AsyncStorage.clear();
         router.replace('/');
     };
 
-    const irAPerfil = () => router.push('/perfil');
+    const añadirEjercicio = (ej) => {
+        const nueva = { ...rutinaPropia };
+        nueva[diaPropioActivo] = [...nueva[diaPropioActivo], `${ej.nombre} 3x12`];
+        setRutinaPropia(nueva);
+        AsyncStorage.setItem("rutina_propia", JSON.stringify(nueva));
+        setModalEjercicios(false);
+    };
 
-    if (!data) return (
-        <View style={styles.loading}>
-            <Text style={{color:'white', fontSize: 18, fontWeight: '300'}}>Preparando entrenamiento...</Text>
-        </View>
-    );
+    const eliminarEjercicio = (index) => {
+        const nueva = { ...rutinaPropia };
+        nueva[diaPropioActivo] = nueva[diaPropioActivo].filter((_, i) => i !== index);
+        setRutinaPropia(nueva);
+        AsyncStorage.setItem("rutina_propia", JSON.stringify(nueva));
+    };
+
+    if (!data) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -205,20 +170,12 @@ export default function Rutina() {
             {/* --- TOP BAR --- */}
             <View style={styles.topBar}>
                 <Image source={require('../assets/images/logo1.png')} style={styles.topBarLogo} resizeMode="contain" />
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={styles.avatarGlow}
-                    onPress={() => setMenuVisible(true)}
-                >
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                            {usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : 'U'}
-                        </Text>
-                    </View>
+                <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.avatarGlow}>
+                    <View style={styles.avatar}><Text style={styles.avatarText}>{usuario.nombre[0].toUpperCase()}</Text></View>
                 </TouchableOpacity>
             </View>
 
-            {/* --- MENÚ DESPLEGABLE --- */}
+            {/* --- MENÚ DESPLEGABLE (RESTURADO) --- */}
             <Modal transparent visible={menuVisible} animationType="fade">
                 <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
                     <View style={styles.modalOverlay}>
@@ -227,11 +184,11 @@ export default function Rutina() {
                                 <Text style={styles.dropdownHeader}>{usuario.nombre}</Text>
                                 <View style={styles.dropdownDivider} />
                                 <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); irAPerfil(); }}>
-                                    <Text style={styles.dropdownText}>Ver Perfil</Text>
+                                    <Text style={styles.dropdownText}>👤 Ver Perfil</Text>
                                 </TouchableOpacity>
                                 <View style={styles.dropdownDivider} />
                                 <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); cerrarSesion(); }}>
-                                    <Text style={[styles.dropdownText, {color: '#ff4444'}]}>Cerrar Sesión</Text>
+                                    <Text style={[styles.dropdownText, {color: '#ff4444'}]}>🚪 Cerrar Sesión</Text>
                                 </TouchableOpacity>
                             </View>
                         </TouchableWithoutFeedback>
@@ -241,59 +198,30 @@ export default function Rutina() {
 
             {/* --- CARD PRINCIPAL --- */}
             <View style={styles.mainCard}>
-
-                {/* --- VISTA AUTOMÁTICA --- */}
                 {vistaActiva === 'automatica' && (
                     <>
                         <View style={styles.header}>
-                            <View style={{flex: 1}}>
-                                <Text style={styles.methodLabel}>MÉTODO SELECCIONADO</Text>
-                                <Text style={styles.title}>{data.metodo}</Text>
-                                <Text style={styles.subtitleTitle}>{data.subtitulo}</Text>
-                            </View>
+                            <Text style={styles.methodLabel}>MÉTODO INTELIGENTE</Text>
+                            <Text style={styles.title}>{data.metodo}</Text>
                         </View>
-
                         <View style={styles.tabsWrapper}>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                 {Object.keys(data.rutina).map(dia => (
-                                    <TouchableOpacity
-                                        key={dia}
-                                        style={[styles.tab, diaActual === dia && styles.tabActive]}
-                                        onPress={() => setDiaActual(dia)}
-                                    >
-                                        <Text style={[styles.tabText, diaActual === dia && styles.textOrange]}>
-                                            {dia.split(' ').slice(0, 2).join(' ')}
-                                        </Text>
+                                    <TouchableOpacity key={dia} style={[styles.tab, diaActual === dia && styles.tabActive]} onPress={() => setDiaActual(dia)}>
+                                        <Text style={[styles.tabText, diaActual === dia && styles.textOrange]}>{dia.split(' (')[0]}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
                         </View>
-
-                        <ScrollView
-                            showsVerticalScrollIndicator={false}
-                            style={styles.content}
-                            contentContainerStyle={{ paddingBottom: 120 }} // Espacio para que la barra no tape el final
-                        >
-                            <View style={styles.imageContainer}>
-                                <Image source={obtenerImagenMusculo(diaActual)} style={styles.muscleImage} resizeMode="cover" />
-                                <View style={styles.imageOverlay}>
-                                    <Text style={styles.overlayDia}>{diaActual}</Text>
-                                    <Text style={styles.overlayCount}>{data.rutina[diaActual]?.length || 0} ejercicios</Text>
-                                </View>
-                            </View>
-
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
                             {data.rutina[diaActual]?.map((ej, i) => {
                                 const { nombre, series } = parsearEjercicio(ej);
                                 return (
                                     <View key={i} style={styles.exerciseCard}>
-                                        <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} resizeMode="cover" />
+                                        <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
                                         <View style={styles.exerciseInfo}>
                                             <Text style={styles.exerciseName}>{nombre}</Text>
-                                            {series ? (
-                                                <View style={styles.seriesBadge}>
-                                                    <Text style={styles.seriesText}>{series}</Text>
-                                                </View>
-                                            ) : null}
+                                            <View style={styles.seriesBadge}><Text style={styles.seriesText}>{series}</Text></View>
                                         </View>
                                     </View>
                                 );
@@ -302,74 +230,93 @@ export default function Rutina() {
                     </>
                 )}
 
-                {/* --- VISTA PROPIA --- */}
                 {vistaActiva === 'propia' && (
-                    <View style={styles.placeholderCenter}>
-                        <Text style={styles.placeholderText}>Aquí podrás crear y visualizar tus rutinas personalizadas manualmente.</Text>
-                        <TouchableOpacity style={styles.btnPlaceholder}>
-                            <Text style={styles.btnPlaceholderText}>+ Crear Nueva Rutina</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* --- VISTA DIETA --- */}
-                {vistaActiva === 'dieta' && (
-                    <View style={styles.placeholderCenter}>
-                        <Text style={styles.placeholderText}>Registro de alimentación y seguimiento de macros diarias.</Text>
-                        <TouchableOpacity style={[styles.btnPlaceholder, {backgroundColor: '#4CAF50'}]}>
-                            <Text style={styles.btnPlaceholderText}>Registrar Alimento</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <>
+                        <View style={styles.header}>
+                            <Text style={styles.methodLabel}>MI ENTRENAMIENTO PERSONAL</Text>
+                            <Text style={styles.title}>Diseña tu semana</Text>
+                        </View>
+                        <View style={styles.tabsWrapper}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                {diasSemana.map(dia => (
+                                    <TouchableOpacity key={dia} style={[styles.tab, diaPropioActivo === dia && styles.tabActive]} onPress={() => setDiaPropioActivo(dia)}>
+                                        <Text style={[styles.tabText, diaPropioActivo === dia && styles.textOrange]}>{dia}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
+                            {rutinaPropia[diaPropioActivo]?.map((ej, i) => {
+                                const { nombre, series } = parsearEjercicio(ej);
+                                return (
+                                    <View key={i} style={styles.exerciseCard}>
+                                        <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
+                                        <View style={styles.exerciseInfo}>
+                                            <Text style={styles.exerciseName}>{nombre}</Text>
+                                            <Text style={styles.propiaSeries}>{series || '3x12'}</Text>
+                                        </View>
+                                        <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
+                                    </View>
+                                );
+                            })}
+                            <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
+                                <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </>
                 )}
             </View>
 
-            {/* --- BARRA DE NAVEGACIÓN INFERIOR (FLOTANTE PREMIUM) --- */}
+            {/* --- MODAL CATÁLOGO --- */}
+            <Modal visible={modalEjercicios} animationType="slide">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Añadir a {diaPropioActivo}</Text>
+                        <TouchableOpacity onPress={() => setModalEjercicios(false)}><Text style={styles.closeModal}>Cerrar</Text></TouchableOpacity>
+                    </View>
+                    <TextInput placeholder="Buscar..." style={styles.searchInput} value={busqueda} onChangeText={setBusqueda} />
+                    <ScrollView contentContainerStyle={{padding: 20}}>
+                        {ejerciciosCatalogo.filter(e => e.nombre.toLowerCase().includes(busqueda.toLowerCase())).map((ej, i) => (
+                            <TouchableOpacity key={i} style={styles.catItem} onPress={() => añadirEjercicio(ej)}>
+                                <Image source={obtenerFotoEjercicio(ej.nombre)} style={styles.catImage} />
+                                <View><Text style={styles.catName}>{ej.nombre}</Text><Text style={styles.catSub}>{ej.grupo_muscular}</Text></View>
+                                <Text style={styles.plusIcon}>+</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            </Modal>
+
+            {/* --- NAV BAR --- */}
             <View style={styles.navContainer}>
                 <View style={styles.tabBar}>
-                    <TouchableOpacity
-                        style={styles.tabBarItem}
-                        onPress={() => setVistaActiva('propia')}
-                    >
-                        <View style={[styles.iconCircle, vistaActiva === 'propia' && styles.iconCircleActive]}>
-                            <Text style={[styles.tabIcon, vistaActiva === 'propia' && styles.textWhite]}>📋</Text>
-                        </View>
+                    <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('propia')}>
+                        <View style={[styles.iconCircle, vistaActiva === 'propia' && styles.iconCircleActive]}><Text>📋</Text></View>
                         <Text style={[styles.tabBarText, vistaActiva === 'propia' && styles.tabBarTextActive]}>Mi Rutina</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.tabBarItem}
-                        onPress={() => setVistaActiva('automatica')}
-                    >
-                        <View style={[styles.iconCircle, vistaActiva === 'automatica' && styles.iconCircleActive]}>
-                            <Text style={[styles.tabIcon, vistaActiva === 'automatica' && styles.textWhite]}>⚡</Text>
-                        </View>
+                    <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('automatica')}>
+                        <View style={[styles.iconCircle, vistaActiva === 'automatica' && styles.iconCircleActive]}><Text>⚡</Text></View>
                         <Text style={[styles.tabBarText, vistaActiva === 'automatica' && styles.tabBarTextActive]}>Auto</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.tabBarItem}
-                        onPress={() => setVistaActiva('dieta')}
-                    >
-                        <View style={[styles.iconCircle, vistaActiva === 'dieta' && styles.iconCircleActive]}>
-                            <Text style={[styles.tabIcon, vistaActiva === 'dieta' && styles.textWhite]}>🍎</Text>
-                        </View>
+                    <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('dieta')}>
+                        <View style={[styles.iconCircle, vistaActiva === 'dieta' && styles.iconCircleActive]}><Text>🍎</Text></View>
                         <Text style={[styles.tabBarText, vistaActiva === 'dieta' && styles.tabBarTextActive]}>Dieta</Text>
                     </TouchableOpacity>
                 </View>
             </View>
-
         </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#ffffff', paddingTop: 10 },
-    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 5, paddingTop: 5 },
+    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
     topBarLogo: { width: 140, height: 51, tintColor: '#ff7a00', marginLeft: -35 },
     avatarGlow: { padding: 3, borderRadius: 26, backgroundColor: 'rgba(255, 122, 0, 0.15)' },
     avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
-    avatarText: { color: 'white', fontWeight: 'bold', fontSize: 20 },
+    avatarText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
 
+    // --- ESTILOS MODAL MENÚ ---
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 70, paddingRight: 15 },
     dropdown: { backgroundColor: '#fff', borderRadius: 16, elevation: 12, minWidth: 190, overflow: 'hidden' },
     dropdownHeader: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', paddingVertical: 14, paddingHorizontal: 16 },
@@ -378,115 +325,46 @@ const styles = StyleSheet.create({
     dropdownDivider: { height: 1, backgroundColor: '#f0f0f0' },
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
-    header: { marginBottom: 10 },
-    methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.8 },
-    title: { fontSize: 17, fontWeight: '900', color: '#ffffff', marginTop: 2 },
-    subtitleTitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 1, fontWeight: '500' },
+    header: { marginBottom: 15 },
+    methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.9 },
+    title: { fontSize: 20, fontWeight: '900', color: '#ffffff' },
 
-    tabsWrapper: { marginBottom: 10, marginHorizontal: -18 },
-    tabsScroll: { paddingHorizontal: 18, gap: 6 },
-    tab: { paddingHorizontal: 12, paddingVertical: 7, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
+    tabsWrapper: { marginBottom: 15, marginHorizontal: -18 },
+    tab: { paddingHorizontal: 15, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, marginHorizontal: 5 },
     tabActive: { backgroundColor: '#ffffff' },
-    tabText: { fontSize: 11, fontWeight: '700', color: '#ffffff' },
+    tabText: { fontSize: 12, fontWeight: '800', color: '#ffffff' },
     textOrange: { color: '#ff7a00' },
 
-    content: { flex: 1 },
-    imageContainer: { width: '100%', height: 260, borderRadius: 16, overflow: 'hidden', marginBottom: 10 },
-    muscleImage: { width: '100%', height: '100%' },
-    imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)', padding: 10 },
-    overlayDia: { color: 'white', fontWeight: '800', fontSize: 13 },
-    overlayCount: { color: 'rgba(255,255,255,0.8)', fontSize: 11 },
-
-    exerciseCard: { backgroundColor: '#ffffff', borderRadius: 18, marginBottom: 12, overflow: 'hidden', flexDirection: 'row', alignItems: 'center' },
-    exercisePhoto: { width: 80, height: 80 },
-    exerciseInfo: { flex: 1, paddingHorizontal: 14 },
+    exerciseCard: { backgroundColor: '#ffffff', borderRadius: 18, marginBottom: 12, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+    exercisePhoto: { width: 85, height: 85 },
+    exerciseInfo: { flex: 1, paddingHorizontal: 15 },
     exerciseName: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
-    seriesBadge: { marginTop: 4, backgroundColor: '#ff7a00', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, alignSelf: 'flex-start' },
-    seriesText: { color: 'white', fontWeight: '800', fontSize: 12 },
+    seriesBadge: { marginTop: 6, backgroundColor: '#ff7a00', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, alignSelf: 'flex-start' },
+    seriesText: { color: 'white', fontSize: 12, fontWeight: '800' },
 
-    // --- ESTILOS BARRA INFERIOR PREMIUM ---
-    navContainer: {
-        position: 'absolute',
-        bottom: 25,         // Elevada del suelo
-        left: 20,
-        right: 20,
-        alignItems: 'center',
-    },
-    tabBar: {
-        flexDirection: 'row',
-        backgroundColor: '#ffffff',
-        height: 70,
-        borderRadius: 25,
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        width: '100%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 10,
-        paddingHorizontal: 10,
-    },
-    tabBarItem: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-    },
-    iconCircle: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 2,
-        backgroundColor: 'transparent',
-    },
-    iconCircleActive: {
-        backgroundColor: '#ff7a00',
-        shadowColor: '#ff7a00',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-    },
-    tabIcon: {
-        fontSize: 18,
-    },
-    textWhite: {
-        color: '#ffffff',
-    },
-    tabBarText: {
-        fontSize: 9,
-        fontWeight: '800',
-        color: '#bbb',
-        textTransform: 'uppercase',
-    },
-    tabBarTextActive: {
-        color: '#ff7a00',
-    },
+    propiaSeries: { color: '#666', fontSize: 12, marginTop: 4 },
+    btnDelete: { padding: 20 },
+    deleteIcon: { color: '#ff4444', fontSize: 18, fontWeight: 'bold' },
+    btnAdd: { backgroundColor: 'white', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 10, borderStyle: 'dashed', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
+    btnAddText: { color: '#ff7a00', fontWeight: '900' },
 
-    // --- ESTILOS PLACEHOLDERS ---
-    placeholderCenter: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 30,
-    },
-    placeholderText: {
-        color: '#fff',
-        fontSize: 16,
-        textAlign: 'center',
-        lineHeight: 24,
-        marginBottom: 20,
-    },
-    btnPlaceholder: {
-        backgroundColor: '#fff',
-        paddingVertical: 12,
-        paddingHorizontal: 25,
-        borderRadius: 25,
-    },
-    btnPlaceholderText: {
-        color: '#ff7a00',
-        fontWeight: 'bold',
-    },
+    modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#eee' },
+    modalTitle: { fontSize: 18, fontWeight: 'bold' },
+    closeModal: { color: '#ff7a00', fontWeight: 'bold' },
+    searchInput: { backgroundColor: 'white', margin: 15, padding: 15, borderRadius: 12, elevation: 2 },
+    catItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 10, borderRadius: 15, marginBottom: 10 },
+    catImage: { width: 50, height: 50, borderRadius: 10, marginRight: 15 },
+    catName: { fontSize: 14, fontWeight: 'bold' },
+    catSub: { fontSize: 11, color: '#999' },
+    plusIcon: { marginLeft: 'auto', fontSize: 24, color: '#ff7a00', paddingRight: 10 },
+
+    navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
+    tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 70, borderRadius: 25, alignItems: 'center', elevation: 10 },
+    tabBarItem: { flex: 1, alignItems: 'center' },
+    iconCircle: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+    iconCircleActive: { backgroundColor: '#ff7a00' },
+    tabBarText: { fontSize: 9, fontWeight: '800', color: '#bbb' },
+    tabBarTextActive: { color: '#ff7a00' },
     loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' }
 });
