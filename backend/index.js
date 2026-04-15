@@ -304,40 +304,42 @@ app.post('/api/rutinas/generar', async (req, res) => {
     }
 });
 
-// NUEVO: Obtener perfil de usuario completo
+// OBTENER PERFIL (Asegúrate de poner /api/)
 app.get('/api/usuarios/:id', async (req, res) => {
     const userId = parseInt(req.params.id);
-
     try {
         const usuario = await prisma.usuario.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                nombre: true,
-                email: true,
-                telefono: true,
-                peso: true,
-                altura: true,
-                edad: true,
-                sexo: true,
-                frecuencia_semanal: true,
-                objetivo: true,
-                nivel: true,
-                fecha_registro: true
-            }
+            where: { id: userId }
         });
-
-        if (!usuario) {
-            return res.status(404).json({ error: "Usuario no encontrado" });
-        }
-
+        if (!usuario) return res.status(404).json({ success: false, error: "No encontrado" });
         res.json({ success: true, usuario });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al recuperar datos del perfil" });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
+// ACTUALIZAR PERFIL (Asegúrate de poner /api/)
+app.put('/api/usuarios/:id', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { peso, altura, edad } = req.body;
+
+    try {
+        const usuarioActualizado = await prisma.usuario.update({
+            where: { id: userId },
+            data: {
+                // Forzamos Number() para que Prisma/Postgres no rechace el dato
+                peso: peso ? Number(peso) : null,
+                altura: altura ? Number(altura) : null,
+                edad: edad ? Number(edad) : null,
+            },
+        });
+
+        res.json({ success: true, message: "Perfil actualizado", usuario: usuarioActualizado });
+    } catch (error) {
+        console.error("Error en PUT:", error);
+        res.status(500).json({ success: false, error: "Error al actualizar en DB" });
+    }
+});
 // NUEVO: Obtener la rutina de un usuario existente
 app.get('/api/usuarios/:id/rutina', async (req, res) => {
     const userId = parseInt(req.params.id);
