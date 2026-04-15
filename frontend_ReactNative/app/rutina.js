@@ -167,9 +167,16 @@ export default function Rutina() {
     useEffect(() => {
         const cargarData = async () => {
             try {
+                // --- CRITICAL: LIMPIEZA DE PANTALLA ---
+                // Al iniciar la carga, reseteamos los estados para que no se vea lo del usuario anterior
+                setData(null);
+                setUsuario({ nombre: 'Usuario' });
+                setRutinaPropia({});
+
                 let resRutina = await AsyncStorage.getItem("rutina");
                 const userId = await AsyncStorage.getItem("userId");
                 const userName = await AsyncStorage.getItem("userName");
+
                 if (userName) setUsuario({ nombre: userName });
 
                 if (!resRutina && userId) {
@@ -180,15 +187,18 @@ export default function Rutina() {
                         resRutina = JSON.stringify(result);
                     }
                 }
+
                 if (resRutina) {
                     const parsed = JSON.parse(resRutina);
                     setData(parsed);
                     setDiaActual(Object.keys(parsed.rutina)[0]);
                 }
 
+                // Cargar Rutina Propia específica del nuevo usuario
                 const propiaGuardada = await AsyncStorage.getItem("rutina_propia");
-                if (propiaGuardada) setRutinaPropia(JSON.parse(propiaGuardada));
-                else {
+                if (propiaGuardada) {
+                    setRutinaPropia(JSON.parse(propiaGuardada));
+                } else {
                     let inicial = {};
                     diasSemana.forEach(d => inicial[d] = []);
                     setRutinaPropia(inicial);
@@ -199,7 +209,11 @@ export default function Rutina() {
                 setEjerciciosCatalogo(dataCat);
 
                 Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: false }).start();
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                console.error(err);
+                // En caso de error, también aseguramos que no se quede data vieja
+                setData(null);
+            }
         };
         cargarData();
     }, []);
