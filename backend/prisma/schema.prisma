@@ -30,6 +30,8 @@ model Usuario {
   fecha_registro      DateTime  @default(now())
   codigo_recuperacion String?
   expiracion_codigo   DateTime?
+  foto_perfil         String?   // URL de foto de perfil (HU-14)
+  calorias_objetivo   Int?      // TDEE/objetivo calórico diario (HU-13)
 
   // Relaciones
   rutinas             Rutina[]
