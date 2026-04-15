@@ -464,6 +464,35 @@ app.post('/api/reset-password', async (req, res) => {
         res.status(500).json({ error: 'Error al resetear contraseña' });
     }
 });
+// Guardar rutina personalizada
+app.post('/api/rutinas/guardar-personalizada', async (req, res) => {
+    const { userId, nombreRutina, esquema } = req.body;
+    try {
+        const nuevaRutina = await prisma.rutina.create({
+            data: {
+                usuario_id: parseInt(userId),
+                nombre: nombreRutina,
+                es_generada: false,
+                descripcion: JSON.stringify(esquema) // Guardamos el JSON de los días aquí
+            }
+        });
+        res.json({ success: true, rutina: nuevaRutina });
+    } catch (error) {
+        res.status(500).json({ error: "Error al guardar rutina" });
+    }
+});
+
+// Listar rutinas de un usuario
+app.get('/api/usuarios/:id/rutinas-guardadas', async (req, res) => {
+    try {
+        const rutinas = await prisma.rutina.findMany({
+            where: { usuario_id: parseInt(req.params.id), es_generada: false }
+        });
+        res.json(rutinas);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener rutinas" });
+    }
+});
 
 
 // --- ARRANCAR SERVIDOR ---

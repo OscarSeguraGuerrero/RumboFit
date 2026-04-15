@@ -14,7 +14,8 @@ import {
     View,
     Dimensions,
     Animated,
-    TextInput
+    TextInput,
+    Alert
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -33,6 +34,12 @@ export default function Rutina() {
     const [modalEjercicios, setModalEjercicios] = useState(false);
     const [ejerciciosCatalogo, setEjerciciosCatalogo] = useState([]);
     const [busqueda, setBusqueda] = useState('');
+
+    // --- ESTADOS PARA GUARDAR Y CARGAR ---
+    const [modalGuardar, setModalGuardar] = useState(false);
+    const [modalElegir, setModalElegir] = useState(false);
+    const [nombreNuevaRutina, setNombreNuevaRutina] = useState('');
+    const [listaRutinas, setListaRutinas] = useState([]);
 
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -147,6 +154,47 @@ export default function Rutina() {
         router.replace('/');
     };
 
+    // --- LÓGICA DE BASE DE DATOS (PERSONALIZADA) ---
+    const handleGuardarEnDB = async () => {
+        if (!nombreNuevaRutina.trim()) return Alert.alert("Error", "Ponle un nombre a tu rutina");
+        const userId = await AsyncStorage.getItem("userId");
+        try {
+            const response = await fetch(`${API_URL}/rutinas/guardar-personalizada`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    nombreRutina: nombreNuevaRutina,
+                    esquema: rutinaPropia
+                })
+            });
+            const resData = await response.json();
+            if (resData.success) {
+                setModalGuardar(false);
+                setNombreNuevaRutina('');
+                Alert.alert("Éxito", "Rutina guardada en la base de datos");
+            }
+        } catch (e) { Alert.alert("Error", "No se pudo guardar"); }
+    };
+
+    const abrirElegirRutina = async () => {
+        const userId = await AsyncStorage.getItem("userId");
+        try {
+            const res = await fetch(`${API_URL}/usuarios/${userId}/rutinas-guardadas`);
+            const rutinas = await res.json();
+            setListaRutinas(rutinas);
+            setModalElegir(true);
+        } catch (e) { console.error(e); }
+    };
+
+    const cargarRutinaSeleccionada = (rutina) => {
+        const esquema = JSON.parse(rutina.descripcion);
+        setRutinaPropia(esquema);
+        AsyncStorage.setItem("rutina_propia", rutina.descripcion);
+        setModalElegir(false);
+        Alert.alert("Cargada", `Se ha cargado: ${rutina.nombre}`);
+    };
+
     const añadirEjercicio = (ej) => {
         const nueva = { ...rutinaPropia };
         nueva[diaPropioActivo] = [...nueva[diaPropioActivo], `${ej.nombre} 3x12`];
@@ -175,7 +223,7 @@ export default function Rutina() {
                 </TouchableOpacity>
             </View>
 
-            {/* --- MENÚ DESPLEGABLE (RESTURADO) --- */}
+            {/* --- MENÚ DESPLEGABLE --- */}
             <Modal transparent visible={menuVisible} animationType="fade">
                 <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
                     <View style={styles.modalOverlay}>
@@ -232,9 +280,19 @@ export default function Rutina() {
 
                 {vistaActiva === 'propia' && (
                     <>
-                        <View style={styles.header}>
-                            <Text style={styles.methodLabel}>MI ENTRENAMIENTO PERSONAL</Text>
-                            <Text style={styles.title}>Diseña tu semana</Text>
+                        <View style={styles.headerRow}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.methodLabel}>MI ENTRENAMIENTO PERSONAL</Text>
+                                <Text style={styles.title}>Diseña tu semana</Text>
+                            </View>
+                            <View style={styles.actionButtons}>
+                                <TouchableOpacity style={styles.btnSmall} onPress={abrirElegirRutina}>
+                                    <Text style={styles.btnSmallText}>ELEGIR</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: '#2ecc71' }]} onPress={() => setModalGuardar(true)}>
+                                    <Text style={styles.btnSmallText}>GUARDAR</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                         <View style={styles.tabsWrapper}>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -266,6 +324,47 @@ export default function Rutina() {
                     </>
                 )}
             </View>
+
+            {/* --- MODALES DE GESTIÓN (GUARDAR/ELEGIR) --- */}
+            <Modal visible={modalGuardar} transparent animationType="fade">
+                <View style={styles.fullOverlay}>
+                    <View style={styles.modalSmall}>
+                        <Text style={styles.modalSub}>Guardar Rutina Como:</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="Nombre (ej: Fuerza 2024)"
+                            value={nombreNuevaRutina}
+                            onChangeText={setNombreNuevaRutina}
+                        />
+                        <TouchableOpacity style={styles.btnConfirm} onPress={handleGuardarEnDB}>
+                            <Text style={styles.btnConfirmText}>CONFIRMAR</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setModalGuardar(false)}>
+                            <Text style={styles.btnCancelText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={modalElegir} transparent animationType="fade">
+                <View style={styles.fullOverlay}>
+                    <View style={styles.modalSmall}>
+                        <Text style={styles.modalSub}>Selecciona una Rutina:</Text>
+                        <ScrollView style={{ maxHeight: 200, marginVertical: 10 }}>
+                            {listaRutinas.length === 0 ? <Text style={{textAlign:'center', color:'#999'}}>No hay rutinas guardadas</Text> :
+                                listaRutinas.map((r, i) => (
+                                    <TouchableOpacity key={i} style={styles.rutinaListItem} onPress={() => cargarRutinaSeleccionada(r)}>
+                                        <Text style={styles.rutinaListItemText}>{r.nombre}</Text>
+                                        <Text style={{color: '#ff7a00'}}>Cargar</Text>
+                                    </TouchableOpacity>
+                                ))}
+                        </ScrollView>
+                        <TouchableOpacity onPress={() => setModalElegir(false)}>
+                            <Text style={[styles.btnCancelText, {marginTop: 10}]}>Cerrar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             {/* --- MODAL CATÁLOGO --- */}
             <Modal visible={modalEjercicios} animationType="slide">
@@ -316,7 +415,6 @@ const styles = StyleSheet.create({
     avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
     avatarText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
 
-    // --- ESTILOS MODAL MENÚ ---
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 70, paddingRight: 15 },
     dropdown: { backgroundColor: '#fff', borderRadius: 16, elevation: 12, minWidth: 190, overflow: 'hidden' },
     dropdownHeader: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', paddingVertical: 14, paddingHorizontal: 16 },
@@ -326,6 +424,11 @@ const styles = StyleSheet.create({
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
     header: { marginBottom: 15 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
+    actionButtons: { flexDirection: 'row', gap: 8 },
+    btnSmall: { backgroundColor: 'rgba(255,255,255,0.25)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: 'white' },
+    btnSmallText: { color: 'white', fontSize: 10, fontWeight: '900' },
+
     methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.9 },
     title: { fontSize: 20, fontWeight: '900', color: '#ffffff' },
 
@@ -347,6 +450,17 @@ const styles = StyleSheet.create({
     deleteIcon: { color: '#ff4444', fontSize: 18, fontWeight: 'bold' },
     btnAdd: { backgroundColor: 'white', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 10, borderStyle: 'dashed', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
     btnAddText: { color: '#ff7a00', fontWeight: '900' },
+
+    // --- ESTILOS MODALES GUARDAR/ELEGIR ---
+    fullOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    modalSmall: { backgroundColor: 'white', width: '80%', borderRadius: 20, padding: 25, elevation: 20 },
+    modalSub: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 15 },
+    modalInput: { backgroundColor: '#f0f0f0', padding: 12, borderRadius: 10, marginBottom: 15 },
+    btnConfirm: { backgroundColor: '#2ecc71', padding: 12, borderRadius: 12, alignItems: 'center' },
+    btnConfirmText: { color: 'white', fontWeight: 'bold' },
+    btnCancelText: { color: 'red', textAlign: 'center', marginTop: 15, fontSize: 13 },
+    rutinaListItem: { paddingVertical: 12, borderBottomWidth: 1, borderColor: '#eee', flexDirection: 'row', justifyContent: 'space-between' },
+    rutinaListItemText: { fontWeight: '600', color: '#333' },
 
     modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#eee' },
