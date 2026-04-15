@@ -43,12 +43,15 @@ export default function Rutina() {
 
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-    // --- MAPEOS DE IMÁGENES (Mantenidos) ---
+    // --- MAPEOS DE IMÁGENES ---
     const imagenesMusculos = {
         empuje:   require('../assets/images/musculo_pecho.png'),
         traccion: require('../assets/images/musculo_traccion.png'),
         pierna:   require('../assets/images/musculo_pierna.png'),
         fullbody: require('../assets/images/fullbody.png'),
+        core:     require('../assets/images/musculo_core.png'),
+        hombros:  require('../assets/images/musculo_hombros.png'),
+        descanso: require('../assets/images/descanso.png'),
     };
 
     const imagenesEjercicios = {
@@ -85,16 +88,70 @@ export default function Rutina() {
         deadbug:       require('../assets/images/ej_deadbug.png'),
     };
 
+    const obtenerImagenMusculo = (textoDia) => {
+        const dia = (textoDia || "").toLowerCase();
+        if (dia.includes('empuje ligero') || dia.includes('hombros')) return imagenesMusculos.hombros;
+        if (dia.includes('empuje') || dia.includes('push')) return imagenesMusculos.empuje;
+        if (dia.includes('tracción') || dia.includes('traccion') || dia.includes('pull')) return imagenesMusculos.traccion;
+        if (dia.includes('core'))     return imagenesMusculos.core;
+        if (dia.includes('pierna') || dia.includes('legs')) return imagenesMusculos.pierna;
+        if (dia.includes('fullbody') || dia.includes('full body')) return imagenesMusculos.fullbody;
+        if (dia.includes('descanso')) return imagenesMusculos.descanso;
+        return imagenesMusculos.fullbody;
+    };
+
     const obtenerFotoEjercicio = (nombreEjercicio) => {
-        const ej = nombreEjercicio.toLowerCase();
-        if (ej.includes('press') && ej.includes('banca')) return imagenesEjercicios.press_banca;
-        if (ej.includes('sentadilla')) return imagenesEjercicios.sentadilla;
-        if (ej.includes('peso muerto')) return imagenesEjercicios.peso_muerto;
+        const ej = (nombreEjercicio || "").toLowerCase();
+
+        // --- PECHO ---
+        if (ej.includes('press') && (ej.includes('banca') || ej.includes('pecho') || ej.includes('plano') || ej.includes('superior') || ej.includes('inclinado'))) return imagenesEjercicios.press_banca;
+        if (ej.includes('aperturas') || ej.includes('contractor') || ej.includes('cruce') || ej.includes('peck deck')) return imagenesEjercicios.aperturas;
+        if (ej.includes('flexiones') || ej.includes('push up')) return imagenesEjercicios.flexiones;
+        if (ej.includes('fondos') && (ej.includes('pecho') || ej.includes('paralelas'))) return imagenesEjercicios.fondos;
+
+        // --- ESPALDA ---
+        if (ej.includes('dominadas') || ej.includes('pull up')) return imagenesEjercicios.dominadas;
         if (ej.includes('remo')) return imagenesEjercicios.remo;
-        if (ej.includes('curl')) return imagenesEjercicios.curl;
-        if (ej.includes('jalón')) return imagenesEjercicios.jalon;
+        if (ej.includes('jalón') || ej.includes('jalon')) return imagenesEjercicios.jalon;
+        if (ej.includes('peso muerto') && !ej.includes('rumano')) return imagenesEjercicios.peso_muerto;
+        if (ej.includes('lumbares') || ej.includes('hiperextensiones') || ej.includes('extension de espalda')) return imagenesEjercicios.lumbares;
+
+        // --- PIERNAS ---
+        if (ej.includes('sentadilla') || ej.includes('squat')) return imagenesEjercicios.sentadilla;
         if (ej.includes('prensa')) return imagenesEjercicios.prensa;
-        if (ej.includes('zancada')) return imagenesEjercicios.zancadas;
+        if (ej.includes('zancada') || ej.includes('lunge') || ej.includes('estocada')) return imagenesEjercicios.zancadas;
+        if (ej.includes('extensión') && ej.includes('cuádriceps')) return imagenesEjercicios.ext_cuad;
+        if (ej.includes('curl femoral') || ej.includes('peso muerto rumano') || ej.includes('femoral')) return imagenesEjercicios.femoral;
+        if (ej.includes('gemelo') || ej.includes('pantorrilla') || ej.includes('talones')) return imagenesEjercicios.gemelos;
+
+        // --- HOMBROS ---
+        if (ej.includes('press militar') || ej.includes('press hombro') || ej.includes('press arnold')) return imagenesEjercicios.press_militar;
+        if (ej.includes('elevación lateral') || ej.includes('elevacion lateral') || ej.includes('laterales')) return imagenesEjercicios.elevaciones;
+        if (ej.includes('pájaro') || ej.includes('pajaro') || ej.includes('deltoide posterior')) return imagenesEjercicios.pajaro;
+        if (ej.includes('trapecio') || ej.includes('encogimiento')) return imagenesEjercicios.trapecio;
+
+        // --- BRAZOS ---
+        if (ej.includes('curl') && (ej.includes('bíceps') || ej.includes('biceps'))) return imagenesEjercicios.curl;
+        if (ej.includes('martillo') || ej.includes('hammer')) return imagenesEjercicios.martillo;
+        if (ej.includes('tríceps') || ej.includes('triceps') || ej.includes('francés') || ej.includes('frances') || ej.includes('extension de codo')) return imagenesEjercicios.triceps;
+        if (ej.includes('fondos') && (ej.includes('banco') || ej.includes('silla'))) return imagenesEjercicios.fondos;
+
+        // --- CORE / ABDOMEN ---
+        if (ej.includes('deadbug')) return imagenesEjercicios.deadbug;
+        if (ej.includes('crunch') || ej.includes('abdominal')) return imagenesEjercicios.crunch;
+        if (ej.includes('plancha') || ej.includes('plank')) return imagenesEjercicios.core;
+        if (ej.includes('piernas') && (ej.includes('elevación') || ej.includes('elevacion'))) return imagenesEjercicios.abd_piernas;
+        if (ej.includes('bird dog') || ej.includes('bird-dog')) return imagenesEjercicios.bird;
+
+        // --- SALUD / MOVILIDAD / OTROS ---
+        if (ej.includes('gato') || ej.includes('camello') || ej.includes('cat-cow')) return imagenesEjercicios.gato;
+        if (ej.includes('estiramiento') || ej.includes('movilidad')) return imagenesEjercicios.estiramiento;
+        if (ej.includes('caminar') || ej.includes('pasos') || ej.includes('cardio')) return imagenesEjercicios.caminar;
+
+        // Si no encuentra nada de lo anterior, pero el nombre del ejercicio coincide con alguna clave de tu objeto:
+        const claveDirecta = Object.keys(imagenesEjercicios).find(key => ej.includes(key));
+        if (claveDirecta) return imagenesEjercicios[claveDirecta];
+
         return imagenesEjercicios.descanso;
     };
 
@@ -154,7 +211,6 @@ export default function Rutina() {
         router.replace('/');
     };
 
-    // --- LÓGICA DE BASE DE DATOS (PERSONALIZADA) ---
     const handleGuardarEnDB = async () => {
         if (!nombreNuevaRutina.trim()) return Alert.alert("Error", "Ponle un nombre a tu rutina");
         const userId = await AsyncStorage.getItem("userId");
@@ -262,6 +318,16 @@ export default function Rutina() {
                             </ScrollView>
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+
+                            {/* IMAGEN DE MÚSCULOS RESTAURADA */}
+                            <View style={styles.imageContainer}>
+                                <Image source={obtenerImagenMusculo(diaActual)} style={styles.muscleImage} resizeMode="cover" />
+                                <View style={styles.imageOverlay}>
+                                    <Text style={styles.overlayDia}>{diaActual}</Text>
+                                    <Text style={styles.overlayCount}>{data.rutina[diaActual]?.length || 0} ejercicios</Text>
+                                </View>
+                            </View>
+
                             {data.rutina[diaActual]?.map((ej, i) => {
                                 const { nombre, series } = parsearEjercicio(ej);
                                 return (
@@ -325,7 +391,7 @@ export default function Rutina() {
                 )}
             </View>
 
-            {/* --- MODALES DE GESTIÓN (GUARDAR/ELEGIR) --- */}
+            {/* MODALES GUARDAR/ELEGIR */}
             <Modal visible={modalGuardar} transparent animationType="fade">
                 <View style={styles.fullOverlay}>
                     <View style={styles.modalSmall}>
@@ -366,7 +432,7 @@ export default function Rutina() {
                 </View>
             </Modal>
 
-            {/* --- MODAL CATÁLOGO --- */}
+            {/* MODAL CATÁLOGO */}
             <Modal visible={modalEjercicios} animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
@@ -386,7 +452,7 @@ export default function Rutina() {
                 </View>
             </Modal>
 
-            {/* --- NAV BAR --- */}
+            {/* NAV BAR */}
             <View style={styles.navContainer}>
                 <View style={styles.tabBar}>
                     <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('propia')}>
@@ -438,6 +504,13 @@ const styles = StyleSheet.create({
     tabText: { fontSize: 12, fontWeight: '800', color: '#ffffff' },
     textOrange: { color: '#ff7a00' },
 
+    // ESTILOS IMAGEN MÚSCULOS
+    imageContainer: { width: '100%', height: 260, borderRadius: 16, overflow: 'hidden', marginBottom: 15 },
+    muscleImage: { width: '100%', height: '100%' },
+    imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)', padding: 10 },
+    overlayDia: { color: 'white', fontWeight: '800', fontSize: 13 },
+    overlayCount: { color: 'rgba(255,255,255,0.8)', fontSize: 11 },
+
     exerciseCard: { backgroundColor: '#ffffff', borderRadius: 18, marginBottom: 12, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
     exercisePhoto: { width: 85, height: 85 },
     exerciseInfo: { flex: 1, paddingHorizontal: 15 },
@@ -451,7 +524,6 @@ const styles = StyleSheet.create({
     btnAdd: { backgroundColor: 'white', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 10, borderStyle: 'dashed', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
     btnAddText: { color: '#ff7a00', fontWeight: '900' },
 
-    // --- ESTILOS MODALES GUARDAR/ELEGIR ---
     fullOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
     modalSmall: { backgroundColor: 'white', width: '80%', borderRadius: 20, padding: 25, elevation: 20 },
     modalSub: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 15 },
