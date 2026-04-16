@@ -35,6 +35,9 @@ export default function Rutina() {
     const [ejerciciosCatalogo, setEjerciciosCatalogo] = useState([]);
     const [busqueda, setBusqueda] = useState('');
 
+    // --- ESTADO DE COMPLETADO ---
+    const [completados, setCompletados] = useState({}); // { "Nombre Ejercicio": true/false }
+
     // --- ESTADOS PARA GUARDAR Y CARGAR ---
     const [modalGuardar, setModalGuardar] = useState(false);
     const [modalElegir, setModalElegir] = useState(false);
@@ -102,56 +105,14 @@ export default function Rutina() {
 
     const obtenerFotoEjercicio = (nombreEjercicio) => {
         const ej = (nombreEjercicio || "").toLowerCase();
-
-        // --- PECHO ---
-        if (ej.includes('press') && (ej.includes('banca') || ej.includes('pecho') || ej.includes('plano') || ej.includes('superior') || ej.includes('inclinado'))) return imagenesEjercicios.press_banca;
-        if (ej.includes('aperturas') || ej.includes('contractor') || ej.includes('cruce') || ej.includes('peck deck')) return imagenesEjercicios.aperturas;
-        if (ej.includes('flexiones') || ej.includes('push up')) return imagenesEjercicios.flexiones;
-        if (ej.includes('fondos') && (ej.includes('pecho') || ej.includes('paralelas'))) return imagenesEjercicios.fondos;
-
-        // --- ESPALDA ---
-        if (ej.includes('dominadas') || ej.includes('pull up')) return imagenesEjercicios.dominadas;
+        if (ej.includes('press') && (ej.includes('banca') || ej.includes('pecho'))) return imagenesEjercicios.press_banca;
+        if (ej.includes('sentadilla')) return imagenesEjercicios.sentadilla;
+        if (ej.includes('peso muerto')) return imagenesEjercicios.peso_muerto;
         if (ej.includes('remo')) return imagenesEjercicios.remo;
-        if (ej.includes('jalón') || ej.includes('jalon')) return imagenesEjercicios.jalon;
-        if (ej.includes('peso muerto') && !ej.includes('rumano')) return imagenesEjercicios.peso_muerto;
-        if (ej.includes('lumbares') || ej.includes('hiperextensiones') || ej.includes('extension de espalda')) return imagenesEjercicios.lumbares;
-
-        // --- PIERNAS ---
-        if (ej.includes('sentadilla') || ej.includes('squat')) return imagenesEjercicios.sentadilla;
+        if (ej.includes('curl')) return imagenesEjercicios.curl;
+        if (ej.includes('militar')) return imagenesEjercicios.press_militar;
         if (ej.includes('prensa')) return imagenesEjercicios.prensa;
-        if (ej.includes('zancada') || ej.includes('lunge') || ej.includes('estocada')) return imagenesEjercicios.zancadas;
-        if (ej.includes('extensión') && ej.includes('cuádriceps')) return imagenesEjercicios.ext_cuad;
-        if (ej.includes('curl femoral') || ej.includes('peso muerto rumano') || ej.includes('femoral')) return imagenesEjercicios.femoral;
-        if (ej.includes('gemelo') || ej.includes('pantorrilla') || ej.includes('talones')) return imagenesEjercicios.gemelos;
-
-        // --- HOMBROS ---
-        if (ej.includes('press militar') || ej.includes('press hombro') || ej.includes('press arnold')) return imagenesEjercicios.press_militar;
-        if (ej.includes('elevación lateral') || ej.includes('elevacion lateral') || ej.includes('laterales')) return imagenesEjercicios.elevaciones;
-        if (ej.includes('pájaro') || ej.includes('pajaro') || ej.includes('deltoide posterior')) return imagenesEjercicios.pajaro;
-        if (ej.includes('trapecio') || ej.includes('encogimiento')) return imagenesEjercicios.trapecio;
-
-        // --- BRAZOS ---
-        if (ej.includes('curl') && (ej.includes('bíceps') || ej.includes('biceps'))) return imagenesEjercicios.curl;
-        if (ej.includes('martillo') || ej.includes('hammer')) return imagenesEjercicios.martillo;
-        if (ej.includes('tríceps') || ej.includes('triceps') || ej.includes('francés') || ej.includes('frances') || ej.includes('extension de codo')) return imagenesEjercicios.triceps;
-        if (ej.includes('fondos') && (ej.includes('banco') || ej.includes('silla'))) return imagenesEjercicios.fondos;
-
-        // --- CORE / ABDOMEN ---
-        if (ej.includes('deadbug')) return imagenesEjercicios.deadbug;
-        if (ej.includes('crunch') || ej.includes('abdominal')) return imagenesEjercicios.crunch;
-        if (ej.includes('plancha') || ej.includes('plank')) return imagenesEjercicios.core;
-        if (ej.includes('piernas') && (ej.includes('elevación') || ej.includes('elevacion'))) return imagenesEjercicios.abd_piernas;
-        if (ej.includes('bird dog') || ej.includes('bird-dog')) return imagenesEjercicios.bird;
-
-        // --- SALUD / MOVILIDAD / OTROS ---
-        if (ej.includes('gato') || ej.includes('camello') || ej.includes('cat-cow')) return imagenesEjercicios.gato;
-        if (ej.includes('estiramiento') || ej.includes('movilidad')) return imagenesEjercicios.estiramiento;
-        if (ej.includes('caminar') || ej.includes('pasos') || ej.includes('cardio')) return imagenesEjercicios.caminar;
-
-        // Si no encuentra nada de lo anterior, pero el nombre del ejercicio coincide con alguna clave de tu objeto:
-        const claveDirecta = Object.keys(imagenesEjercicios).find(key => ej.includes(key));
-        if (claveDirecta) return imagenesEjercicios[claveDirecta];
-
+        if (ej.includes('jalon')) return imagenesEjercicios.jalon;
         return imagenesEjercicios.descanso;
     };
 
@@ -162,16 +123,22 @@ export default function Rutina() {
         return { nombre, series };
     };
 
+    const toggleCompletado = (nombre) => {
+        setCompletados(prev => ({
+            ...prev,
+            [nombre]: !prev[nombre]
+        }));
+    };
+
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         const cargarData = async () => {
             try {
-                // --- CRITICAL: LIMPIEZA DE PANTALLA ---
-                // Al iniciar la carga, reseteamos los estados para que no se vea lo del usuario anterior
                 setData(null);
                 setUsuario({ nombre: 'Usuario' });
                 setRutinaPropia({});
+                setCompletados({});
 
                 let resRutina = await AsyncStorage.getItem("rutina");
                 const userId = await AsyncStorage.getItem("userId");
@@ -194,10 +161,16 @@ export default function Rutina() {
                     setDiaActual(Object.keys(parsed.rutina)[0]);
                 }
 
-                // Cargar Rutina Propia específica del nuevo usuario
                 const propiaGuardada = await AsyncStorage.getItem("rutina_propia");
                 if (propiaGuardada) {
-                    setRutinaPropia(JSON.parse(propiaGuardada));
+                    const parsedPropia = JSON.parse(propiaGuardada);
+                    // Si viene del formato nuevo con .ejercicios y .completados
+                    if (parsedPropia.ejercicios) {
+                        setRutinaPropia(parsedPropia.ejercicios);
+                        setCompletados(parsedPropia.completados || {});
+                    } else {
+                        setRutinaPropia(parsedPropia);
+                    }
                 } else {
                     let inicial = {};
                     diasSemana.forEach(d => inicial[d] = []);
@@ -211,7 +184,6 @@ export default function Rutina() {
                 Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: false }).start();
             } catch (err) {
                 console.error(err);
-                // En caso de error, también aseguramos que no se quede data vieja
                 setData(null);
             }
         };
@@ -229,20 +201,24 @@ export default function Rutina() {
         if (!nombreNuevaRutina.trim()) return Alert.alert("Error", "Ponle un nombre a tu rutina");
         const userId = await AsyncStorage.getItem("userId");
         try {
+            const esquemaCompleto = {
+                ejercicios: rutinaPropia,
+                completados: completados
+            };
             const response = await fetch(`${API_URL}/rutinas/guardar-personalizada`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId,
                     nombreRutina: nombreNuevaRutina,
-                    esquema: rutinaPropia
+                    esquema: esquemaCompleto
                 })
             });
             const resData = await response.json();
             if (resData.success) {
                 setModalGuardar(false);
                 setNombreNuevaRutina('');
-                Alert.alert("Éxito", "Rutina guardada en la base de datos");
+                Alert.alert("Éxito", "Rutina y progreso guardados");
             }
         } catch (e) { Alert.alert("Error", "No se pudo guardar"); }
     };
@@ -259,17 +235,22 @@ export default function Rutina() {
 
     const cargarRutinaSeleccionada = (rutina) => {
         const esquema = JSON.parse(rutina.descripcion);
-        setRutinaPropia(esquema);
+        if (esquema.ejercicios) {
+            setRutinaPropia(esquema.ejercicios);
+            setCompletados(esquema.completados || {});
+        } else {
+            setRutinaPropia(esquema);
+        }
         AsyncStorage.setItem("rutina_propia", rutina.descripcion);
         setModalElegir(false);
-        Alert.alert("Cargada", `Se ha cargado: ${rutina.nombre}`);
+        Alert.alert("Cargada", `Rutina: ${rutina.nombre}`);
     };
 
     const añadirEjercicio = (ej) => {
         const nueva = { ...rutinaPropia };
         nueva[diaPropioActivo] = [...nueva[diaPropioActivo], `${ej.nombre} 3x12`];
         setRutinaPropia(nueva);
-        AsyncStorage.setItem("rutina_propia", JSON.stringify(nueva));
+        AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
         setModalEjercicios(false);
     };
 
@@ -277,7 +258,7 @@ export default function Rutina() {
         const nueva = { ...rutinaPropia };
         nueva[diaPropioActivo] = nueva[diaPropioActivo].filter((_, i) => i !== index);
         setRutinaPropia(nueva);
-        AsyncStorage.setItem("rutina_propia", JSON.stringify(nueva));
+        AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
     };
 
     if (!data) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
@@ -303,6 +284,13 @@ export default function Rutina() {
                                 <View style={styles.dropdownDivider} />
                                 <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); irAPerfil(); }}>
                                     <Text style={styles.dropdownText}>👤 Ver Perfil</Text>
+                                </TouchableOpacity>
+                                <View style={styles.dropdownDivider} />
+                                <TouchableOpacity
+                                    style={styles.dropdownItem}
+                                    onPress={() => { setMenuVisible(false); router.push('/historial'); }}
+                                >
+                                    <Text style={styles.dropdownText}>📅 Historial de Entrenos</Text>
                                 </TouchableOpacity>
                                 <View style={styles.dropdownDivider} />
                                 <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); cerrarSesion(); }}>
@@ -332,8 +320,6 @@ export default function Rutina() {
                             </ScrollView>
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-
-                            {/* IMAGEN DE MÚSCULOS RESTAURADA */}
                             <View style={styles.imageContainer}>
                                 <Image source={obtenerImagenMusculo(diaActual)} style={styles.muscleImage} resizeMode="cover" />
                                 <View style={styles.imageOverlay}>
@@ -344,14 +330,23 @@ export default function Rutina() {
 
                             {data.rutina[diaActual]?.map((ej, i) => {
                                 const { nombre, series } = parsearEjercicio(ej);
+                                const estaCompletado = completados[nombre];
                                 return (
-                                    <View key={i} style={styles.exerciseCard}>
+                                    <TouchableOpacity
+                                        key={i}
+                                        onPress={() => toggleCompletado(nombre)}
+                                        style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}
+                                    >
                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
                                         <View style={styles.exerciseInfo}>
-                                            <Text style={styles.exerciseName}>{nombre}</Text>
-                                            <View style={styles.seriesBadge}><Text style={styles.seriesText}>{series}</Text></View>
+                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
+                                                {nombre} {estaCompletado ? "(COMPLETADO)" : ""}
+                                            </Text>
+                                            <View style={[styles.seriesBadge, estaCompletado && styles.badgeCompleted]}>
+                                                <Text style={styles.seriesText}>{series}</Text>
+                                            </View>
                                         </View>
-                                    </View>
+                                    </TouchableOpacity>
                                 );
                             })}
                         </ScrollView>
@@ -386,15 +381,22 @@ export default function Rutina() {
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
                             {rutinaPropia[diaPropioActivo]?.map((ej, i) => {
                                 const { nombre, series } = parsearEjercicio(ej);
+                                const estaCompletado = completados[nombre];
                                 return (
-                                    <View key={i} style={styles.exerciseCard}>
+                                    <TouchableOpacity
+                                        key={i}
+                                        onPress={() => toggleCompletado(nombre)}
+                                        style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}
+                                    >
                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
                                         <View style={styles.exerciseInfo}>
-                                            <Text style={styles.exerciseName}>{nombre}</Text>
+                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
+                                                {nombre} {estaCompletado ? "✓" : ""}
+                                            </Text>
                                             <Text style={styles.propiaSeries}>{series || '3x12'}</Text>
                                         </View>
                                         <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
-                                    </View>
+                                    </TouchableOpacity>
                                 );
                             })}
                             <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
@@ -405,23 +407,14 @@ export default function Rutina() {
                 )}
             </View>
 
-            {/* MODALES GUARDAR/ELEGIR */}
+            {/* MODALES GUARDAR/ELEGIR/CATÁLOGO (Sin cambios) */}
             <Modal visible={modalGuardar} transparent animationType="fade">
                 <View style={styles.fullOverlay}>
                     <View style={styles.modalSmall}>
                         <Text style={styles.modalSub}>Guardar Rutina Como:</Text>
-                        <TextInput
-                            style={styles.modalInput}
-                            placeholder="Nombre (ej: Fuerza 2024)"
-                            value={nombreNuevaRutina}
-                            onChangeText={setNombreNuevaRutina}
-                        />
-                        <TouchableOpacity style={styles.btnConfirm} onPress={handleGuardarEnDB}>
-                            <Text style={styles.btnConfirmText}>CONFIRMAR</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setModalGuardar(false)}>
-                            <Text style={styles.btnCancelText}>Cancelar</Text>
-                        </TouchableOpacity>
+                        <TextInput style={styles.modalInput} placeholder="Nombre (ej: Fuerza 2024)" value={nombreNuevaRutina} onChangeText={setNombreNuevaRutina} />
+                        <TouchableOpacity style={styles.btnConfirm} onPress={handleGuardarEnDB}><Text style={styles.btnConfirmText}>CONFIRMAR</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setModalGuardar(false)}><Text style={styles.btnCancelText}>Cancelar</Text></TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -431,22 +424,18 @@ export default function Rutina() {
                     <View style={styles.modalSmall}>
                         <Text style={styles.modalSub}>Selecciona una Rutina:</Text>
                         <ScrollView style={{ maxHeight: 200, marginVertical: 10 }}>
-                            {listaRutinas.length === 0 ? <Text style={{textAlign:'center', color:'#999'}}>No hay rutinas guardadas</Text> :
-                                listaRutinas.map((r, i) => (
-                                    <TouchableOpacity key={i} style={styles.rutinaListItem} onPress={() => cargarRutinaSeleccionada(r)}>
-                                        <Text style={styles.rutinaListItemText}>{r.nombre}</Text>
-                                        <Text style={{color: '#ff7a00'}}>Cargar</Text>
-                                    </TouchableOpacity>
-                                ))}
+                            {listaRutinas.map((r, i) => (
+                                <TouchableOpacity key={i} style={styles.rutinaListItem} onPress={() => cargarRutinaSeleccionada(r)}>
+                                    <Text style={styles.rutinaListItemText}>{r.nombre}</Text>
+                                    <Text style={{color: '#ff7a00'}}>Cargar</Text>
+                                </TouchableOpacity>
+                            ))}
                         </ScrollView>
-                        <TouchableOpacity onPress={() => setModalElegir(false)}>
-                            <Text style={[styles.btnCancelText, {marginTop: 10}]}>Cerrar</Text>
-                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setModalElegir(false)}><Text style={styles.btnCancelText}>Cerrar</Text></TouchableOpacity>
                     </View>
                 </View>
             </Modal>
 
-            {/* MODAL CATÁLOGO */}
             <Modal visible={modalEjercicios} animationType="slide">
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
@@ -518,7 +507,6 @@ const styles = StyleSheet.create({
     tabText: { fontSize: 12, fontWeight: '800', color: '#ffffff' },
     textOrange: { color: '#ff7a00' },
 
-    // ESTILOS IMAGEN MÚSCULOS
     imageContainer: { width: '100%', height: 260, borderRadius: 16, overflow: 'hidden', marginBottom: 15 },
     muscleImage: { width: '100%', height: '100%' },
     imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)', padding: 10 },
@@ -526,10 +514,13 @@ const styles = StyleSheet.create({
     overlayCount: { color: 'rgba(255,255,255,0.8)', fontSize: 11 },
 
     exerciseCard: { backgroundColor: '#ffffff', borderRadius: 18, marginBottom: 12, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+    exerciseCardCompleted: { backgroundColor: '#d4edda', borderColor: '#28a745', borderWidth: 1 },
     exercisePhoto: { width: 85, height: 85 },
     exerciseInfo: { flex: 1, paddingHorizontal: 15 },
     exerciseName: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+    textCompleted: { color: '#155724', textDecorationLine: 'line-through' },
     seriesBadge: { marginTop: 6, backgroundColor: '#ff7a00', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, alignSelf: 'flex-start' },
+    badgeCompleted: { backgroundColor: '#28a745' },
     seriesText: { color: 'white', fontSize: 12, fontWeight: '800' },
 
     propiaSeries: { color: '#666', fontSize: 12, marginTop: 4 },
@@ -539,7 +530,7 @@ const styles = StyleSheet.create({
     btnAddText: { color: '#ff7a00', fontWeight: '900' },
 
     fullOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    modalSmall: { backgroundColor: 'white', width: '80%', borderRadius: 20, padding: 25, elevation: 20 },
+    modalSmall: { backgroundColor: 'white', width: '80%', borderRadius: 20, padding: 25 },
     modalSub: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 15 },
     modalInput: { backgroundColor: '#f0f0f0', padding: 12, borderRadius: 10, marginBottom: 15 },
     btnConfirm: { backgroundColor: '#2ecc71', padding: 12, borderRadius: 12, alignItems: 'center' },
@@ -549,7 +540,7 @@ const styles = StyleSheet.create({
     rutinaListItemText: { fontWeight: '600', color: '#333' },
 
     modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#eee' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'white' },
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     closeModal: { color: '#ff7a00', fontWeight: 'bold' },
     searchInput: { backgroundColor: 'white', margin: 15, padding: 15, borderRadius: 12, elevation: 2 },
