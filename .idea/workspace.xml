@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="historial">
-      <change afterPath="$PROJECT_DIR$/frontend_ReactNative/app/historial.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package.json" afterDir="false" />
-    </list>
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="historial de entreno" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -135,7 +128,7 @@
       <workItem from="1776266359918" duration="411000" />
       <workItem from="1776288025440" duration="749000" />
       <workItem from="1776292786201" duration="1210000" />
-      <workItem from="1776371880311" duration="1857000" />
+      <workItem from="1776371880311" duration="2158000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -321,7 +314,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776260419089</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="historial de entreno">
+      <option name="closed" value="true" />
+      <created>1776374212596</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1776374212596</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -362,6 +363,7 @@
     <MESSAGE value="historial de rutinas" />
     <MESSAGE value="historial de rutinas y cambios en perfil.js" />
     <MESSAGE value="historial" />
-    <option name="LAST_COMMIT_MESSAGE" value="historial" />
+    <MESSAGE value="historial de entreno" />
+    <option name="LAST_COMMIT_MESSAGE" value="historial de entreno" />
   </component>
 </project>
