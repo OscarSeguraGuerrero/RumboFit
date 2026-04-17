@@ -28,7 +28,7 @@ export default function Rutina() {
     const [menuVisible, setMenuVisible] = useState(false);
 
     // --- ESTADOS RUTINA PROPIA Y NAVEGACIÓN ---
-    const [vistaActiva, setVistaActiva] = useState('automatica');
+    const [vistaActiva, setVistaActiva] = useState('rutinas_menu');
     const [rutinaPropia, setRutinaPropia] = useState({});
     const [diaPropioActivo, setDiaPropioActivo] = useState('Lunes');
     const [modalEjercicios, setModalEjercicios] = useState(false);
@@ -356,6 +356,48 @@ export default function Rutina() {
         AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
     };
 
+    const simulateTrainingLog = async () => {
+        const userId = await AsyncStorage.getItem("userId");
+        const payload = {
+            userId,
+            rutinaId: data?.id || null,
+            ejercicios: [
+                { ejercicioId: 1, series: [{ peso: 80, reps: 10 }, { peso: 80, reps: 10 }] },
+                { ejercicioId: 2, series: [{ peso: 60, reps: 12 }] }
+            ]
+        };
+        try {
+            const res = await fetch(`${API_URL}/historial/entrenamiento`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (result.success) Alert.alert("¡Entrenamiento Guardado!", `Sesión registrada con ${result.volumen}kg de volumen total.`);
+            else Alert.alert("Error", result.error || "No se pudo registrar");
+        } catch (e) { Alert.alert("Error", "No se pudo conectar"); }
+    };
+
+    const simulateFoodLog = async () => {
+        const userId = await AsyncStorage.getItem("userId");
+        const payload = {
+            userId,
+            alimentoId: 1,
+            cantidad: 150,
+            franja: 'Comida'
+        };
+        try {
+            const res = await fetch(`${API_URL}/historial/comida`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) Alert.alert("¡Comida Guardada!", "Se ha añadido al registro de hoy.");
+            else Alert.alert("Error", "Asegúrate de tener alimentos en la base de datos.");
+        } catch (e) { Alert.alert("Error", "No se pudo conectar"); }
+    };
+
+
     if (!data) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
 
     return (
@@ -378,18 +420,18 @@ export default function Rutina() {
                                 <Text style={styles.dropdownHeader}>{usuario.nombre}</Text>
                                 <View style={styles.dropdownDivider} />
                                 <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); irAPerfil(); }}>
-                                    <Text style={styles.dropdownText}>👤 Ver Perfil</Text>
+                                    <Text style={styles.dropdownText}>Ver Perfil</Text>
                                 </TouchableOpacity>
                                 <View style={styles.dropdownDivider} />
                                 <TouchableOpacity
                                     style={styles.dropdownItem}
                                     onPress={() => { setMenuVisible(false); router.push('/historial'); }}
                                 >
-                                    <Text style={styles.dropdownText}>📅 Historial de Entrenos</Text>
+                                    <Text style={styles.dropdownText}>Mi Historial</Text>
                                 </TouchableOpacity>
                                 <View style={styles.dropdownDivider} />
                                 <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); cerrarSesion(); }}>
-                                    <Text style={[styles.dropdownText, {color: '#ff4444'}]}>🚪 Cerrar Sesión</Text>
+                                    <Text style={[styles.dropdownText, {color: '#ff4444'}]}>Cerrar Sesión</Text>
                                 </TouchableOpacity>
                             </View>
                         </TouchableWithoutFeedback>
@@ -399,9 +441,29 @@ export default function Rutina() {
 
             {/* --- CARD PRINCIPAL --- */}
             <View style={styles.mainCard}>
+                {vistaActiva === 'rutinas_menu' && (
+                    <View style={{ flex: 1, paddingBottom: 100 }}>
+                        <View style={styles.header}>
+                            <Text style={styles.methodLabel}>GESTIÓN DE ENTRENAMIENTO</Text>
+                            <Text style={styles.title}>Mis Rutinas</Text>
+                        </View>
+                        <TouchableOpacity style={styles.menuCard} onPress={() => setVistaActiva('automatica')}>
+                            <Text style={styles.menuCardTitle}>Mi rutina sugerida</Text>
+                            <Text style={styles.menuCardSub}>Rutina inteligente creada en tu registro</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.menuCard, {marginTop: 15}]} onPress={() => setVistaActiva('propia')}>
+                            <Text style={styles.menuCardTitle}>Añadir rutinas</Text>
+                            <Text style={styles.menuCardSub}>Crea y personaliza tus propios entrenamientos</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {vistaActiva === 'automatica' && (
                     <>
                         <View style={styles.header}>
+                            <TouchableOpacity onPress={() => setVistaActiva('rutinas_menu')}>
+                                <Text style={styles.backToMenuText}>← Volver al menú</Text>
+                            </TouchableOpacity>
                             <Text style={styles.methodLabel}>MÉTODO INTELIGENTE</Text>
                             <Text style={styles.title}>{data.metodo}</Text>
                         </View>
@@ -445,6 +507,9 @@ export default function Rutina() {
                                 );
                             })}
                         </ScrollView>
+                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
+                            <Text style={styles.btnSimularText}>🏁 FINALIZAR Y REGISTRAR SESIÓN</Text>
+                        </TouchableOpacity>
                     </>
                 )}
 
@@ -452,6 +517,9 @@ export default function Rutina() {
                     <>
                         <View style={styles.headerRow}>
                             <View style={{ flex: 1 }}>
+                                <TouchableOpacity onPress={() => setVistaActiva('rutinas_menu')}>
+                                    <Text style={styles.backToMenuText}>← Volver al menú</Text>
+                                </TouchableOpacity>
                                 <Text style={styles.methodLabel}>MI ENTRENAMIENTO PERSONAL</Text>
                                 <Text style={styles.title}>Diseña tu semana</Text>
                             </View>
@@ -498,7 +566,41 @@ export default function Rutina() {
                                 <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
                             </TouchableOpacity>
                         </ScrollView>
+                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
+                            <Text style={styles.btnSimularText}>FINALIZAR Y REGISTRAR SESIÓN</Text>
+                        </TouchableOpacity>
                     </>
+                )}
+
+                {vistaActiva === 'dieta' && (
+                    <View style={{ flex: 1 }}>
+                         <View style={styles.header}>
+                            <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
+                            <Text style={styles.title}>Registro de Comidas</Text>
+                        </View>
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+                            <View style={styles.dietBanner}>
+                                <Text style={styles.dietBannerText}>El historial unificado está disponible en el menú superior ↗</Text>
+                            </View>
+                            
+                            <View style={styles.dashboardCard}>
+                                <Text style={styles.dashboardTitle}>Proteína diaria recomendada</Text>
+                                <View style={styles.progressBg}>
+                                    <View style={[styles.progressFill, { width: '65%' }]} />
+                                </View>
+                                <Text style={styles.dashboardSub}>120g / 185g (Objetivo)</Text>
+                            </View>
+
+                            <TouchableOpacity 
+                                style={[styles.btnAdd, { borderStyle: 'solid', backgroundColor: 'rgba(255,122,0,0.1)', borderColor: '#ff7a00' }]}
+                                onPress={() => simulateFoodLog()}
+                            >
+                                <Text style={styles.btnAddText}>Registrar dieta</Text>
+                            </TouchableOpacity>
+
+                            <Text style={styles.noDataText}>Las funciones de búsqueda avanzada de alimentos estarán disponibles próximamente.</Text>
+                        </ScrollView>
+                    </View>
                 )}
             </View>
 
@@ -553,17 +655,11 @@ export default function Rutina() {
             {/* NAV BAR */}
             <View style={styles.navContainer}>
                 <View style={styles.tabBar}>
-                    <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('propia')}>
-                        <View style={[styles.iconCircle, vistaActiva === 'propia' && styles.iconCircleActive]}><Text>📋</Text></View>
-                        <Text style={[styles.tabBarText, vistaActiva === 'propia' && styles.tabBarTextActive]}>Mi Rutina</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('automatica')}>
-                        <View style={[styles.iconCircle, vistaActiva === 'automatica' && styles.iconCircleActive]}><Text>⚡</Text></View>
-                        <Text style={[styles.tabBarText, vistaActiva === 'automatica' && styles.tabBarTextActive]}>Auto</Text>
+                    <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('rutinas_menu')}>
+                        <Text style={[styles.tabBarText, ['rutinas_menu', 'automatica', 'propia'].includes(vistaActiva) && styles.tabBarTextActive]}>MIS RUTINAS</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('dieta')}>
-                        <View style={[styles.iconCircle, vistaActiva === 'dieta' && styles.iconCircleActive]}><Text>🍎</Text></View>
-                        <Text style={[styles.tabBarText, vistaActiva === 'dieta' && styles.tabBarTextActive]}>Dieta</Text>
+                        <Text style={[styles.tabBarText, vistaActiva === 'dieta' && styles.tabBarTextActive]}>MI DIETA</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -646,11 +742,26 @@ const styles = StyleSheet.create({
     plusIcon: { marginLeft: 'auto', fontSize: 24, color: '#ff7a00', paddingRight: 10 },
 
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
-    tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 70, borderRadius: 25, alignItems: 'center', elevation: 10 },
-    tabBarItem: { flex: 1, alignItems: 'center' },
+    tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
+    tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     iconCircle: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
     iconCircleActive: { backgroundColor: '#ff7a00' },
-    tabBarText: { fontSize: 9, fontWeight: '800', color: '#bbb' },
+    tabBarText: { fontSize: 13, fontWeight: '900', color: '#bbb', letterSpacing: 1 },
     tabBarTextActive: { color: '#ff7a00' },
-    loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' }
+    loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
+    btnSimular: { backgroundColor: '#2ecc71', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 20, marginBottom: 10 },
+    btnSimularText: { color: 'white', fontWeight: '900', fontSize: 13 },
+    dietBanner: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 15, borderRadius: 12, marginBottom: 20, borderLeftWidth: 4, borderLeftColor: 'white' },
+    dietBannerText: { color: 'white', fontSize: 11, fontWeight: '700' },
+    dashboardCard: { backgroundColor: 'white', borderRadius: 20, padding: 20, marginBottom: 20 },
+    dashboardTitle: { color: '#333', fontSize: 14, fontWeight: 'bold', marginBottom: 10 },
+    progressBg: { height: 8, backgroundColor: '#eee', borderRadius: 4, marginBottom: 8 },
+    progressFill: { height: '100%', backgroundColor: '#ff7a00', borderRadius: 4 },
+    dashboardSub: { color: '#666', fontSize: 12, fontWeight: 'bold' },
+    noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', marginTop: 30, lineHeight: 18 },
+    
+    menuCard: { backgroundColor: 'white', borderRadius: 20, padding: 25, elevation: 4 },
+    menuCardTitle: { fontSize: 18, fontWeight: 'bold', color: '#ff7a00', marginBottom: 5 },
+    menuCardSub: { fontSize: 13, color: '#666' },
+    backToMenuText: { color: 'white', fontWeight: 'bold', fontSize: 14, marginBottom: 15, opacity: 0.9 },
 });
