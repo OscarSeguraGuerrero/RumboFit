@@ -20,11 +20,58 @@ import {
 
 const { width } = Dimensions.get('window');
 
+const calcularTDEE = (user) => {
+    if (!user || !user.peso || !user.altura || !user.edad) return 2000;
+    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5; 
+    let multiplicador = 1.2;
+    if (user.frecuencia_semanal >= 1 && user.frecuencia_semanal <= 2) multiplicador = 1.375;
+    else if (user.frecuencia_semanal >= 3 && user.frecuencia_semanal <= 5) multiplicador = 1.55;
+    else if (user.frecuencia_semanal > 5) multiplicador = 1.725;
+    let tdee = tmb * multiplicador;
+    if (user.objetivo) {
+        const obj = user.objetivo.toLowerCase();
+        if (obj.includes('perder') || obj.includes('bajar')) tdee -= 500;
+        else if (obj.includes('masa') || obj.includes('ganar') || obj.includes('hipertrofia')) tdee += 500;
+    }
+    return Math.round(tdee);
+};
+
+const calcularMacrosObjetivo = (tdee, user) => {
+    const peso = user?.peso || 70;
+    const prot = peso * 2;
+    const gras = peso * 1;
+    const caloriasProt = prot * 4;
+    const caloriasGras = gras * 9;
+    const caloriasCarb = Math.max(0, tdee - caloriasProt - caloriasGras);
+    const carb = caloriasCarb / 4;
+    return {
+        kcal: tdee,
+        prot: Math.round(prot),
+        gras: Math.round(gras),
+        carb: Math.round(carb)
+    };
+};
+
+const calcularMacrosConsumidos = (comidas) => {
+    let totales = { kcal: 0, prot: 0, carb: 0, gras: 0 };
+    if (!comidas) return totales;
+    comidas.forEach(c => {
+        const factor = Number(c.cantidad_gramos) / 100;
+        totales.kcal += Number(c.alimento?.calorias_100g || 0) * factor;
+        totales.prot += Number(c.alimento?.proteinas_100g || 0) * factor;
+        totales.carb += Number(c.alimento?.carbohidratos_100g || 0) * factor;
+        totales.gras += Number(c.alimento?.grasas_100g || 0) * factor;
+    });
+    return totales;
+};
+
 export default function Rutina() {
     const router = useRouter();
     const [data, setData] = useState(null);
     const [diaActual, setDiaActual] = useState(null);
     const [usuario, setUsuario] = useState({ nombre: 'Usuario' });
+    const [usuarioCompleto, setUsuarioCompleto] = useState(null);
+    const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
     const [menuVisible, setMenuVisible] = useState(false);
 
     // --- ESTADOS RUTINA PROPIA Y NAVEGACIÓN ---
@@ -241,12 +288,28 @@ export default function Rutina() {
 
                 if (userName) setUsuario({ nombre: userName });
 
-                if (!resRutina && userId) {
-                    const response = await fetch(`${API_URL}/usuarios/${userId}/rutina`);
-                    const result = await response.json();
-                    if (result.success) {
-                        await AsyncStorage.setItem("rutina", JSON.stringify(result));
-                        resRutina = JSON.stringify(result);
+                if (userId) {
+                    const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
+                    const userData = await userRes.json();
+                    if (userData.success) setUsuarioCompleto(userData.usuario);
+
+                    const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial`);
+                    const histData = await histRes.json();
+                    if (histData.success && histData.historial) {
+                        const hoyStr = new Date().toISOString().split('T')[0];
+                        const dataHoy = histData.historial[hoyStr];
+                        if (dataHoy && dataHoy.comidas) {
+                            setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
+                        }
+                    }
+
+                    if (!resRutina) {
+                        const response = await fetch(`${API_URL}/usuarios/${userId}/rutina`);
+                        const result = await response.json();
+                        if (result.success) {
+                            await AsyncStorage.setItem("rutina", JSON.stringify(result));
+                            resRutina = JSON.stringify(result);
+                        }
                     }
                 }
 
@@ -583,13 +646,43 @@ export default function Rutina() {
                                 <Text style={styles.dietBannerText}>El historial unificado está disponible en el menú superior ↗</Text>
                             </View>
                             
-                            <View style={styles.dashboardCard}>
-                                <Text style={styles.dashboardTitle}>Proteína diaria recomendada</Text>
-                                <View style={styles.progressBg}>
-                                    <View style={[styles.progressFill, { width: '65%' }]} />
-                                </View>
-                                <Text style={styles.dashboardSub}>120g / 185g (Objetivo)</Text>
-                            </View>
+                            {(() => {
+                                const objMacros = calcularMacrosObjetivo(calcularTDEE(usuarioCompleto), usuarioCompleto);
+                                const pctKcal = Math.min(100, (macrosHoy.kcal / objMacros.kcal) * 100) || 0;
+                                const pctProt = Math.min(100, (macrosHoy.prot / objMacros.prot) * 100) || 0;
+                                const pctCarb = Math.min(100, (macrosHoy.carb / objMacros.carb) * 100) || 0;
+                                const pctGras = Math.min(100, (macrosHoy.gras / objMacros.gras) * 100) || 0;
+
+                                return (
+                                    <>
+                                        <View style={styles.dashboardCard}>
+                                            <Text style={styles.dashboardTitle}>Calorías Consumidas</Text>
+                                            <View style={styles.progressBg}>
+                                                <View style={[styles.progressFill, { width: `${pctKcal}%`, backgroundColor: '#ff7a00' }]} />
+                                            </View>
+                                            <Text style={styles.dashboardSub}>{Math.round(macrosHoy.kcal)} / {objMacros.kcal} Kcal</Text>
+                                        </View>
+
+                                        <View style={styles.macrosRow}>
+                                            <View style={styles.macroCol}>
+                                                <Text style={styles.macroLabel}>Proteínas</Text>
+                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctProt}%`, backgroundColor: '#3498db'}]} /></View>
+                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot}g</Text>
+                                            </View>
+                                            <View style={styles.macroCol}>
+                                                <Text style={styles.macroLabel}>Carbos</Text>
+                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctCarb}%`, backgroundColor: '#2ecc71'}]} /></View>
+                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb}g</Text>
+                                            </View>
+                                            <View style={styles.macroCol}>
+                                                <Text style={styles.macroLabel}>Grasas</Text>
+                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctGras}%`, backgroundColor: '#f1c40f'}]} /></View>
+                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras}g</Text>
+                                            </View>
+                                        </View>
+                                    </>
+                                );
+                            })()}
 
                             <TouchableOpacity 
                                 style={[styles.btnAdd, { borderStyle: 'solid', backgroundColor: 'rgba(255,122,0,0.1)', borderColor: '#ff7a00' }]}
@@ -757,8 +850,15 @@ const styles = StyleSheet.create({
     dashboardTitle: { color: '#333', fontSize: 14, fontWeight: 'bold', marginBottom: 10 },
     progressBg: { height: 8, backgroundColor: '#eee', borderRadius: 4, marginBottom: 8 },
     progressFill: { height: '100%', backgroundColor: '#ff7a00', borderRadius: 4 },
-    dashboardSub: { color: '#666', fontSize: 12, fontWeight: 'bold' },
+    dashboardSub: { color: '#666', fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
     noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', marginTop: 30, lineHeight: 18 },
+    
+    macrosRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+    macroCol: { flex: 1, backgroundColor: 'white', borderRadius: 15, padding: 15, marginHorizontal: 4, elevation: 2 },
+    macroLabel: { fontSize: 11, fontWeight: 'bold', color: '#666', marginBottom: 5, textAlign: 'center' },
+    macroBg: { height: 6, backgroundColor: '#eee', borderRadius: 3, marginBottom: 5 },
+    macroFill: { height: '100%', borderRadius: 3 },
+    macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
     
     menuCard: { backgroundColor: 'white', borderRadius: 20, padding: 25, elevation: 4 },
     menuCardTitle: { fontSize: 18, fontWeight: 'bold', color: '#ff7a00', marginBottom: 5 },
