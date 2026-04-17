@@ -497,6 +497,108 @@ app.get('/api/usuarios/:id/rutinas-guardadas', async (req, res) => {
 });
 
 
+// --- SISTEMA DE HISTORIAL (HU-09, HU-10, HU-11, HU-12) ---
+
+// Registrar Entrenamiento (HU-09)
+app.post('/api/historial/entrenamiento', async (req, res) => {
+    const { userId, rutinaId, ejercicios } = req.body; 
+    try {
+        const entrenamiento = await prisma.entrenamiento.create({
+            data: {
+                usuario_id: parseInt(userId),
+                rutina_id: rutinaId ? parseInt(rutinaId) : null,
+                fecha_inicio: new Date(),
+                fecha_fin: new Date(),
+                series: {
+                    create: ejercicios.flatMap((ej) => 
+                        ej.series.map((s, idx) => ({
+                            ejercicio_id: ej.ejercicioId,
+                            numero_serie: idx + 1,
+                            peso_kg: Number(s.peso),
+                            repeticiones_reales: parseInt(s.reps)
+                        }))
+                    )
+                }
+            },
+            include: { series: true }
+        });
+        const volumen = entrenamiento.series.reduce((acc, s) => acc + (Number(s.peso_kg) * s.repeticiones_reales), 0);
+        await prisma.entrenamiento.update({
+            where: { id: entrenamiento.id },
+            data: { volumen_total_kg: volumen }
+        });
+        res.json({ success: true, id: entrenamiento.id, volumen });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al registrar entrenamiento" });
+    }
+});
+
+// Registrar Comida (HU-11)
+app.post('/api/historial/comida', async (req, res) => {
+    const { userId, alimentoId, cantidad, franja } = req.body;
+    try {
+        const registro = await prisma.registro_Comidas.create({
+            data: {
+                usuario_id: parseInt(userId),
+                alimento_id: parseInt(alimentoId),
+                cantidad_gramos: Number(cantidad),
+                franja_horaria: franja || 'Desayuno',
+                fecha: new Date()
+            }
+        });
+        res.json({ success: true, id: registro.id });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al registrar comida" });
+    }
+});
+
+// Obtener Historial Unificado (HU-10, HU-12)
+app.get('/api/usuarios/:id/historial', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    try {
+        const usuario = await prisma.usuario.findUnique({ where: { id: userId } });
+        if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
+
+        let fechaLimite = null;
+        if (!usuario.es_premium) {
+            fechaLimite = new Date();
+            fechaLimite.setMonth(fechaLimite.getMonth() - 3);
+            fechaLimite.setHours(0, 0, 0, 0);
+        }
+
+        const entrenamientos = await prisma.entrenamiento.findMany({
+            where: { usuario_id: userId, ...(fechaLimite && { fecha_inicio: { gte: fechaLimite } }) },
+            include: { series: { include: { ejercicio: true } } },
+            orderBy: { fecha_inicio: 'desc' }
+        });
+
+        const comidas = await prisma.registro_Comidas.findMany({
+            where: { usuario_id: userId, ...(fechaLimite && { fecha: { gte: fechaLimite } }) },
+            include: { alimento: true },
+            orderBy: { fecha: 'desc' }
+        });
+
+        const historial = {};
+        entrenamientos.forEach(e => {
+            const fechaStr = e.fecha_inicio.toISOString().split('T')[0];
+            if (!historial[fechaStr]) historial[fechaStr] = { entrenamientos: [], comidas: [] };
+            historial[fechaStr].entrenamientos.push(e);
+        });
+        comidas.forEach(c => {
+            const fechaStr = c.fecha.toISOString().split('T')[0];
+            if (!historial[fechaStr]) historial[fechaStr] = { entrenamientos: [], comidas: [] };
+            historial[fechaStr].comidas.push(c);
+        });
+
+        res.json({ success: true, es_premium: usuario.es_premium, historial });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al recuperar historial" });
+    }
+});
+
 // --- ARRANCAR SERVIDOR ---
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor RumboFit corriendo en http://0.0.0.0:${PORT}`);
