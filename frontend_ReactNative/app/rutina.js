@@ -406,7 +406,14 @@ export default function Rutina() {
 
     const añadirEjercicio = (ej) => {
         const nueva = { ...rutinaPropia };
-        nueva[diaPropioActivo] = [...nueva[diaPropioActivo], `${ej.nombre} 3x12`];
+        nueva[diaPropioActivo] = [
+            ...nueva[diaPropioActivo],
+            {
+                nombre: ej.nombre,
+                series: 3,
+                reps: 12
+            }
+        ];
         setRutinaPropia(nueva);
         AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
         setModalEjercicios(false);
@@ -417,6 +424,19 @@ export default function Rutina() {
         nueva[diaPropioActivo] = nueva[diaPropioActivo].filter((_, i) => i !== index);
         setRutinaPropia(nueva);
         AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
+    };
+    // Para modificar las series y repeticiones
+    const actualizarEjercicio = (index, campo, valor) => {
+        const nueva = { ...rutinaPropia };
+
+        nueva[diaPropioActivo][index][campo] = Number(valor);
+
+        setRutinaPropia(nueva);
+
+        AsyncStorage.setItem(
+            "rutina_propia",
+            JSON.stringify({ ejercicios: nueva, completados })
+        );
     };
 
     const simulateTrainingLog = async () => {
@@ -606,7 +626,18 @@ export default function Rutina() {
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
                             {rutinaPropia[diaPropioActivo]?.map((ej, i) => {
-                                const { nombre, series } = parsearEjercicio(ej);
+                                const ejercicio = typeof ej === 'string'
+                                    ? (() => {
+                                        const parsed = parsearEjercicio(ej);
+                                        return {
+                                            nombre: parsed.nombre,
+                                            series: 3,
+                                            reps: 12
+                                        };
+                                    })()
+                                    : ej;
+
+                                const nombre = ejercicio.nombre;
                                 const estaCompletado = completados[nombre];
                                 return (
                                     <TouchableOpacity
@@ -619,7 +650,37 @@ export default function Rutina() {
                                             <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
                                                 {nombre} {estaCompletado ? "✓" : ""}
                                             </Text>
-                                            <Text style={styles.propiaSeries}>{series || '3x12'}</Text>
+                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
+
+                                                <TextInput
+                                                    style={{
+                                                        backgroundColor: '#eee',
+                                                        padding: 5,
+                                                        borderRadius: 5,
+                                                        width: 40,
+                                                        textAlign: 'center'
+                                                    }}
+                                                    keyboardType="numeric"
+                                                    value={String(ejercicio.series)}
+                                                    onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
+                                                />
+
+                                                <Text style={{ alignSelf: 'center' }}>x</Text>
+
+                                                <TextInput
+                                                    style={{
+                                                        backgroundColor: '#eee',
+                                                        padding: 5,
+                                                        borderRadius: 5,
+                                                        width: 40,
+                                                        textAlign: 'center'
+                                                    }}
+                                                    keyboardType="numeric"
+                                                    value={String(ejercicio.reps)}
+                                                    onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
+                                                />
+
+                                            </View>
                                         </View>
                                         <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
                                     </TouchableOpacity>
