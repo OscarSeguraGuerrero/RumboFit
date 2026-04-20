@@ -22,7 +22,7 @@ const { width } = Dimensions.get('window');
 
 const calcularTDEE = (user) => {
     if (!user || !user.peso || !user.altura || !user.edad) return 2000;
-    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5; 
+    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5;
     let multiplicador = 1.2;
     if (user.frecuencia_semanal >= 1 && user.frecuencia_semanal <= 2) multiplicador = 1.375;
     else if (user.frecuencia_semanal >= 3 && user.frecuencia_semanal <= 5) multiplicador = 1.55;
@@ -82,8 +82,14 @@ export default function Rutina() {
     const [ejerciciosCatalogo, setEjerciciosCatalogo] = useState([]);
     const [busqueda, setBusqueda] = useState('');
 
+    // --- ESTADOS PARA AÑADIR VOLUMEN (NUEVO) ---
+    const [modalDetalleEjercicio, setModalDetalleEjercicio] = useState(false);
+    const [ejercicioSeleccionado, setEjercicioSeleccionado] = useState(null);
+    const [inputSeries, setInputSeries] = useState('3');
+    const [inputReps, setInputReps] = useState('12');
+
     // --- ESTADO DE COMPLETADO ---
-    const [completados, setCompletados] = useState({}); // { "Nombre Ejercicio": true/false }
+    const [completados, setCompletados] = useState({});
 
     // --- ESTADOS PARA GUARDAR Y CARGAR ---
     const [modalGuardar, setModalGuardar] = useState(false);
@@ -151,111 +157,24 @@ export default function Rutina() {
     };
 
     const obtenerFotoEjercicio = (nombreEjercicio) => {
-
         const ej = (nombreEjercicio || "").toLowerCase();
-
-
-
-// --- PECHO ---
-
         if (ej.includes('press') && (ej.includes('banca') || ej.includes('pecho') || ej.includes('plano') || ej.includes('superior') || ej.includes('inclinado'))) return imagenesEjercicios.press_banca;
-
         if (ej.includes('aperturas') || ej.includes('contractor') || ej.includes('cruce') || ej.includes('peck deck')) return imagenesEjercicios.aperturas;
-
         if (ej.includes('flexiones') || ej.includes('push up')) return imagenesEjercicios.flexiones;
-
         if (ej.includes('fondos') && (ej.includes('pecho') || ej.includes('paralelas'))) return imagenesEjercicios.fondos;
-
-
-
-// --- ESPALDA ---
-
         if (ej.includes('dominadas') || ej.includes('pull up')) return imagenesEjercicios.dominadas;
-
         if (ej.includes('remo')) return imagenesEjercicios.remo;
-
         if (ej.includes('jalón') || ej.includes('jalon')) return imagenesEjercicios.jalon;
-
         if (ej.includes('peso muerto') && !ej.includes('rumano')) return imagenesEjercicios.peso_muerto;
-
-        if (ej.includes('lumbares') || ej.includes('hiperextensiones') || ej.includes('extension de espalda')) return imagenesEjercicios.lumbares;
-
-
-
-// --- PIERNAS ---
-
         if (ej.includes('sentadilla') || ej.includes('squat')) return imagenesEjercicios.sentadilla;
-
         if (ej.includes('prensa')) return imagenesEjercicios.prensa;
-
         if (ej.includes('zancada') || ej.includes('lunge') || ej.includes('estocada')) return imagenesEjercicios.zancadas;
-
-        if (ej.includes('extensión') && ej.includes('cuádriceps')) return imagenesEjercicios.ext_cuad;
-
-        if (ej.includes('curl femoral') || ej.includes('peso muerto rumano') || ej.includes('femoral')) return imagenesEjercicios.femoral;
-
-        if (ej.includes('gemelo') || ej.includes('pantorrilla') || ej.includes('talones')) return imagenesEjercicios.gemelos;
-
-
-
-// --- HOMBROS ---
-
-        if (ej.includes('press militar') || ej.includes('press hombro') || ej.includes('press arnold')) return imagenesEjercicios.press_militar;
-
-        if (ej.includes('elevación lateral') || ej.includes('elevacion lateral') || ej.includes('laterales')) return imagenesEjercicios.elevaciones;
-
-        if (ej.includes('pájaro') || ej.includes('pajaro') || ej.includes('deltoide posterior')) return imagenesEjercicios.pajaro;
-
-        if (ej.includes('trapecio') || ej.includes('encogimiento')) return imagenesEjercicios.trapecio;
-
-
-
-// --- BRAZOS ---
-
-        if (ej.includes('curl') && (ej.includes('bíceps') || ej.includes('biceps'))) return imagenesEjercicios.curl;
-
-        if (ej.includes('martillo') || ej.includes('hammer')) return imagenesEjercicios.martillo;
-
-        if (ej.includes('tríceps') || ej.includes('triceps') || ej.includes('francés') || ej.includes('frances') || ej.includes('extension de codo')) return imagenesEjercicios.triceps;
-
-        if (ej.includes('fondos') && (ej.includes('banco') || ej.includes('silla'))) return imagenesEjercicios.fondos;
-
-
-
-// --- CORE / ABDOMEN ---
-
-        if (ej.includes('deadbug')) return imagenesEjercicios.deadbug;
-
-        if (ej.includes('crunch') || ej.includes('abdominal')) return imagenesEjercicios.crunch;
-
-        if (ej.includes('plancha') || ej.includes('plank')) return imagenesEjercicios.core;
-
-        if (ej.includes('piernas') && (ej.includes('elevación') || ej.includes('elevacion'))) return imagenesEjercicios.abd_piernas;
-
-        if (ej.includes('bird dog') || ej.includes('bird-dog')) return imagenesEjercicios.bird;
-
-
-
-// --- SALUD / MOVILIDAD / OTROS ---
-
-        if (ej.includes('gato') || ej.includes('camello') || ej.includes('cat-cow')) return imagenesEjercicios.gato;
-
-        if (ej.includes('estiramiento') || ej.includes('movilidad')) return imagenesEjercicios.estiramiento;
-
-        if (ej.includes('caminar') || ej.includes('pasos') || ej.includes('cardio')) return imagenesEjercicios.caminar;
-
-
-
-// Si no encuentra nada de lo anterior, pero el nombre del ejercicio coincide con alguna clave de tu objeto:
+        if (ej.includes('militar')) return imagenesEjercicios.press_militar;
+        if (ej.includes('curl')) return imagenesEjercicios.curl;
 
         const claveDirecta = Object.keys(imagenesEjercicios).find(key => ej.includes(key));
-
         if (claveDirecta) return imagenesEjercicios[claveDirecta];
-
-
-
         return imagenesEjercicios.descanso;
-
     };
 
     const parsearEjercicio = (texto) => {
@@ -322,7 +241,6 @@ export default function Rutina() {
                 const propiaGuardada = await AsyncStorage.getItem("rutina_propia");
                 if (propiaGuardada) {
                     const parsedPropia = JSON.parse(propiaGuardada);
-                    // Si viene del formato nuevo con .ejercicios y .completados
                     if (parsedPropia.ejercicios) {
                         setRutinaPropia(parsedPropia.ejercicios);
                         setCompletados(parsedPropia.completados || {});
@@ -349,11 +267,7 @@ export default function Rutina() {
     }, []);
 
     const irAPerfil = () => router.push('/perfil');
-
-    const cerrarSesion = async () => {
-        await AsyncStorage.clear();
-        router.replace('/');
-    };
+    const cerrarSesion = async () => { await AsyncStorage.clear(); router.replace('/'); };
 
     const handleGuardarEnDB = async () => {
         if (!nombreNuevaRutina.trim()) return Alert.alert("Error", "Ponle un nombre a tu rutina");
@@ -396,20 +310,33 @@ export default function Rutina() {
         if (esquema.ejercicios) {
             setRutinaPropia(esquema.ejercicios);
             setCompletados(esquema.completados || {});
-        } else {
-            setRutinaPropia(esquema);
-        }
+        } else { setRutinaPropia(esquema); }
         AsyncStorage.setItem("rutina_propia", rutina.descripcion);
         setModalElegir(false);
         Alert.alert("Cargada", `Rutina: ${rutina.nombre}`);
     };
 
-    const añadirEjercicio = (ej) => {
+    // --- LÓGICA DE AÑADIR CON VOLUMEN ---
+    const iniciarAñadirEjercicio = (ej) => {
+        setEjercicioSeleccionado(ej);
+        setModalDetalleEjercicio(true);
+    };
+
+    const confirmarAñadirEjercicio = () => {
+        if (!inputSeries || !inputReps) return Alert.alert("Error", "Indica series y repeticiones");
+
         const nueva = { ...rutinaPropia };
-        nueva[diaPropioActivo] = [...nueva[diaPropioActivo], `${ej.nombre} 3x12`];
+        const textoEjercicio = `${ejercicioSeleccionado.nombre} ${inputSeries}x${inputReps}`;
+
+        nueva[diaPropioActivo] = [...(nueva[diaPropioActivo] || []), textoEjercicio];
         setRutinaPropia(nueva);
         AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
-        setModalEjercicios(false);
+
+        setModalDetalleEjercicio(false);
+        setModalEjercicios(false); // Cerramos catálogo
+        setEjercicioSeleccionado(null);
+        setInputSeries('3');
+        setInputReps('12');
     };
 
     const eliminarEjercicio = (index) => {
@@ -425,8 +352,7 @@ export default function Rutina() {
             userId,
             rutinaId: data?.id || null,
             ejercicios: [
-                { ejercicioId: 1, series: [{ peso: 80, reps: 10 }, { peso: 80, reps: 10 }] },
-                { ejercicioId: 2, series: [{ peso: 60, reps: 12 }] }
+                { ejercicioId: 1, series: [{ peso: 80, reps: 10 }] }
             ]
         };
         try {
@@ -436,37 +362,17 @@ export default function Rutina() {
                 body: JSON.stringify(payload)
             });
             const result = await res.json();
-            if (result.success) Alert.alert("¡Entrenamiento Guardado!", `Sesión registrada con ${result.volumen}kg de volumen total.`);
-            else Alert.alert("Error", result.error || "No se pudo registrar");
+            if (result.success) Alert.alert("¡Entrenamiento Guardado!", "Sesión registrada.");
+            else Alert.alert("Error", "No se pudo registrar");
         } catch (e) { Alert.alert("Error", "No se pudo conectar"); }
     };
-
-    const simulateFoodLog = async () => {
-        const userId = await AsyncStorage.getItem("userId");
-        const payload = {
-            userId,
-            alimentoId: 1,
-            cantidad: 150,
-            franja: 'Comida'
-        };
-        try {
-            const res = await fetch(`${API_URL}/historial/comida`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) Alert.alert("¡Comida Guardada!", "Se ha añadido al registro de hoy.");
-            else Alert.alert("Error", "Asegúrate de tener alimentos en la base de datos.");
-        } catch (e) { Alert.alert("Error", "No se pudo conectar"); }
-    };
-
 
     if (!data) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
 
-            {/* --- TOP BAR --- */}
+            {/* TOP BAR */}
             <View style={styles.topBar}>
                 <Image source={require('../assets/images/logo1.png')} style={styles.topBarLogo} resizeMode="contain" />
                 <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.avatarGlow}>
@@ -474,7 +380,7 @@ export default function Rutina() {
                 </TouchableOpacity>
             </View>
 
-            {/* --- MENÚ DESPLEGABLE --- */}
+            {/* MENÚ DESPLEGABLE */}
             <Modal transparent visible={menuVisible} animationType="fade">
                 <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
                     <View style={styles.modalOverlay}>
@@ -486,10 +392,7 @@ export default function Rutina() {
                                     <Text style={styles.dropdownText}>Ver Perfil</Text>
                                 </TouchableOpacity>
                                 <View style={styles.dropdownDivider} />
-                                <TouchableOpacity
-                                    style={styles.dropdownItem}
-                                    onPress={() => { setMenuVisible(false); router.push('/historial'); }}
-                                >
+                                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/historial'); }}>
                                     <Text style={styles.dropdownText}>Mi Historial</Text>
                                 </TouchableOpacity>
                                 <View style={styles.dropdownDivider} />
@@ -502,7 +405,7 @@ export default function Rutina() {
                 </TouchableWithoutFeedback>
             </Modal>
 
-            {/* --- CARD PRINCIPAL --- */}
+            {/* CARD PRINCIPAL */}
             <View style={styles.mainCard}>
                 {vistaActiva === 'rutinas_menu' && (
                     <View style={{ flex: 1, paddingBottom: 100 }}>
@@ -512,11 +415,11 @@ export default function Rutina() {
                         </View>
                         <TouchableOpacity style={styles.menuCard} onPress={() => setVistaActiva('automatica')}>
                             <Text style={styles.menuCardTitle}>Mi rutina sugerida</Text>
-                            <Text style={styles.menuCardSub}>Rutina inteligente creada en tu registro</Text>
+                            <Text style={styles.menuCardSub}>Basada en tu nivel y objetivo</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.menuCard, {marginTop: 15}]} onPress={() => setVistaActiva('propia')}>
                             <Text style={styles.menuCardTitle}>Añadir rutinas</Text>
-                            <Text style={styles.menuCardSub}>Crea y personaliza tus propios entrenamientos</Text>
+                            <Text style={styles.menuCardSub}>Diseño manual personalizado</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -552,27 +455,17 @@ export default function Rutina() {
                                 const { nombre, series } = parsearEjercicio(ej);
                                 const estaCompletado = completados[nombre];
                                 return (
-                                    <TouchableOpacity
-                                        key={i}
-                                        onPress={() => toggleCompletado(nombre)}
-                                        style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}
-                                    >
+                                    <TouchableOpacity key={i} onPress={() => toggleCompletado(nombre)} style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}>
                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
                                         <View style={styles.exerciseInfo}>
-                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
-                                                {nombre} {estaCompletado ? "(COMPLETADO)" : ""}
-                                            </Text>
-                                            <View style={[styles.seriesBadge, estaCompletado && styles.badgeCompleted]}>
-                                                <Text style={styles.seriesText}>{series}</Text>
-                                            </View>
+                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>{nombre} {estaCompletado ? "✓" : ""}</Text>
+                                            <View style={[styles.seriesBadge, estaCompletado && styles.badgeCompleted]}><Text style={styles.seriesText}>{series}</Text></View>
                                         </View>
                                     </TouchableOpacity>
                                 );
                             })}
                         </ScrollView>
-                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
-                            <Text style={styles.btnSimularText}>🏁 FINALIZAR Y REGISTRAR SESIÓN</Text>
-                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}><Text style={styles.btnSimularText}>🏁 FINALIZAR SESIÓN</Text></TouchableOpacity>
                     </>
                 )}
 
@@ -581,18 +474,14 @@ export default function Rutina() {
                         <View style={styles.headerRow}>
                             <View style={{ flex: 1 }}>
                                 <TouchableOpacity onPress={() => setVistaActiva('rutinas_menu')}>
-                                    <Text style={styles.backToMenuText}>← Volver al menú</Text>
+                                    <Text style={styles.backToMenuText}>← Volver</Text>
                                 </TouchableOpacity>
-                                <Text style={styles.methodLabel}>MI ENTRENAMIENTO PERSONAL</Text>
+                                <Text style={styles.methodLabel}>PERSONALIZACIÓN</Text>
                                 <Text style={styles.title}>Diseña tu semana</Text>
                             </View>
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity style={styles.btnSmall} onPress={abrirElegirRutina}>
-                                    <Text style={styles.btnSmallText}>ELEGIR</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: '#2ecc71' }]} onPress={() => setModalGuardar(true)}>
-                                    <Text style={styles.btnSmallText}>GUARDAR</Text>
-                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.btnSmall} onPress={abrirElegirRutina}><Text style={styles.btnSmallText}>ELEGIR</Text></TouchableOpacity>
+                                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: '#2ecc71' }]} onPress={() => setModalGuardar(true)}><Text style={styles.btnSmallText}>GUARDAR</Text></TouchableOpacity>
                             </View>
                         </View>
                         <View style={styles.tabsWrapper}>
@@ -609,100 +498,86 @@ export default function Rutina() {
                                 const { nombre, series } = parsearEjercicio(ej);
                                 const estaCompletado = completados[nombre];
                                 return (
-                                    <TouchableOpacity
-                                        key={i}
-                                        onPress={() => toggleCompletado(nombre)}
-                                        style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}
-                                    >
+                                    <TouchableOpacity key={i} onPress={() => toggleCompletado(nombre)} style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}>
                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
                                         <View style={styles.exerciseInfo}>
-                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
-                                                {nombre} {estaCompletado ? "✓" : ""}
-                                            </Text>
+                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>{nombre} {estaCompletado ? "✓" : ""}</Text>
                                             <Text style={styles.propiaSeries}>{series || '3x12'}</Text>
                                         </View>
                                         <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
                                     </TouchableOpacity>
                                 );
                             })}
-                            <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
-                                <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
-                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}><Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text></TouchableOpacity>
                         </ScrollView>
-                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
-                            <Text style={styles.btnSimularText}>FINALIZAR Y REGISTRAR SESIÓN</Text>
-                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}><Text style={styles.btnSimularText}>GUARDAR PROGRESO</Text></TouchableOpacity>
                     </>
-                )}
-
-                {vistaActiva === 'dieta' && (
-                    <View style={{ flex: 1 }}>
-                         <View style={styles.header}>
-                            <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
-                            <Text style={styles.title}>Registro de Comidas</Text>
-                        </View>
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-                            <View style={styles.dietBanner}>
-                                <Text style={styles.dietBannerText}>El historial unificado está disponible en el menú superior ↗</Text>
-                            </View>
-                            
-                            {(() => {
-                                const objMacros = calcularMacrosObjetivo(calcularTDEE(usuarioCompleto), usuarioCompleto);
-                                const pctKcal = Math.min(100, (macrosHoy.kcal / objMacros.kcal) * 100) || 0;
-                                const pctProt = Math.min(100, (macrosHoy.prot / objMacros.prot) * 100) || 0;
-                                const pctCarb = Math.min(100, (macrosHoy.carb / objMacros.carb) * 100) || 0;
-                                const pctGras = Math.min(100, (macrosHoy.gras / objMacros.gras) * 100) || 0;
-
-                                return (
-                                    <>
-                                        <View style={styles.dashboardCard}>
-                                            <Text style={styles.dashboardTitle}>Calorías Consumidas</Text>
-                                            <View style={styles.progressBg}>
-                                                <View style={[styles.progressFill, { width: `${pctKcal}%`, backgroundColor: '#ff7a00' }]} />
-                                            </View>
-                                            <Text style={styles.dashboardSub}>{Math.round(macrosHoy.kcal)} / {objMacros.kcal} Kcal</Text>
-                                        </View>
-
-                                        <View style={styles.macrosRow}>
-                                            <View style={styles.macroCol}>
-                                                <Text style={styles.macroLabel}>Proteínas</Text>
-                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctProt}%`, backgroundColor: '#3498db'}]} /></View>
-                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot}g</Text>
-                                            </View>
-                                            <View style={styles.macroCol}>
-                                                <Text style={styles.macroLabel}>Carbos</Text>
-                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctCarb}%`, backgroundColor: '#2ecc71'}]} /></View>
-                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb}g</Text>
-                                            </View>
-                                            <View style={styles.macroCol}>
-                                                <Text style={styles.macroLabel}>Grasas</Text>
-                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctGras}%`, backgroundColor: '#f1c40f'}]} /></View>
-                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras}g</Text>
-                                            </View>
-                                        </View>
-                                    </>
-                                );
-                            })()}
-
-                            <TouchableOpacity 
-                                style={[styles.btnAdd, { borderStyle: 'solid', backgroundColor: 'rgba(255,122,0,0.1)', borderColor: '#ff7a00' }]}
-                                onPress={() => simulateFoodLog()}
-                            >
-                                <Text style={styles.btnAddText}>Registrar dieta</Text>
-                            </TouchableOpacity>
-
-                            <Text style={styles.noDataText}>Las funciones de búsqueda avanzada de alimentos estarán disponibles próximamente.</Text>
-                        </ScrollView>
-                    </View>
                 )}
             </View>
 
-            {/* MODALES GUARDAR/ELEGIR/CATÁLOGO (Sin cambios) */}
+            {/* MODAL CATÁLOGO */}
+            <Modal visible={modalEjercicios} animationType="slide">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Ejercicios para el {diaPropioActivo}</Text>
+                        <TouchableOpacity onPress={() => setModalEjercicios(false)}><Text style={styles.closeModal}>Cerrar</Text></TouchableOpacity>
+                    </View>
+                    <TextInput placeholder="Buscar ejercicio..." style={styles.searchInput} value={busqueda} onChangeText={setBusqueda} />
+                    <ScrollView contentContainerStyle={{padding: 20}}>
+                        {ejerciciosCatalogo.filter(e => e.nombre.toLowerCase().includes(busqueda.toLowerCase())).map((ej, i) => (
+                            <TouchableOpacity key={i} style={styles.catItem} onPress={() => iniciarAñadirEjercicio(ej)}>
+                                <Image source={obtenerFotoEjercicio(ej.nombre)} style={styles.catImage} />
+                                <View><Text style={styles.catName}>{ej.nombre}</Text><Text style={styles.catSub}>{ej.grupo_muscular}</Text></View>
+                                <Text style={styles.plusIcon}>+</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            </Modal>
+
+            {/* MODAL VOLUMEN (NUEVO) */}
+            <Modal visible={modalDetalleEjercicio} transparent animationType="fade">
+                <View style={styles.fullOverlay}>
+                    <View style={styles.modalSmall}>
+                        <Text style={styles.modalSub}>Ajustar Volumen</Text>
+                        <Text style={{fontSize: 14, color: '#666', marginBottom: 15}}>{ejercicioSeleccionado?.nombre}</Text>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Número de Series:</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                value={inputSeries}
+                                onChangeText={setInputSeries}
+                                keyboardType="numeric"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Repeticiones:</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                value={inputReps}
+                                onChangeText={setInputReps}
+                                placeholder="Ej: 12 o 8-10"
+                            />
+                        </View>
+
+                        <TouchableOpacity style={styles.btnConfirm} onPress={confirmarAñadirEjercicio}>
+                            <Text style={styles.btnConfirmText}>AÑADIR A LA RUTINA</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setModalDetalleEjercicio(false)}>
+                            <Text style={styles.btnCancelText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* MODALES EXTRAS (GUARDAR/ELEGIR) */}
             <Modal visible={modalGuardar} transparent animationType="fade">
                 <View style={styles.fullOverlay}>
                     <View style={styles.modalSmall}>
                         <Text style={styles.modalSub}>Guardar Rutina Como:</Text>
-                        <TextInput style={styles.modalInput} placeholder="Nombre (ej: Fuerza 2024)" value={nombreNuevaRutina} onChangeText={setNombreNuevaRutina} />
+                        <TextInput style={styles.modalInput} placeholder="Nombre de la rutina" value={nombreNuevaRutina} onChangeText={setNombreNuevaRutina} />
                         <TouchableOpacity style={styles.btnConfirm} onPress={handleGuardarEnDB}><Text style={styles.btnConfirmText}>CONFIRMAR</Text></TouchableOpacity>
                         <TouchableOpacity onPress={() => setModalGuardar(false)}><Text style={styles.btnCancelText}>Cancelar</Text></TouchableOpacity>
                     </View>
@@ -712,7 +587,7 @@ export default function Rutina() {
             <Modal visible={modalElegir} transparent animationType="fade">
                 <View style={styles.fullOverlay}>
                     <View style={styles.modalSmall}>
-                        <Text style={styles.modalSub}>Selecciona una Rutina:</Text>
+                        <Text style={styles.modalSub}>Tus Rutinas Guardadas</Text>
                         <ScrollView style={{ maxHeight: 200, marginVertical: 10 }}>
                             {listaRutinas.map((r, i) => (
                                 <TouchableOpacity key={i} style={styles.rutinaListItem} onPress={() => cargarRutinaSeleccionada(r)}>
@@ -726,33 +601,14 @@ export default function Rutina() {
                 </View>
             </Modal>
 
-            <Modal visible={modalEjercicios} animationType="slide">
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Añadir a {diaPropioActivo}</Text>
-                        <TouchableOpacity onPress={() => setModalEjercicios(false)}><Text style={styles.closeModal}>Cerrar</Text></TouchableOpacity>
-                    </View>
-                    <TextInput placeholder="Buscar..." style={styles.searchInput} value={busqueda} onChangeText={setBusqueda} />
-                    <ScrollView contentContainerStyle={{padding: 20}}>
-                        {ejerciciosCatalogo.filter(e => e.nombre.toLowerCase().includes(busqueda.toLowerCase())).map((ej, i) => (
-                            <TouchableOpacity key={i} style={styles.catItem} onPress={() => añadirEjercicio(ej)}>
-                                <Image source={obtenerFotoEjercicio(ej.nombre)} style={styles.catImage} />
-                                <View><Text style={styles.catName}>{ej.nombre}</Text><Text style={styles.catSub}>{ej.grupo_muscular}</Text></View>
-                                <Text style={styles.plusIcon}>+</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            </Modal>
-
             {/* NAV BAR */}
             <View style={styles.navContainer}>
                 <View style={styles.tabBar}>
                     <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('rutinas_menu')}>
-                        <Text style={[styles.tabBarText, ['rutinas_menu', 'automatica', 'propia'].includes(vistaActiva) && styles.tabBarTextActive]}>MIS RUTINAS</Text>
+                        <Text style={[styles.tabBarText, ['rutinas_menu', 'automatica', 'propia'].includes(vistaActiva) && styles.tabBarTextActive]}>RUTINAS</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('dieta')}>
-                        <Text style={[styles.tabBarText, vistaActiva === 'dieta' && styles.tabBarTextActive]}>MI DIETA</Text>
+                        <Text style={[styles.tabBarText, vistaActiva === 'dieta' && styles.tabBarTextActive]}>DIETA</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -767,36 +623,30 @@ const styles = StyleSheet.create({
     avatarGlow: { padding: 3, borderRadius: 26, backgroundColor: 'rgba(255, 122, 0, 0.15)' },
     avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
     avatarText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 70, paddingRight: 15 },
     dropdown: { backgroundColor: '#fff', borderRadius: 16, elevation: 12, minWidth: 190, overflow: 'hidden' },
     dropdownHeader: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', paddingVertical: 14, paddingHorizontal: 16 },
     dropdownItem: { paddingVertical: 14, paddingHorizontal: 16 },
     dropdownText: { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
     dropdownDivider: { height: 1, backgroundColor: '#f0f0f0' },
-
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
     header: { marginBottom: 15 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
     actionButtons: { flexDirection: 'row', gap: 8 },
     btnSmall: { backgroundColor: 'rgba(255,255,255,0.25)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: 'white' },
     btnSmallText: { color: 'white', fontSize: 10, fontWeight: '900' },
-
     methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.9 },
     title: { fontSize: 20, fontWeight: '900', color: '#ffffff' },
-
     tabsWrapper: { marginBottom: 15, marginHorizontal: -18 },
     tab: { paddingHorizontal: 15, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, marginHorizontal: 5 },
     tabActive: { backgroundColor: '#ffffff' },
     tabText: { fontSize: 12, fontWeight: '800', color: '#ffffff' },
     textOrange: { color: '#ff7a00' },
-
     imageContainer: { width: '100%', height: 260, borderRadius: 16, overflow: 'hidden', marginBottom: 15 },
     muscleImage: { width: '100%', height: '100%' },
     imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)', padding: 10 },
     overlayDia: { color: 'white', fontWeight: '800', fontSize: 13 },
     overlayCount: { color: 'rgba(255,255,255,0.8)', fontSize: 11 },
-
     exerciseCard: { backgroundColor: '#ffffff', borderRadius: 18, marginBottom: 12, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
     exerciseCardCompleted: { backgroundColor: '#d4edda', borderColor: '#28a745', borderWidth: 1 },
     exercisePhoto: { width: 85, height: 85 },
@@ -806,62 +656,42 @@ const styles = StyleSheet.create({
     seriesBadge: { marginTop: 6, backgroundColor: '#ff7a00', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, alignSelf: 'flex-start' },
     badgeCompleted: { backgroundColor: '#28a745' },
     seriesText: { color: 'white', fontSize: 12, fontWeight: '800' },
-
     propiaSeries: { color: '#666', fontSize: 12, marginTop: 4 },
     btnDelete: { padding: 20 },
     deleteIcon: { color: '#ff4444', fontSize: 18, fontWeight: 'bold' },
     btnAdd: { backgroundColor: 'white', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 10, borderStyle: 'dashed', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
     btnAddText: { color: '#ff7a00', fontWeight: '900' },
-
     fullOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    modalSmall: { backgroundColor: 'white', width: '80%', borderRadius: 20, padding: 25 },
-    modalSub: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 15 },
-    modalInput: { backgroundColor: '#f0f0f0', padding: 12, borderRadius: 10, marginBottom: 15 },
-    btnConfirm: { backgroundColor: '#2ecc71', padding: 12, borderRadius: 12, alignItems: 'center' },
-    btnConfirmText: { color: 'white', fontWeight: 'bold' },
-    btnCancelText: { color: 'red', textAlign: 'center', marginTop: 15, fontSize: 13 },
-    rutinaListItem: { paddingVertical: 12, borderBottomWidth: 1, borderColor: '#eee', flexDirection: 'row', justifyContent: 'space-between' },
-    rutinaListItemText: { fontWeight: '600', color: '#333' },
-
+    modalSmall: { backgroundColor: 'white', width: '85%', borderRadius: 25, padding: 25, elevation: 10 },
+    modalSub: { fontWeight: '900', fontSize: 18, color: '#333', marginBottom: 5 },
+    modalInput: { backgroundColor: '#f5f5f5', padding: 12, borderRadius: 12, fontSize: 16, color: '#333', borderWidth: 1, borderColor: '#eee' },
+    inputLabel: { fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 5 },
+    inputGroup: { marginBottom: 15 },
+    btnConfirm: { backgroundColor: '#ff7a00', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 10 },
+    btnConfirmText: { color: 'white', fontWeight: '900', fontSize: 14 },
+    btnCancelText: { color: '#ff4444', textAlign: 'center', marginTop: 15, fontSize: 13, fontWeight: 'bold' },
+    rutinaListItem: { paddingVertical: 15, borderBottomWidth: 1, borderColor: '#eee', flexDirection: 'row', justifyContent: 'space-between' },
+    rutinaListItemText: { fontWeight: '700', color: '#333' },
     modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'white' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#eee' },
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     closeModal: { color: '#ff7a00', fontWeight: 'bold' },
     searchInput: { backgroundColor: 'white', margin: 15, padding: 15, borderRadius: 12, elevation: 2 },
-    catItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 10, borderRadius: 15, marginBottom: 10 },
-    catImage: { width: 50, height: 50, borderRadius: 10, marginRight: 15 },
-    catName: { fontSize: 14, fontWeight: 'bold' },
-    catSub: { fontSize: 11, color: '#999' },
+    catItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 12, borderRadius: 15, marginBottom: 10, marginHorizontal: 15, elevation: 2 },
+    catImage: { width: 55, height: 55, borderRadius: 12, marginRight: 15 },
+    catName: { fontSize: 15, fontWeight: 'bold' },
+    catSub: { fontSize: 12, color: '#999' },
     plusIcon: { marginLeft: 'auto', fontSize: 24, color: '#ff7a00', paddingRight: 10 },
-
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
     tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
     tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    iconCircle: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-    iconCircleActive: { backgroundColor: '#ff7a00' },
     tabBarText: { fontSize: 13, fontWeight: '900', color: '#bbb', letterSpacing: 1 },
     tabBarTextActive: { color: '#ff7a00' },
     loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
     btnSimular: { backgroundColor: '#2ecc71', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 20, marginBottom: 10 },
     btnSimularText: { color: 'white', fontWeight: '900', fontSize: 13 },
-    dietBanner: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 15, borderRadius: 12, marginBottom: 20, borderLeftWidth: 4, borderLeftColor: 'white' },
-    dietBannerText: { color: 'white', fontSize: 11, fontWeight: '700' },
-    dashboardCard: { backgroundColor: 'white', borderRadius: 20, padding: 20, marginBottom: 20 },
-    dashboardTitle: { color: '#333', fontSize: 14, fontWeight: 'bold', marginBottom: 10 },
-    progressBg: { height: 8, backgroundColor: '#eee', borderRadius: 4, marginBottom: 8 },
-    progressFill: { height: '100%', backgroundColor: '#ff7a00', borderRadius: 4 },
-    dashboardSub: { color: '#666', fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
-    noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', marginTop: 30, lineHeight: 18 },
-    
-    macrosRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-    macroCol: { flex: 1, backgroundColor: 'white', borderRadius: 15, padding: 15, marginHorizontal: 4, elevation: 2 },
-    macroLabel: { fontSize: 11, fontWeight: 'bold', color: '#666', marginBottom: 5, textAlign: 'center' },
-    macroBg: { height: 6, backgroundColor: '#eee', borderRadius: 3, marginBottom: 5 },
-    macroFill: { height: '100%', borderRadius: 3 },
-    macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
-    
     menuCard: { backgroundColor: 'white', borderRadius: 20, padding: 25, elevation: 4 },
     menuCardTitle: { fontSize: 18, fontWeight: 'bold', color: '#ff7a00', marginBottom: 5 },
     menuCardSub: { fontSize: 13, color: '#666' },
-    backToMenuText: { color: 'white', fontWeight: 'bold', fontSize: 14, marginBottom: 15, opacity: 0.9 },
+    backToMenuText: { color: 'white', fontWeight: 'bold', fontSize: 14, marginBottom: 5, opacity: 0.9 },
 });
