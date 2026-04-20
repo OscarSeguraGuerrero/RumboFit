@@ -136,6 +136,20 @@ export default function Rutina() {
         trapecio:      require('../assets/images/ej_trapecio.png'),
         lumbares:      require('../assets/images/ej_lumbares.png'),
         deadbug:       require('../assets/images/ej_deadbug.png'),
+        press_maquina: require('../assets/images/ej_press_maquina.png'),
+        remo_gironda:  require('../assets/images/ej_remo_gironda.png'),
+        extension_polea:         require('../assets/images/ej_extension_polea.png'),
+        apertura_cadera:         require('../assets/images/ej_apertura_cadera.png'),
+        rotacion_tronco:         require('../assets/images/ej_rotacion_tronco.png'),
+        press_banca_mancuernas:  require('../assets/images/ej_press_banca_mancuernas.png'),
+        press_inclinado:         require('../assets/images/ej_press_inclinado.png'),
+        cruce_poleas:            require('../assets/images/ej_cruce_poleas.png'),
+        remo_mancuerna:          require('../assets/images/ej_remo_mancuerna.png'),
+        press_militar_mancuernas:require('../assets/images/ej_press_militar_mancuernas.png'),
+        press_arnold:            require('../assets/images/ej_press_arnold.png'),
+        sentadilla_mancuernas:   require('../assets/images/ej_sentadilla_mancuernas.png'),
+        peso_muerto_rumano:      require('../assets/images/ej_peso_muerto_rumano.png'),
+        curl_mancuernas:         require('../assets/images/ej_curl_mancuernas.png'),
     };
 
     const obtenerImagenMusculo = (textoDia) => {
@@ -158,6 +172,12 @@ export default function Rutina() {
 
 // --- PECHO ---
 
+        if (ej.includes('press de banca con mancuernas') || ej.includes('press con mancuernas')) return imagenesEjercicios.press_banca_mancuernas;
+        if (ej.includes('press inclinado')) return imagenesEjercicios.press_inclinado;
+        if (ej.includes('cruce de poleas')) return imagenesEjercicios.cruce_poleas;
+
+        if (ej.includes('press en máquina') || ej.includes('press en maquina')) return imagenesEjercicios.press_maquina;
+
         if (ej.includes('press') && (ej.includes('banca') || ej.includes('pecho') || ej.includes('plano') || ej.includes('superior') || ej.includes('inclinado'))) return imagenesEjercicios.press_banca;
 
         if (ej.includes('aperturas') || ej.includes('contractor') || ej.includes('cruce') || ej.includes('peck deck')) return imagenesEjercicios.aperturas;
@@ -172,6 +192,10 @@ export default function Rutina() {
 
         if (ej.includes('dominadas') || ej.includes('pull up')) return imagenesEjercicios.dominadas;
 
+        if (ej.includes('remo gironda') || ej.includes('gironda')) return imagenesEjercicios.remo_gironda;
+
+        if (ej.includes('remo con mancuerna') || ej.includes('remo a una mano')) return imagenesEjercicios.remo_mancuerna;
+
         if (ej.includes('remo')) return imagenesEjercicios.remo;
 
         if (ej.includes('jalón') || ej.includes('jalon')) return imagenesEjercicios.jalon;
@@ -184,6 +208,8 @@ export default function Rutina() {
 
 // --- PIERNAS ---
 
+        if (ej.includes('sentadilla con mancuernas') || (ej.includes('sentadilla') && ej.includes('mancuernas'))) return imagenesEjercicios.sentadilla_mancuernas;
+
         if (ej.includes('sentadilla') || ej.includes('squat')) return imagenesEjercicios.sentadilla;
 
         if (ej.includes('prensa')) return imagenesEjercicios.prensa;
@@ -192,7 +218,9 @@ export default function Rutina() {
 
         if (ej.includes('extensión') && ej.includes('cuádriceps')) return imagenesEjercicios.ext_cuad;
 
-        if (ej.includes('curl femoral') || ej.includes('peso muerto rumano') || ej.includes('femoral')) return imagenesEjercicios.femoral;
+        if (ej.includes('peso muerto rumano')) return imagenesEjercicios.peso_muerto_rumano;
+
+        if (ej.includes('curl femoral') || ej.includes('femoral')) return imagenesEjercicios.femoral;
 
         if (ej.includes('gemelo') || ej.includes('pantorrilla') || ej.includes('talones')) return imagenesEjercicios.gemelos;
 
@@ -200,7 +228,10 @@ export default function Rutina() {
 
 // --- HOMBROS ---
 
-        if (ej.includes('press militar') || ej.includes('press hombro') || ej.includes('press arnold')) return imagenesEjercicios.press_militar;
+        if (ej.includes('press arnold')) return imagenesEjercicios.press_arnold;
+        if (ej.includes('press militar con mancuernas') || (ej.includes('press') && ej.includes('mancuernas') && (ej.includes('hombro') || ej.includes('militar')))) return imagenesEjercicios.press_militar_mancuernas;
+
+        if (ej.includes('press militar') || ej.includes('press hombro')) return imagenesEjercicios.press_militar;
 
         if (ej.includes('elevación lateral') || ej.includes('elevacion lateral') || ej.includes('laterales')) return imagenesEjercicios.elevaciones;
 
@@ -211,6 +242,10 @@ export default function Rutina() {
 
 
 // --- BRAZOS ---
+
+        if (ej.includes('extensión en polea alta') || ej.includes('extension en polea alta')) return imagenesEjercicios.extension_polea;
+
+        if (ej.includes('curl de bíceps con mancuernas') || ej.includes('curl con mancuernas') || (ej.includes('curl') && ej.includes('mancuernas'))) return imagenesEjercicios.curl_mancuernas;
 
         if (ej.includes('curl') && (ej.includes('bíceps') || ej.includes('biceps'))) return imagenesEjercicios.curl;
 
@@ -237,6 +272,9 @@ export default function Rutina() {
 
 
 // --- SALUD / MOVILIDAD / OTROS ---
+
+        if (ej.includes('apertura de cadera')) return imagenesEjercicios.apertura_cadera;
+        if (ej.includes('rotación de tronco') || ej.includes('rotacion de tronco')) return imagenesEjercicios.rotacion_tronco;
 
         if (ej.includes('gato') || ej.includes('camello') || ej.includes('cat-cow')) return imagenesEjercicios.gato;
 

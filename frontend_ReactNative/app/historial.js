@@ -102,11 +102,22 @@ export default function Historial() {
     const macros = calcularMacrosTotales(dataHoy.comidas);
 
     let eventosDia = [];
+    
+    const crearFechaConHora = (fechaBase, horaStr) => {
+        let f = new Date(fechaBase);
+        if (horaStr) {
+            const [h, m] = horaStr.split(':');
+            f.setHours(parseInt(h, 10), parseInt(m, 10), 0);
+        }
+        return f;
+    };
+
     if (dataHoy.entrenamientos) {
         dataHoy.entrenamientos.forEach(e => {
             eventosDia.push({
                 tipo: 'entrenamiento',
-                fecha: new Date(e.fecha_inicio),
+                // Intentar usar e.fecha y e.hora, con fallback a e.fecha_inicio
+                fecha: crearFechaConHora(e.fecha || e.fecha_inicio, e.hora),
                 datos: e
             });
         });
@@ -115,7 +126,7 @@ export default function Historial() {
         dataHoy.comidas.forEach(c => {
             eventosDia.push({
                 tipo: 'comida',
-                fecha: new Date(c.fecha),
+                fecha: crearFechaConHora(c.fecha, c.hora),
                 datos: c
             });
         });

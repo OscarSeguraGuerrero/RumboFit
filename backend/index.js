@@ -501,14 +501,20 @@ app.get('/api/usuarios/:id/rutinas-guardadas', async (req, res) => {
 
 // Registrar Entrenamiento (HU-09)
 app.post('/api/historial/entrenamiento', async (req, res) => {
-    const { userId, rutinaId, ejercicios } = req.body; 
+    const { userId, rutinaId, ejercicios, fecha, hora } = req.body; 
     try {
+        const now = new Date();
+        const fechaStr = fecha ? new Date(fecha).toISOString().split('T')[0] : now.toISOString().split('T')[0];
+        const horaStr = hora || now.toTimeString().substring(0, 5);
+
         const entrenamiento = await prisma.entrenamiento.create({
             data: {
                 usuario_id: parseInt(userId),
                 rutina_id: rutinaId ? parseInt(rutinaId) : null,
-                fecha_inicio: new Date(),
-                fecha_fin: new Date(),
+                fecha_inicio: now,
+                fecha_fin: now,
+                fecha: new Date(fechaStr),
+                hora: horaStr,
                 series: {
                     create: ejercicios.flatMap((ej) => 
                         ej.series.map((s, idx) => ({
@@ -536,15 +542,20 @@ app.post('/api/historial/entrenamiento', async (req, res) => {
 
 // Registrar Comida (HU-11)
 app.post('/api/historial/comida', async (req, res) => {
-    const { userId, alimentoId, cantidad, franja } = req.body;
+    const { userId, alimentoId, cantidad, franja, fecha, hora } = req.body;
     try {
+        const now = new Date();
+        const fechaStr = fecha ? new Date(fecha).toISOString().split('T')[0] : now.toISOString().split('T')[0];
+        const horaStr = hora || now.toTimeString().substring(0, 5);
+
         const registro = await prisma.registro_Comidas.create({
             data: {
                 usuario_id: parseInt(userId),
                 alimento_id: parseInt(alimentoId),
                 cantidad_gramos: Number(cantidad),
                 franja_horaria: franja || 'Desayuno',
-                fecha: new Date()
+                fecha: new Date(fechaStr),
+                hora: horaStr
             }
         });
         res.json({ success: true, id: registro.id });
@@ -582,7 +593,8 @@ app.get('/api/usuarios/:id/historial', async (req, res) => {
 
         const historial = {};
         entrenamientos.forEach(e => {
-            const fechaStr = e.fecha_inicio.toISOString().split('T')[0];
+            // Usar la nueva columna fecha (que está garantizada al ser default(now()))
+            const fechaStr = e.fecha ? e.fecha.toISOString().split('T')[0] : e.fecha_inicio.toISOString().split('T')[0];
             if (!historial[fechaStr]) historial[fechaStr] = { entrenamientos: [], comidas: [] };
             historial[fechaStr].entrenamientos.push(e);
         });
