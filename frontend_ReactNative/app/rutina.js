@@ -73,6 +73,7 @@ export default function Rutina() {
     const [usuarioCompleto, setUsuarioCompleto] = useState(null);
     const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
     const [menuVisible, setMenuVisible] = useState(false);
+    const [entrenamientoCompletado, setEntrenamientoCompletado] = useState(false);
 
     // --- ESTADOS RUTINA PROPIA Y NAVEGACIÓN ---
     const [vistaActiva, setVistaActiva] = useState('rutinas_menu');
@@ -271,7 +272,9 @@ export default function Rutina() {
             [nombre]: !prev[nombre]
         }));
     };
-
+    const toggleEntrenamiento = () => {
+        setEntrenamientoCompletado(prev => !prev);
+    };
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -590,6 +593,18 @@ export default function Rutina() {
                                 );
                             })}
                         </ScrollView>
+                        <TouchableOpacity
+                            onPress={toggleEntrenamiento}
+                            style={[
+                                styles.checkEntreno,
+                                entrenamientoCompletado && styles.checkEntrenoActivo
+                            ]}
+                        >
+                            <Text style={styles.checkEntrenoText}>
+                                {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
+                            </Text>
+                        </TouchableOpacity>
+
                         <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
                             <Text style={styles.btnSimularText}>🏁 FINALIZAR Y REGISTRAR SESIÓN</Text>
                         </TouchableOpacity>
@@ -690,6 +705,17 @@ export default function Rutina() {
                                 <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
                             </TouchableOpacity>
                         </ScrollView>
+                        <TouchableOpacity
+                            onPress={toggleEntrenamiento}
+                            style={[
+                                styles.checkEntreno,
+                                entrenamientoCompletado && styles.checkEntrenoActivo
+                            ]}
+                        >
+                            <Text style={styles.checkEntrenoText}>
+                                {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
+                            </Text>
+                        </TouchableOpacity>
                         <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
                             <Text style={styles.btnSimularText}>FINALIZAR Y REGISTRAR SESIÓN</Text>
                         </TouchableOpacity>
@@ -904,6 +930,25 @@ const styles = StyleSheet.create({
     tabBarTextActive: { color: '#ff7a00' },
     loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
     btnSimular: { backgroundColor: '#2ecc71', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 20, marginBottom: 10 },
+    checkEntreno: {
+        backgroundColor: 'white',
+        padding: 15,
+        borderRadius: 15,
+        alignItems: 'center',
+        marginTop: 10,
+        borderWidth: 2,
+        borderColor: '#ff7a00'
+    },
+
+    checkEntrenoActivo: {
+        backgroundColor: '#2ecc71',
+        borderColor: '#2ecc71'
+    },
+
+    checkEntrenoText: {
+        fontWeight: '900',
+        color: '#ff7a00'
+    },
     btnSimularText: { color: 'white', fontWeight: '900', fontSize: 13 },
     dietBanner: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 15, borderRadius: 12, marginBottom: 20, borderLeftWidth: 4, borderLeftColor: 'white' },
     dietBannerText: { color: 'white', fontSize: 11, fontWeight: '700' },
