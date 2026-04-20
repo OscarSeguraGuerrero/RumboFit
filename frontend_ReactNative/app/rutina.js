@@ -73,6 +73,7 @@ export default function Rutina() {
     const [usuarioCompleto, setUsuarioCompleto] = useState(null);
     const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
     const [menuVisible, setMenuVisible] = useState(false);
+    const [entrenamientoCompletado, setEntrenamientoCompletado] = useState(false);
 
     // --- ESTADOS RUTINA PROPIA Y NAVEGACIÓN ---
     const [vistaActiva, setVistaActiva] = useState('rutinas_menu');
@@ -309,7 +310,9 @@ export default function Rutina() {
             [nombre]: !prev[nombre]
         }));
     };
-
+    const toggleEntrenamiento = () => {
+        setEntrenamientoCompletado(prev => !prev);
+    };
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -444,7 +447,14 @@ export default function Rutina() {
 
     const añadirEjercicio = (ej) => {
         const nueva = { ...rutinaPropia };
-        nueva[diaPropioActivo] = [...nueva[diaPropioActivo], `${ej.nombre} 3x12`];
+        nueva[diaPropioActivo] = [
+            ...nueva[diaPropioActivo],
+            {
+                nombre: ej.nombre,
+                series: 3,
+                reps: 12
+            }
+        ];
         setRutinaPropia(nueva);
         AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
         setModalEjercicios(false);
@@ -455,6 +465,19 @@ export default function Rutina() {
         nueva[diaPropioActivo] = nueva[diaPropioActivo].filter((_, i) => i !== index);
         setRutinaPropia(nueva);
         AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
+    };
+    // Para modificar las series y repeticiones
+    const actualizarEjercicio = (index, campo, valor) => {
+        const nueva = { ...rutinaPropia };
+
+        nueva[diaPropioActivo][index][campo] = Number(valor);
+
+        setRutinaPropia(nueva);
+
+        AsyncStorage.setItem(
+            "rutina_propia",
+            JSON.stringify({ ejercicios: nueva, completados })
+        );
     };
 
     const simulateTrainingLog = async () => {
@@ -608,6 +631,18 @@ export default function Rutina() {
                                 );
                             })}
                         </ScrollView>
+                        <TouchableOpacity
+                            onPress={toggleEntrenamiento}
+                            style={[
+                                styles.checkEntreno,
+                                entrenamientoCompletado && styles.checkEntrenoActivo
+                            ]}
+                        >
+                            <Text style={styles.checkEntrenoText}>
+                                {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
+                            </Text>
+                        </TouchableOpacity>
+
                         <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
                             <Text style={styles.btnSimularText}>🏁 FINALIZAR Y REGISTRAR SESIÓN</Text>
                         </TouchableOpacity>
@@ -644,7 +679,18 @@ export default function Rutina() {
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
                             {rutinaPropia[diaPropioActivo]?.map((ej, i) => {
-                                const { nombre, series } = parsearEjercicio(ej);
+                                const ejercicio = typeof ej === 'string'
+                                    ? (() => {
+                                        const parsed = parsearEjercicio(ej);
+                                        return {
+                                            nombre: parsed.nombre,
+                                            series: 3,
+                                            reps: 121
+                                        };
+                                    })()
+                                    : ej;
+
+                                const nombre = ejercicio.nombre;
                                 const estaCompletado = completados[nombre];
                                 return (
                                     <TouchableOpacity
@@ -657,7 +703,37 @@ export default function Rutina() {
                                             <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
                                                 {nombre} {estaCompletado ? "✓" : ""}
                                             </Text>
-                                            <Text style={styles.propiaSeries}>{series || '3x12'}</Text>
+                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
+
+                                                <TextInput
+                                                    style={{
+                                                        backgroundColor: '#eee',
+                                                        padding: 5,
+                                                        borderRadius: 5,
+                                                        width: 40,
+                                                        textAlign: 'center'
+                                                    }}
+                                                    keyboardType="numeric"
+                                                    value={String(ejercicio.series)}
+                                                    onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
+                                                />
+
+                                                <Text style={{ alignSelf: 'center' }}>x</Text>
+
+                                                <TextInput
+                                                    style={{
+                                                        backgroundColor: '#eee',
+                                                        padding: 5,
+                                                        borderRadius: 5,
+                                                        width: 40,
+                                                        textAlign: 'center'
+                                                    }}
+                                                    keyboardType="numeric"
+                                                    value={String(ejercicio.reps)}
+                                                    onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
+                                                />
+
+                                            </View>
                                         </View>
                                         <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
                                     </TouchableOpacity>
@@ -667,6 +743,17 @@ export default function Rutina() {
                                 <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
                             </TouchableOpacity>
                         </ScrollView>
+                        <TouchableOpacity
+                            onPress={toggleEntrenamiento}
+                            style={[
+                                styles.checkEntreno,
+                                entrenamientoCompletado && styles.checkEntrenoActivo
+                            ]}
+                        >
+                            <Text style={styles.checkEntrenoText}>
+                                {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
+                            </Text>
+                        </TouchableOpacity>
                         <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
                             <Text style={styles.btnSimularText}>FINALIZAR Y REGISTRAR SESIÓN</Text>
                         </TouchableOpacity>
@@ -881,6 +968,25 @@ const styles = StyleSheet.create({
     tabBarTextActive: { color: '#ff7a00' },
     loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
     btnSimular: { backgroundColor: '#2ecc71', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 20, marginBottom: 10 },
+    checkEntreno: {
+        backgroundColor: 'white',
+        padding: 15,
+        borderRadius: 15,
+        alignItems: 'center',
+        marginTop: 10,
+        borderWidth: 2,
+        borderColor: '#ff7a00'
+    },
+
+    checkEntrenoActivo: {
+        backgroundColor: '#2ecc71',
+        borderColor: '#2ecc71'
+    },
+
+    checkEntrenoText: {
+        fontWeight: '900',
+        color: '#ff7a00'
+    },
     btnSimularText: { color: 'white', fontWeight: '900', fontSize: 13 },
     dietBanner: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 15, borderRadius: 12, marginBottom: 20, borderLeftWidth: 4, borderLeftColor: 'white' },
     dietBannerText: { color: 'white', fontSize: 11, fontWeight: '700' },

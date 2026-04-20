@@ -70,7 +70,85 @@ async function main() {
       create: ej,
     });
   }
-  console.log('Seed exitoso: Catálogo maestro de ejercicios enriquecido.');
+  console.log(`Seed ejercicios: ${ejercicios.length} ejercicios insertados.`);
+
+  // ==========================================
+  // CATÁLOGO DE ALIMENTOS
+  // ==========================================
+  const alimentos = [
+    // --- PROTEÍNAS ANIMALES ---
+    { nombre: 'Pechuga de pollo', calorias_100g: 165, proteinas_100g: 31.0, carbohidratos_100g: 0.0, grasas_100g: 3.6 },
+    { nombre: 'Pechuga de pavo', calorias_100g: 135, proteinas_100g: 29.0, carbohidratos_100g: 0.0, grasas_100g: 1.0 },
+    { nombre: 'Ternera magra', calorias_100g: 135, proteinas_100g: 21.0, carbohidratos_100g: 0.0, grasas_100g: 5.0 },
+    { nombre: 'Cerdo magro', calorias_100g: 143, proteinas_100g: 21.0, carbohidratos_100g: 0.0, grasas_100g: 6.0 },
+    { nombre: 'Salmón', calorias_100g: 208, proteinas_100g: 20.0, carbohidratos_100g: 0.0, grasas_100g: 13.0 },
+    { nombre: 'Atún en lata al natural', calorias_100g: 116, proteinas_100g: 26.0, carbohidratos_100g: 0.0, grasas_100g: 1.0 },
+    { nombre: 'Merluza', calorias_100g: 86, proteinas_100g: 17.0, carbohidratos_100g: 0.0, grasas_100g: 1.9 },
+    { nombre: 'Sardina', calorias_100g: 208, proteinas_100g: 24.0, carbohidratos_100g: 0.0, grasas_100g: 12.0 },
+    { nombre: 'Huevo entero', calorias_100g: 155, proteinas_100g: 13.0, carbohidratos_100g: 1.1, grasas_100g: 11.0 },
+    { nombre: 'Clara de huevo', calorias_100g: 52, proteinas_100g: 11.0, carbohidratos_100g: 0.7, grasas_100g: 0.2 },
+
+    // --- LÁCTEOS ---
+    { nombre: 'Leche entera', calorias_100g: 61, proteinas_100g: 3.2, carbohidratos_100g: 4.8, grasas_100g: 3.3 },
+    { nombre: 'Leche desnatada', calorias_100g: 35, proteinas_100g: 3.4, carbohidratos_100g: 5.0, grasas_100g: 0.1 },
+    { nombre: 'Yogur natural', calorias_100g: 59, proteinas_100g: 3.5, carbohidratos_100g: 4.0, grasas_100g: 3.3 },
+    { nombre: 'Yogur griego', calorias_100g: 97, proteinas_100g: 9.0, carbohidratos_100g: 3.6, grasas_100g: 5.0 },
+    { nombre: 'Queso fresco', calorias_100g: 98, proteinas_100g: 13.0, carbohidratos_100g: 3.0, grasas_100g: 4.0 },
+    { nombre: 'Requesón', calorias_100g: 74, proteinas_100g: 11.0, carbohidratos_100g: 3.0, grasas_100g: 1.0 },
+    { nombre: 'Queso parmesano', calorias_100g: 392, proteinas_100g: 36.0, carbohidratos_100g: 3.2, grasas_100g: 26.0 },
+
+    // --- CARBOHIDRATOS ---
+    { nombre: 'Arroz blanco cocido', calorias_100g: 130, proteinas_100g: 2.7, carbohidratos_100g: 28.0, grasas_100g: 0.3 },
+    { nombre: 'Arroz integral cocido', calorias_100g: 111, proteinas_100g: 2.6, carbohidratos_100g: 23.0, grasas_100g: 0.9 },
+    { nombre: 'Pasta cocida', calorias_100g: 131, proteinas_100g: 5.0, carbohidratos_100g: 25.0, grasas_100g: 1.1 },
+    { nombre: 'Pan integral', calorias_100g: 247, proteinas_100g: 9.0, carbohidratos_100g: 41.0, grasas_100g: 3.5 },
+    { nombre: 'Avena', calorias_100g: 389, proteinas_100g: 17.0, carbohidratos_100g: 66.0, grasas_100g: 7.0 },
+    { nombre: 'Patata cocida', calorias_100g: 86, proteinas_100g: 2.0, carbohidratos_100g: 20.0, grasas_100g: 0.1 },
+    { nombre: 'Boniato cocido', calorias_100g: 86, proteinas_100g: 1.6, carbohidratos_100g: 20.0, grasas_100g: 0.1 },
+    { nombre: 'Quinoa cocida', calorias_100g: 120, proteinas_100g: 4.4, carbohidratos_100g: 21.0, grasas_100g: 1.9 },
+
+    // --- VERDURAS ---
+    { nombre: 'Brócoli', calorias_100g: 34, proteinas_100g: 2.8, carbohidratos_100g: 7.0, grasas_100g: 0.4 },
+    { nombre: 'Espinacas', calorias_100g: 23, proteinas_100g: 2.9, carbohidratos_100g: 3.6, grasas_100g: 0.4 },
+    { nombre: 'Tomate', calorias_100g: 18, proteinas_100g: 0.9, carbohidratos_100g: 3.9, grasas_100g: 0.2 },
+    { nombre: 'Pepino', calorias_100g: 16, proteinas_100g: 0.7, carbohidratos_100g: 3.6, grasas_100g: 0.1 },
+    { nombre: 'Zanahoria', calorias_100g: 41, proteinas_100g: 0.9, carbohidratos_100g: 10.0, grasas_100g: 0.2 },
+    { nombre: 'Pimiento rojo', calorias_100g: 26, proteinas_100g: 1.0, carbohidratos_100g: 6.0, grasas_100g: 0.3 },
+    { nombre: 'Lechuga', calorias_100g: 17, proteinas_100g: 1.4, carbohidratos_100g: 2.0, grasas_100g: 0.3 },
+    { nombre: 'Cebolla', calorias_100g: 40, proteinas_100g: 1.1, carbohidratos_100g: 9.3, grasas_100g: 0.1 },
+    { nombre: 'Champiñón', calorias_100g: 22, proteinas_100g: 3.1, carbohidratos_100g: 3.3, grasas_100g: 0.3 },
+
+    // --- FRUTAS ---
+    { nombre: 'Plátano', calorias_100g: 89, proteinas_100g: 1.1, carbohidratos_100g: 23.0, grasas_100g: 0.3 },
+    { nombre: 'Manzana', calorias_100g: 52, proteinas_100g: 0.3, carbohidratos_100g: 14.0, grasas_100g: 0.2 },
+    { nombre: 'Naranja', calorias_100g: 47, proteinas_100g: 0.9, carbohidratos_100g: 12.0, grasas_100g: 0.1 },
+    { nombre: 'Fresa', calorias_100g: 32, proteinas_100g: 0.7, carbohidratos_100g: 8.0, grasas_100g: 0.3 },
+    { nombre: 'Arándano', calorias_100g: 57, proteinas_100g: 0.7, carbohidratos_100g: 14.0, grasas_100g: 0.3 },
+    { nombre: 'Sandía', calorias_100g: 30, proteinas_100g: 0.6, carbohidratos_100g: 7.6, grasas_100g: 0.2 },
+    { nombre: 'Kiwi', calorias_100g: 61, proteinas_100g: 1.1, carbohidratos_100g: 15.0, grasas_100g: 0.5 },
+
+    // --- GRASAS SALUDABLES ---
+    { nombre: 'Aguacate', calorias_100g: 160, proteinas_100g: 2.0, carbohidratos_100g: 9.0, grasas_100g: 15.0 },
+    { nombre: 'Aceite de oliva', calorias_100g: 884, proteinas_100g: 0.0, carbohidratos_100g: 0.0, grasas_100g: 100.0 },
+    { nombre: 'Almendras', calorias_100g: 579, proteinas_100g: 21.0, carbohidratos_100g: 22.0, grasas_100g: 50.0 },
+    { nombre: 'Nueces', calorias_100g: 654, proteinas_100g: 15.0, carbohidratos_100g: 14.0, grasas_100g: 65.0 },
+    { nombre: 'Mantequilla de cacahuete', calorias_100g: 588, proteinas_100g: 25.0, carbohidratos_100g: 20.0, grasas_100g: 50.0 },
+
+    // --- LEGUMBRES ---
+    { nombre: 'Lentejas cocidas', calorias_100g: 116, proteinas_100g: 9.0, carbohidratos_100g: 20.0, grasas_100g: 0.4 },
+    { nombre: 'Garbanzos cocidos', calorias_100g: 164, proteinas_100g: 8.9, carbohidratos_100g: 27.0, grasas_100g: 2.6 },
+    { nombre: 'Judías negras cocidas', calorias_100g: 132, proteinas_100g: 8.9, carbohidratos_100g: 24.0, grasas_100g: 0.5 },
+    { nombre: 'Edamame', calorias_100g: 122, proteinas_100g: 11.0, carbohidratos_100g: 10.0, grasas_100g: 5.0 },
+  ];
+
+  for (const alimento of alimentos) {
+    await prisma.alimento.upsert({
+      where: { nombre: alimento.nombre },
+      update: alimento,
+      create: alimento,
+    });
+  }
+  console.log(`Seed alimentos: ${alimentos.length} alimentos insertados.`);
 }
 
 main()
