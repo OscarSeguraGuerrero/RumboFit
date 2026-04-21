@@ -942,6 +942,7 @@ export default function Rutina() {
                                 );
                             })}
                         </ScrollView>
+                        <View style={styles.routineFooterActions}>
                         <TouchableOpacity
                             onPress={abrirModalCompletarEntrenamiento}
                             style={[
@@ -957,6 +958,7 @@ export default function Rutina() {
                         <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
                             <Text style={styles.btnSimularText}>🏁 FINALIZAR Y REGISTRAR SESIÓN</Text>
                         </TouchableOpacity>
+                        </View>
                     </>
                 )}
 
