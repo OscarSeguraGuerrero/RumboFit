@@ -6,6 +6,7 @@ import { API_URL } from '../config';
 import {
     Image,
     Modal,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -64,6 +65,123 @@ const calcularMacrosConsumidos = (comidas) => {
     });
     return totales;
 };
+
+function LaserRoutineCard({ children, style, contentStyle, onPress }) {
+    const laserAnim = useRef(new Animated.Value(0)).current;
+    const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
+
+    useEffect(() => {
+        const loop = Animated.loop(
+            Animated.timing(laserAnim, {
+                toValue: 1,
+                duration: 4200,
+                useNativeDriver: true
+            })
+        );
+
+        loop.start();
+        return () => loop.stop();
+    }, [laserAnim]);
+
+    const beamSize = 68;
+    const safeWidth = Math.max(cardSize.width - beamSize, 1);
+    const safeHeight = Math.max(cardSize.height - beamSize, 1);
+
+    const topBeamX = laserAnim.interpolate({
+        inputRange: [0, 0.25, 1],
+        outputRange: [0, safeWidth, safeWidth]
+    });
+    const rightBeamY = laserAnim.interpolate({
+        inputRange: [0, 0.25, 0.5, 1],
+        outputRange: [0, 0, safeHeight, safeHeight]
+    });
+    const bottomBeamX = laserAnim.interpolate({
+        inputRange: [0, 0.5, 0.75, 1],
+        outputRange: [safeWidth, safeWidth, 0, 0]
+    });
+    const leftBeamY = laserAnim.interpolate({
+        inputRange: [0, 0.75, 1],
+        outputRange: [safeHeight, safeHeight, 0]
+    });
+
+    const topOpacity = laserAnim.interpolate({
+        inputRange: [0, 0.22, 0.28, 0.94, 1],
+        outputRange: [1, 1, 0.35, 0.35, 1]
+    });
+    const rightOpacity = laserAnim.interpolate({
+        inputRange: [0, 0.2, 0.25, 0.47, 0.53, 1],
+        outputRange: [0.2, 0.2, 1, 1, 0.35, 0.2]
+    });
+    const bottomOpacity = laserAnim.interpolate({
+        inputRange: [0, 0.45, 0.5, 0.72, 0.78, 1],
+        outputRange: [0.2, 0.2, 1, 1, 0.35, 0.2]
+    });
+    const leftOpacity = laserAnim.interpolate({
+        inputRange: [0, 0.7, 0.75, 0.97, 1],
+        outputRange: [0.2, 0.2, 1, 1, 0.6]
+    });
+
+    return (
+        <Pressable
+            onPress={onPress}
+            style={({ pressed, hovered }) => [
+                styles.laserCardShell,
+                style,
+                (pressed || hovered) && styles.laserCardShellActive
+            ]}
+            onLayout={(event) => {
+                const { width, height } = event.nativeEvent.layout;
+                setCardSize({ width, height });
+            }}
+        >
+            {({ pressed, hovered }) => (
+                <>
+                    <View style={styles.laserCardFrame}>
+                        <View
+                            style={[
+                                styles.laserCardInner,
+                                contentStyle,
+                                (pressed || hovered) && styles.laserCardInnerActive
+                            ]}
+                        >
+                            {children}
+                        </View>
+                    </View>
+                    <View pointerEvents="none" style={styles.laserOverlay}>
+                        <Animated.View
+                            style={[
+                                styles.laserBeamHorizontal,
+                                styles.laserBeamTop,
+                                { opacity: topOpacity, transform: [{ translateX: topBeamX }] }
+                            ]}
+                        />
+                        <Animated.View
+                            style={[
+                                styles.laserBeamVertical,
+                                styles.laserBeamRight,
+                                { opacity: rightOpacity, transform: [{ translateY: rightBeamY }] }
+                            ]}
+                        />
+                        <Animated.View
+                            style={[
+                                styles.laserBeamHorizontal,
+                                styles.laserBeamBottom,
+                                { opacity: bottomOpacity, transform: [{ translateX: bottomBeamX }] }
+                            ]}
+                        />
+                        <Animated.View
+                            style={[
+                                styles.laserBeamVertical,
+                                styles.laserBeamLeft,
+                                { opacity: leftOpacity, transform: [{ translateY: leftBeamY }] }
+                            ]}
+                        />
+                    </View>
+                </>
+            )}
+        </Pressable>
+    );
+}
 
 export default function Rutina() {
     const router = useRouter();
@@ -720,23 +838,23 @@ export default function Rutina() {
                             <Text style={styles.methodLabel}>GESTIÓN DE ENTRENAMIENTO</Text>
                             <Text style={styles.title}>Mis Rutinas</Text>
                         </View>
-                        <TouchableOpacity style={styles.menuCard} onPress={() => setVistaActiva('automatica')}>
+                        <LaserRoutineCard contentStyle={styles.menuCard} onPress={() => setVistaActiva('automatica')}>
                             <Text style={styles.menuCardTitle}>Mi rutina sugerida</Text>
                             <Text style={styles.menuCardSub}>Rutina inteligente creada en tu registro</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.menuCard, {marginTop: 15}]} onPress={() => setVistaActiva('propia')}>
+                        </LaserRoutineCard>
+                        <LaserRoutineCard style={{ marginTop: 15 }} contentStyle={styles.menuCard} onPress={() => setVistaActiva('propia')}>
                             <Text style={styles.menuCardTitle}>Crear rutinas personalizadas</Text>
                             <Text style={styles.menuCardSub}>Crea y personaliza tus propios entrenamientos</Text>
-                        </TouchableOpacity>
+                        </LaserRoutineCard>
                         {listaRutinas.length > 0 && (
                             <View style={styles.savedRoutinesSection}>
                                 <Text style={styles.savedRoutinesTitle}>Rutinas creadas por ti</Text>
                                 {listaRutinas.map((rutina) => {
                                     const resumen = obtenerResumenRutinaGuardada(rutina);
                                     return (
-                                        <TouchableOpacity
+                                        <LaserRoutineCard
                                             key={rutina.id || rutina.nombre}
-                                            style={styles.savedRoutineCard}
+                                            contentStyle={styles.savedRoutineCard}
                                             onPress={() => abrirRutinaGuardada(rutina)}
                                         >
                                             <Text style={styles.savedRoutineName}>{rutina.nombre}</Text>
@@ -744,7 +862,7 @@ export default function Rutina() {
                                                 {resumen.diasActivos} días • {resumen.totalEjercicios} ejercicios
                                             </Text>
                                             <Text style={styles.savedRoutineHint}>Toca para abrirla o editarla</Text>
-                                        </TouchableOpacity>
+                                        </LaserRoutineCard>
                                     );
                                 })}
                             </View>
@@ -783,9 +901,14 @@ export default function Rutina() {
                                 const nombre = ej.nombre;
                                 const estaCompletado = completados[nombre];
                                 return (
-                                    <View
+                                    <Pressable
                                         key={i}
-                                        style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}
+                                        onPress={() => {}}
+                                        style={({ pressed, hovered }) => [
+                                            styles.exerciseCard,
+                                            estaCompletado && styles.exerciseCardCompleted,
+                                            (pressed || hovered) && styles.exerciseCardActive
+                                        ]}
                                     >
                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
                                         <View style={styles.exerciseInfo}>
@@ -811,7 +934,7 @@ export default function Rutina() {
                                                 />
                                             </View>
                                         </View>
-                                    </View>
+                                    </Pressable>
                                 );
                             })}
                         </ScrollView>
@@ -877,9 +1000,14 @@ export default function Rutina() {
                                 const nombre = ejercicio.nombre;
                                 const estaCompletado = completados[nombre];
                                 return (
-                                    <View
+                                    <Pressable
                                         key={i}
-                                        style={[styles.exerciseCard, estaCompletado && styles.exerciseCardCompleted]}
+                                        onPress={() => {}}
+                                        style={({ pressed, hovered }) => [
+                                            styles.exerciseCard,
+                                            estaCompletado && styles.exerciseCardCompleted,
+                                            (pressed || hovered) && styles.exerciseCardActive
+                                        ]}
                                     >
                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
                                         <View style={styles.exerciseInfo}>
@@ -919,7 +1047,7 @@ export default function Rutina() {
                                             </View>
                                         </View>
                                         <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
-                                    </View>
+                                    </Pressable>
                                 );
                             })}
                             <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
@@ -1132,11 +1260,33 @@ const styles = StyleSheet.create({
     overlayDia: { color: 'white', fontWeight: '800', fontSize: 13 },
     overlayCount: { color: 'rgba(255,255,255,0.8)', fontSize: 11 },
 
-    exerciseCard: { backgroundColor: '#ffffff', borderRadius: 18, marginBottom: 12, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
-    exerciseCardCompleted: { backgroundColor: '#d4edda', borderColor: '#28a745', borderWidth: 1 },
-    exercisePhoto: { width: 85, height: 85 },
-    exerciseInfo: { flex: 1, paddingHorizontal: 15 },
-    exerciseName: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+    exerciseCard: {
+        backgroundColor: '#fff7ef',
+        borderRadius: 24,
+        marginBottom: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.45)',
+        shadowColor: '#3d1600',
+        shadowOpacity: 0.18,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 8
+    },
+    exerciseCardCompleted: { backgroundColor: '#dcf8e5', borderColor: '#43b36b', borderWidth: 1.5 },
+    exerciseCardActive: {
+        transform: [{ translateY: -2 }, { scale: 1.01 }],
+        shadowColor: '#2c1404',
+        shadowOpacity: 0.28,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 14 },
+        elevation: 12
+    },
+    exercisePhoto: { width: 96, height: 96, borderTopRightRadius: 20, borderBottomRightRadius: 20 },
+    exerciseInfo: { flex: 1, paddingHorizontal: 16, paddingVertical: 12 },
+    exerciseName: { fontSize: 15, fontWeight: '800', color: '#24150d', letterSpacing: 0.2 },
     textCompleted: { color: '#155724', textDecorationLine: 'line-through' },
     seriesBadge: { marginTop: 6, backgroundColor: '#ff7a00', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, alignSelf: 'flex-start' },
     badgeCompleted: { backgroundColor: '#28a745' },
@@ -1220,20 +1370,88 @@ const styles = StyleSheet.create({
     macroFill: { height: '100%', borderRadius: 3 },
     macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
     
-    menuCard: { backgroundColor: 'white', borderRadius: 20, padding: 25, elevation: 4 },
-    menuCardTitle: { fontSize: 18, fontWeight: 'bold', color: '#ff7a00', marginBottom: 5 },
-    menuCardSub: { fontSize: 13, color: '#666' },
+    laserCardShell: {
+        position: 'relative',
+        borderRadius: 24,
+        overflow: 'hidden',
+        padding: 2
+    },
+    laserCardShellActive: {
+        transform: [{ translateY: -3 }, { scale: 1.01 }]
+    },
+    laserCardFrame: {
+        borderRadius: 22,
+        overflow: 'hidden'
+    },
+    laserCardInner: {
+        borderRadius: 22,
+        overflow: 'hidden'
+    },
+    laserCardInnerActive: {
+        shadowColor: '#1a0f00',
+        shadowOpacity: 0.35,
+        shadowRadius: 26,
+        shadowOffset: { width: 0, height: 16 },
+        elevation: 14
+    },
+    laserOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        borderRadius: 24
+    },
+    laserBeamHorizontal: {
+        position: 'absolute',
+        width: 68,
+        height: 3,
+        borderRadius: 999,
+        backgroundColor: '#ffd84d',
+        shadowColor: '#ffd84d',
+        shadowOpacity: 0.95,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 0 }
+    },
+    laserBeamVertical: {
+        position: 'absolute',
+        width: 3,
+        height: 68,
+        borderRadius: 999,
+        backgroundColor: '#ffd84d',
+        shadowColor: '#ffd84d',
+        shadowOpacity: 0.95,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 0 }
+    },
+    laserBeamTop: { top: 0, left: 0 },
+    laserBeamRight: { top: 0, right: 0 },
+    laserBeamBottom: { bottom: 0, left: 0 },
+    laserBeamLeft: { top: 0, left: 0 },
+    menuCard: {
+        backgroundColor: '#fff8f1',
+        borderRadius: 24,
+        padding: 24,
+        shadowColor: '#4a1d00',
+        shadowOpacity: 0.2,
+        shadowRadius: 22,
+        shadowOffset: { width: 0, height: 12 },
+        elevation: 9
+    },
+    menuCardTitle: { fontSize: 18, fontWeight: '900', color: '#b44f00', marginBottom: 6, letterSpacing: 0.2 },
+    menuCardSub: { fontSize: 13, color: '#7a583e', lineHeight: 18 },
     savedRoutinesSection: { marginTop: 20, gap: 12 },
-    savedRoutinesTitle: { color: '#ffffff', fontSize: 14, fontWeight: '900', marginBottom: 2 },
+    savedRoutinesTitle: { color: '#ffffff', fontSize: 14, fontWeight: '900', marginBottom: 2, letterSpacing: 0.4 },
     savedRoutineCard: {
-        backgroundColor: '#090909',
-        borderRadius: 18,
+        backgroundColor: '#0b1118',
+        borderRadius: 24,
         padding: 18,
         borderWidth: 1,
-        borderColor: '#ffffff'
+        borderColor: 'rgba(123, 244, 255, 0.35)',
+        shadowColor: '#000',
+        shadowOpacity: 0.28,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 7
     },
-    savedRoutineName: { color: '#ff7a00', fontSize: 16, fontWeight: '900', marginBottom: 6 },
-    savedRoutineMeta: { color: '#ffffff', fontSize: 12, fontWeight: '700', marginBottom: 6 },
-    savedRoutineHint: { color: '#ffffff', fontSize: 11, fontWeight: '700' },
+    savedRoutineName: { color: '#ffffff', fontSize: 16, fontWeight: '900', marginBottom: 6, letterSpacing: 0.3 },
+    savedRoutineMeta: { color: '#88dce7', fontSize: 12, fontWeight: '800', marginBottom: 6 },
+    savedRoutineHint: { color: '#d7faff', fontSize: 11, fontWeight: '700' },
     backToMenuText: { color: 'white', fontWeight: 'bold', fontSize: 14, marginBottom: 15, opacity: 0.9 },
 });
