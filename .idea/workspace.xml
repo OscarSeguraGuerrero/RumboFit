@@ -6,7 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="historial de rutinas">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_curl_femoral.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_curl_femoral.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_extension_cuadriceps.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_extension_cuadriceps.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_fondos.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_fondos.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_jalon_pecho.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_jalon_pecho.png" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,12 +52,12 @@
     &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
-    &quot;accountId&quot;: &quot;45dfd795-2780-4552-bff6-1dd18bcfeeec&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/OscarSeguraGuerrero/RumboFit",
+    "accountId": "0b7d5ea8-0bce-45af-b171-3013f48abcb3"
   }
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -109,7 +115,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.31033.133" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
       </set>
     </attachedChunks>
   </component>
@@ -150,6 +156,7 @@
       <workItem from="1776371880311" duration="2158000" />
       <workItem from="1776449296171" duration="2095000" />
       <workItem from="1776765829156" duration="1691000" />
+      <workItem from="1776796569946" duration="489000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
