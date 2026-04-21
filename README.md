@@ -22,3 +22,4 @@ VER BASE DE DATOS CON INTERFAZ GRÁFICA
 npx prisma studio --url "postgresql://rumbofit:password123@localhost:5432/rumbofit?schema=public"
 
 
+set DATABASE_URL=postgresql://rumbofit:password123@localhost:5432/rumbofit?schema=public && npx prisma studio
