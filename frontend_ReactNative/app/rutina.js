@@ -995,7 +995,7 @@ export default function Rutina() {
                                         return {
                                             nombre: parsed.nombre,
                                             series: 3,
-                                            reps: 121
+                                            reps: 12
                                         };
                                     })()
                                     : ej;
