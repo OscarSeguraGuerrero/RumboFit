@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="ventana de volumenes y series">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="cambios en rutinas">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -146,7 +144,7 @@
       <workItem from="1776697266293" duration="3922000" />
       <workItem from="1776709377615" duration="197000" />
       <workItem from="1776794727332" duration="93000" />
-      <workItem from="1776794837871" duration="1644000" />
+      <workItem from="1776794837871" duration="2411000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -380,7 +378,23 @@
       <option name="project" value="LOCAL" />
       <updated>1776699923362</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="cambios en rutinas">
+      <option name="closed" value="true" />
+      <created>1776796541816</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1776796541816</updated>
+    </task>
+    <task id="LOCAL-00031" summary="cambios en rutinas">
+      <option name="closed" value="true" />
+      <created>1776796849346</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1776796849346</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -398,7 +412,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="implementación frontend del formulario" />
     <MESSAGE value="implementación frontend con react" />
     <MESSAGE value="implementación frontend con react y node.js" />
     <MESSAGE value="modificaciones en el frontend con react" />
@@ -423,6 +436,7 @@
     <MESSAGE value="Modificación de la pantalla principal." />
     <MESSAGE value="HU-13 hecha." />
     <MESSAGE value="Ahora se pueden modificar las series y repeticiones al crear una rutina personalizada :D" />
-    <option name="LAST_COMMIT_MESSAGE" value="Ahora se pueden modificar las series y repeticiones al crear una rutina personalizada :D" />
+    <MESSAGE value="cambios en rutinas" />
+    <option name="LAST_COMMIT_MESSAGE" value="cambios en rutinas" />
   </component>
 </project>

@@ -927,7 +927,7 @@ export default function Rutina() {
                                                     onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
                                                 />
 
-                                                <Text style={{ alignSelf: 'center' }}> series x</Text>
+                                                <Text style={{ alignSelf: 'center' }}> series </Text>
 
                                                 <TextInput
                                                     style={styles.inputSeries}
@@ -935,7 +935,7 @@ export default function Rutina() {
                                                     value={String(ej.reps)}
                                                     onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
                                                 />
-                                                <Text style={{ marginLeft: 5 }}>repeticiones</Text>
+                                                <Text style={{ alignSelf: 'center'  }}>repeticiones</Text>
                                             </View>
                                         </View>
                                     </Pressable>
@@ -1033,7 +1033,7 @@ export default function Rutina() {
                                                     onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
                                                 />
 
-                                                <Text style={{ alignSelf: 'center' }}>x</Text>
+                                                <Text style={{ alignSelf: 'center' }}>series </Text>
 
                                                 <TextInput
                                                     style={{
@@ -1047,6 +1047,7 @@ export default function Rutina() {
                                                     value={String(ejercicio.reps)}
                                                     onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
                                                 />
+                                                <Text style={{ alignSelf: 'center'  }}>repeticiones</Text>
 
                                             </View>
                                         </View>
