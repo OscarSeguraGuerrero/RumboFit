@@ -37,7 +37,8 @@ model Usuario {
   rutinas             Rutina[]
   rutina_ejercicios   Rutina_Ejercicio[] // Conexión corregida
   entrenamientos      Entrenamiento[]
-  registro_comidas    Registro_Comidas[]
+  comidas             Comida[]
+  registro_comidas    Registro_Comidas[] // Mantener para compatibilidad si es necesario, aunque lo ideal es a través de Comida
   publicaciones       Publicacion[]
   seguidores          Seguidor[]    @relation("UsuarioSeguidores")
   seguidos            Seguidor[]    @relation("UsuarioSeguidos")
@@ -147,17 +148,29 @@ model Serie_Entrenamiento {
 // ==========================================
 // 5. NUTRICIÓN
 // ==========================================
-model Registro_Comidas {
+
+model Comida {
   id               Int       @id @default(autoincrement())
   usuario_id       Int
-  alimento_id      Int
+  titulo           String
   fecha            DateTime  @default(now()) @db.Date
   hora             String?
-  franja_horaria   String
-  cantidad_gramos  Decimal   @db.Decimal
+  franja_horaria   String?   // Desayuno, Almuerzo, etc.
 
   usuario          Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  items            Registro_Comidas[]
+}
+
+model Registro_Comidas {
+  id               Int       @id @default(autoincrement())
+  comida_id        Int
+  alimento_id      Int
+  cantidad_gramos  Decimal   @db.Decimal
+  usuario_id       Int?      // Opcional para facilitar consultas rápidas, pero lo principal es comida_id
+
+  comida           Comida    @relation(fields: [comida_id], references: [id], onDelete: Cascade)
   alimento         Alimento  @relation(fields: [alimento_id], references: [id], onDelete: Cascade)
+  usuario          Usuario?   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
