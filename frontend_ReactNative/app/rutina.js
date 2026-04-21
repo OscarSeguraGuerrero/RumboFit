@@ -837,14 +837,17 @@ export default function Rutina() {
                         <View style={styles.header}>
                             <Text style={styles.methodLabel}>GESTIÓN DE ENTRENAMIENTO</Text>
                             <Text style={styles.title}>Mis Rutinas</Text>
+                            <TouchableOpacity
+                                style={styles.createRoutineButton}
+                                onPress={() => setVistaActiva('propia')}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={styles.createRoutineButtonText}>+ Crear personalizada</Text>
+                            </TouchableOpacity>
                         </View>
                         <LaserRoutineCard contentStyle={styles.menuCard} onPress={() => setVistaActiva('automatica')}>
                             <Text style={styles.menuCardTitle}>Mi rutina sugerida</Text>
                             <Text style={styles.menuCardSub}>Rutina inteligente creada en tu registro</Text>
-                        </LaserRoutineCard>
-                        <LaserRoutineCard style={{ marginTop: 15 }} contentStyle={styles.menuCard} onPress={() => setVistaActiva('propia')}>
-                            <Text style={styles.menuCardTitle}>Crear rutinas personalizadas</Text>
-                            <Text style={styles.menuCardSub}>Crea y personaliza tus propios entrenamientos</Text>
                         </LaserRoutineCard>
                         {listaRutinas.length > 0 && (
                             <View style={styles.savedRoutinesSection}>
@@ -924,7 +927,7 @@ export default function Rutina() {
                                                     onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
                                                 />
 
-                                                <Text style={{ alignSelf: 'center' }}>x</Text>
+                                                <Text style={{ alignSelf: 'center' }}> series x</Text>
 
                                                 <TextInput
                                                     style={styles.inputSeries}
@@ -932,6 +935,7 @@ export default function Rutina() {
                                                     value={String(ej.reps)}
                                                     onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
                                                 />
+                                                <Text style={{ marginLeft: 5 }}>repeticiones</Text>
                                             </View>
                                         </View>
                                     </Pressable>
@@ -992,7 +996,7 @@ export default function Rutina() {
                                         return {
                                             nombre: parsed.nombre,
                                             series: 3,
-                                            reps: 121
+                                            reps: 12
                                         };
                                     })()
                                     : ej;
@@ -1239,7 +1243,19 @@ const styles = StyleSheet.create({
     dropdownDivider: { height: 1, backgroundColor: '#f0f0f0' },
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
-    header: { marginBottom: 15 },
+    header: { marginBottom: 15, position: 'relative', paddingRight: 150 },
+    createRoutineButton: {
+        position: 'absolute',
+        top: 10,
+        right: 0,
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.45)',
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 8
+    },
+    createRoutineButtonText: { color: '#ffffff', fontSize: 11, fontWeight: '900' },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
     actionButtons: { flexDirection: 'row', gap: 8 },
     btnSmall: { backgroundColor: 'rgba(255,255,255,0.25)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: 'white' },
@@ -1439,19 +1455,17 @@ const styles = StyleSheet.create({
     savedRoutinesSection: { marginTop: 20, gap: 12 },
     savedRoutinesTitle: { color: '#ffffff', fontSize: 14, fontWeight: '900', marginBottom: 2, letterSpacing: 0.4 },
     savedRoutineCard: {
-        backgroundColor: '#0b1118',
+        backgroundColor: '#fff8f1',
         borderRadius: 24,
         padding: 18,
-        borderWidth: 1,
-        borderColor: 'rgba(123, 244, 255, 0.35)',
-        shadowColor: '#000',
-        shadowOpacity: 0.28,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 7
+        shadowColor: '#4a1d00',
+        shadowOpacity: 0.2,
+        shadowRadius: 22,
+        shadowOffset: { width: 0, height: 12 },
+        elevation: 9
     },
-    savedRoutineName: { color: '#ffffff', fontSize: 16, fontWeight: '900', marginBottom: 6, letterSpacing: 0.3 },
-    savedRoutineMeta: { color: '#88dce7', fontSize: 12, fontWeight: '800', marginBottom: 6 },
-    savedRoutineHint: { color: '#d7faff', fontSize: 11, fontWeight: '700' },
+    savedRoutineName: { color: '#b44f00', fontSize: 16, fontWeight: '900', marginBottom: 6, letterSpacing: 0.3 },
+    savedRoutineMeta: { color: '#7a583e', fontSize: 12, fontWeight: '800', marginBottom: 6 },
+    savedRoutineHint: { color: '#7a583e', fontSize: 11, fontWeight: '700' },
     backToMenuText: { color: 'white', fontWeight: 'bold', fontSize: 14, marginBottom: 15, opacity: 0.9 },
 });

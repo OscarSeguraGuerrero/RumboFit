@@ -4,15 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="historial de rutinas">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="ventana de volumenes y series">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_curl_femoral.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_curl_femoral.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_extension_cuadriceps.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_extension_cuadriceps.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_fondos.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_fondos.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_jalon_pecho.png" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/assets/images/ej_jalon_pecho.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="87" />
+    <option name="cachedIndexableFilesCount" value="91" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -34,14 +30,9 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="PREVIOUS_COMMIT_AUTHORS">
-      <list>
-        <option value="AriEstudioso &lt;aridaneestudioso@gmail.com&gt;" />
-      </list>
-    </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="frontend-react" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -52,18 +43,15 @@
     &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/OscarSeguraGuerrero/RumboFit",
-    "accountId": "0b7d5ea8-0bce-45af-b171-3013f48abcb3"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
+    &quot;accountId&quot;: &quot;6cd2f2e3-3737-4233-8480-46438b468c72&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
-  </component>
-  <component name="PackageJsonUpdateNotifier">
-    <dismissed value="$PROJECT_DIR$/backend/package.json" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
@@ -80,6 +68,7 @@
     &quot;JavaScript Debug.index.html.executor&quot;: &quot;Run&quot;,
     &quot;JavaScript Debug.rutina.html.executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
@@ -95,7 +84,6 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.agents.accounts&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\Dani\\Desktop\\UNIVERSIDAD\\GRADO EN INGENIERIA INFORMÁTICA\\TERCERO\\SEGUNDO CUATRIMESTRE\\PRODUCCIÓN DE SOFTWARE\\PROYECTO\\RumboFit\\RumboFit\\frontend_ReactNative\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
@@ -115,7 +103,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.31033.133" />
       </set>
     </attachedChunks>
   </component>
@@ -155,8 +143,10 @@
       <workItem from="1776292786201" duration="1210000" />
       <workItem from="1776371880311" duration="2158000" />
       <workItem from="1776449296171" duration="2095000" />
-      <workItem from="1776765829156" duration="1691000" />
-      <workItem from="1776796569946" duration="489000" />
+      <workItem from="1776697266293" duration="3922000" />
+      <workItem from="1776709377615" duration="197000" />
+      <workItem from="1776794727332" duration="93000" />
+      <workItem from="1776794837871" duration="1644000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -374,15 +364,23 @@
       <option name="project" value="LOCAL" />
       <updated>1776434175386</updated>
     </task>
-    <task id="LOCAL-00028" summary="historial de rutinas">
+    <task id="LOCAL-00028" summary="Ahora se pueden modificar las series y repeticiones al crear una rutina personalizada :D">
       <option name="closed" value="true" />
-      <created>1776781600331</created>
+      <created>1776699827206</created>
       <option name="number" value="00028" />
       <option name="presentableId" value="LOCAL-00028" />
       <option name="project" value="LOCAL" />
-      <updated>1776781600331</updated>
+      <updated>1776699827206</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="Ahora se pueden modificar las series y repeticiones al crear una rutina personalizada :D">
+      <option name="closed" value="true" />
+      <created>1776699923362</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1776699923362</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -400,6 +398,7 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <MESSAGE value="implementación frontend del formulario" />
     <MESSAGE value="implementación frontend con react" />
     <MESSAGE value="implementación frontend con react y node.js" />
     <MESSAGE value="modificaciones en el frontend con react" />
@@ -416,15 +415,14 @@
     <MESSAGE value=".." />
     <MESSAGE value="implementación de la barra del menu, para las dietas y rutina personal, gráfica imc en el perfil.js" />
     <MESSAGE value="error node_modules" />
+    <MESSAGE value="historial de rutinas" />
     <MESSAGE value="historial de rutinas y cambios en perfil.js" />
     <MESSAGE value="historial" />
     <MESSAGE value="historial de entreno" />
     <MESSAGE value="Modificación del historial." />
     <MESSAGE value="Modificación de la pantalla principal." />
     <MESSAGE value="HU-13 hecha." />
-    <MESSAGE value="historial de entreno, backend" />
-    <MESSAGE value="Ahora se pueden modificar Reps y series en sugerenci inteligente" />
-    <MESSAGE value="historial de rutinas" />
-    <option name="LAST_COMMIT_MESSAGE" value="historial de rutinas" />
+    <MESSAGE value="Ahora se pueden modificar las series y repeticiones al crear una rutina personalizada :D" />
+    <option name="LAST_COMMIT_MESSAGE" value="Ahora se pueden modificar las series y repeticiones al crear una rutina personalizada :D" />
   </component>
 </project>
