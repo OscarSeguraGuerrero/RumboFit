@@ -309,7 +309,16 @@ app.get('/api/usuarios/:id', async (req, res) => {
     const userId = parseInt(req.params.id);
     try {
         const usuario = await prisma.usuario.findUnique({
-            where: { id: userId }
+            where: { id: userId },
+            include: {
+                _count: {
+                    select: {
+                        seguidores: true,
+                        seguidos: true,
+                        publicaciones: true
+                    }
+                }
+            }
         });
         if (!usuario) return res.status(404).json({ success: false, error: "No encontrado" });
         res.json({ success: true, usuario });
@@ -321,23 +330,123 @@ app.get('/api/usuarios/:id', async (req, res) => {
 // ACTUALIZAR PERFIL (Asegúrate de poner /api/)
 app.put('/api/usuarios/:id', async (req, res) => {
     const userId = parseInt(req.params.id);
-    const { peso, altura, edad } = req.body;
+    const { nombre, email, telefono, peso, altura, edad, sexo, objetivo, nivel, frecuencia_semanal, foto_perfil } = req.body;
 
     try {
         const usuarioActualizado = await prisma.usuario.update({
             where: { id: userId },
             data: {
-                // Forzamos Number() para que Prisma/Postgres no rechace el dato
-                peso: peso ? Number(peso) : null,
-                altura: altura ? Number(altura) : null,
-                edad: edad ? Number(edad) : null,
+                nombre: nombre || undefined,
+                email: email || undefined,
+                telefono: telefono || undefined,
+                peso: peso ? Number(peso) : undefined,
+                altura: altura ? Number(altura) : undefined,
+                edad: edad ? Number(edad) : undefined,
+                sexo: sexo || undefined,
+                objetivo: objetivo || undefined,
+                nivel: nivel || undefined,
+                frecuencia_semanal: frecuencia_semanal ? Number(frecuencia_semanal) : undefined,
+                foto_perfil: foto_perfil || undefined,
             },
         });
 
         res.json({ success: true, message: "Perfil actualizado", usuario: usuarioActualizado });
     } catch (error) {
         console.error("Error en PUT:", error);
+        if (error.code === 'P2002') {
+            return res.status(400).json({ success: false, error: "El email ya está registrado por otro usuario" });
+        }
         res.status(500).json({ success: false, error: "Error al actualizar en DB" });
+    }
+});
+
+// --- SISTEMA SOCIAL (HU-14) ---
+
+// Seguir a un usuario
+app.post('/api/usuarios/follow', async (req, res) => {
+    const { seguidorId, seguidoId } = req.body;
+    try {
+        await prisma.seguidor.create({
+            data: {
+                seguidor_id: parseInt(seguidorId),
+                seguido_id: parseInt(seguidoId)
+            }
+        });
+        res.json({ success: true, message: "Ahora sigues a este usuario" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al seguir usuario" });
+    }
+});
+
+// Dejar de seguir a un usuario
+app.post('/api/usuarios/unfollow', async (req, res) => {
+    const { seguidorId, seguidoId } = req.body;
+    try {
+        await prisma.seguidor.delete({
+            where: {
+                seguidor_id_seguido_id: {
+                    seguidor_id: parseInt(seguidorId),
+                    seguido_id: parseInt(seguidoId)
+                }
+            }
+        });
+        res.json({ success: true, message: "Has dejado de seguir a este usuario" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al dejar de seguir" });
+    }
+});
+
+// Verificar si un usuario sigue a otro
+app.get('/api/usuarios/:seguidorId/sigue/:seguidoId', async (req, res) => {
+    try {
+        const seguimiento = await prisma.seguidor.findUnique({
+            where: {
+                seguidor_id_seguido_id: {
+                    seguidor_id: parseInt(req.params.seguidorId),
+                    seguido_id: parseInt(req.params.seguidoId)
+                }
+            }
+        });
+        res.json({ siguiendo: !!seguimiento });
+    } catch (error) {
+        res.status(500).json({ error: "Error al verificar seguimiento" });
+    }
+});
+
+// --- SISTEMA DE PUBLICACIONES (HU-16) ---
+
+// Obtener publicaciones de un usuario
+app.get('/api/usuarios/:id/publicaciones', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    try {
+        const posts = await prisma.publicacion.findMany({
+            where: { usuario_id: userId },
+            include: {
+                imagenes: true,
+                _count: { select: { me_gusta: true } }
+            },
+            orderBy: { fecha_publicacion: 'desc' }
+        });
+        res.json({ success: true, publicaciones: posts });
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener publicaciones" });
+    }
+});
+
+// Eliminar una publicación
+app.delete('/api/publicaciones/:id', async (req, res) => {
+    const postId = parseInt(req.params.id);
+    const { userId } = req.body; // Para verificar propiedad
+
+    try {
+        const post = await prisma.publicacion.findUnique({ where: { id: postId } });
+        if (!post) return res.status(404).json({ error: "No encontrado" });
+        if (post.usuario_id !== parseInt(userId)) return res.status(403).json({ error: "No autorizado" });
+
+        await prisma.publicacion.delete({ where: { id: postId } });
+        res.json({ success: true, message: "Publicación eliminada" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al eliminar publicación" });
     }
 });
 // NUEVO: Obtener la rutina de un usuario existente
