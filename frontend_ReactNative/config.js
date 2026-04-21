@@ -1,5 +1,5 @@
 // Cambia esta IP por la de tu PC cada vez que cambies de red
-const IP_PC = "192.168.56.1";
+const IP_PC = "10.195.56.117";
 
 export const API_URL = `http://${IP_PC}:3000/api`;
 
