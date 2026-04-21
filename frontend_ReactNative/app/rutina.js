@@ -73,6 +73,7 @@ export default function Rutina() {
     const [usuarioCompleto, setUsuarioCompleto] = useState(null);
     const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
     const [menuVisible, setMenuVisible] = useState(false);
+    const [rutinaEditable, setRutinaEditable] = useState({});
     const [entrenamientoCompletado, setEntrenamientoCompletado] = useState(false);
 
     // --- ESTADOS RUTINA PROPIA Y NAVEGACIÓN ---
@@ -358,6 +359,20 @@ export default function Rutina() {
                     const parsed = JSON.parse(resRutina);
                     setData(parsed);
                     setDiaActual(Object.keys(parsed.rutina)[0]);
+                    const rutinaConvertida = {};
+
+                    Object.keys(parsed.rutina).forEach(dia => {
+                        rutinaConvertida[dia] = parsed.rutina[dia].map(ej => {
+                            const parsedEj = parsearEjercicio(ej);
+                            return {
+                                nombre: parsedEj.nombre,
+                                series: 3,
+                                reps: 12
+                            };
+                        });
+                    });
+
+                    setRutinaEditable(rutinaConvertida);
                 }
 
                 const propiaGuardada = await AsyncStorage.getItem("rutina_propia");
@@ -465,6 +480,13 @@ export default function Rutina() {
         nueva[diaPropioActivo] = nueva[diaPropioActivo].filter((_, i) => i !== index);
         setRutinaPropia(nueva);
         AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
+    };
+    const actualizarEjAuto = (index, campo, valor) => {
+        const nueva = { ...rutinaEditable };
+
+        nueva[diaActual][index][campo] = Number(valor);
+
+        setRutinaEditable(nueva);
     };
     // Para modificar las series y repeticiones
     const actualizarEjercicio = (index, campo, valor) => {
@@ -609,8 +631,8 @@ export default function Rutina() {
                                 </View>
                             </View>
 
-                            {data.rutina[diaActual]?.map((ej, i) => {
-                                const { nombre, series } = parsearEjercicio(ej);
+                            {rutinaEditable[diaActual]?.map((ej, i) => {
+                                const nombre = ej.nombre;
                                 const estaCompletado = completados[nombre];
                                 return (
                                     <TouchableOpacity
@@ -623,8 +645,23 @@ export default function Rutina() {
                                             <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
                                                 {nombre} {estaCompletado ? "(COMPLETADO)" : ""}
                                             </Text>
-                                            <View style={[styles.seriesBadge, estaCompletado && styles.badgeCompleted]}>
-                                                <Text style={styles.seriesText}>{series}</Text>
+                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
+
+                                                <TextInput
+                                                    style={styles.inputSeries}
+                                                    keyboardType="numeric"
+                                                    value={String(ej.series)}
+                                                    onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
+                                                />
+
+                                                <Text style={{ alignSelf: 'center' }}>x</Text>
+
+                                                <TextInput
+                                                    style={styles.inputSeries}
+                                                    keyboardType="numeric"
+                                                    value={String(ej.reps)}
+                                                    onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
+                                                />
                                             </View>
                                         </View>
                                     </TouchableOpacity>
@@ -931,7 +968,13 @@ const styles = StyleSheet.create({
     seriesBadge: { marginTop: 6, backgroundColor: '#ff7a00', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, alignSelf: 'flex-start' },
     badgeCompleted: { backgroundColor: '#28a745' },
     seriesText: { color: 'white', fontSize: 12, fontWeight: '800' },
-
+    inputSeries: {
+        backgroundColor: '#eee',
+        padding: 5,
+        borderRadius: 5,
+        width: 40,
+        textAlign: 'center'
+    },
     propiaSeries: { color: '#666', fontSize: 12, marginTop: 4 },
     btnDelete: { padding: 20 },
     deleteIcon: { color: '#ff4444', fontSize: 18, fontWeight: 'bold' },
