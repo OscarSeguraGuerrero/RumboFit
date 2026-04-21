@@ -927,7 +927,7 @@ export default function Rutina() {
                                                     onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
                                                 />
 
-                                                <Text style={{ alignSelf: 'center' }}>x</Text>
+                                                <Text style={{ alignSelf: 'center' }}> series x</Text>
 
                                                 <TextInput
                                                     style={styles.inputSeries}
@@ -935,6 +935,7 @@ export default function Rutina() {
                                                     value={String(ej.reps)}
                                                     onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
                                                 />
+                                                <Text style={{ marginLeft: 5 }}>repeticiones</Text>
                                             </View>
                                         </View>
                                     </Pressable>
