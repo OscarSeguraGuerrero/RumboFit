@@ -119,6 +119,7 @@ model Entrenamiento {
   id                Int       @id @default(autoincrement())
   usuario_id        Int
   rutina_id         Int?
+  nombre            String?
   fecha             DateTime  @default(now()) @db.Date
   hora              String?
   fecha_inicio      DateTime  @default(now())

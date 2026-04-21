@@ -499,41 +499,68 @@ app.get('/api/usuarios/:id/rutinas-guardadas', async (req, res) => {
 
 // --- SISTEMA DE HISTORIAL (HU-09, HU-10, HU-11, HU-12) ---
 
+const normalizarTexto = (texto = '') =>
+    texto
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
 // Registrar Entrenamiento (HU-09)
 app.post('/api/historial/entrenamiento', async (req, res) => {
-    const { userId, rutinaId, ejercicios, fecha, hora } = req.body; 
+    const { userId, rutinaId, ejercicios, fecha, hora, nombreEntrenamiento } = req.body; 
     try {
         const now = new Date();
         const fechaStr = fecha ? new Date(fecha).toISOString().split('T')[0] : now.toISOString().split('T')[0];
         const horaStr = hora || now.toTimeString().substring(0, 5);
+        const ejerciciosPayload = Array.isArray(ejercicios) ? ejercicios : [];
+
+        const catalogo = await prisma.ejercicio.findMany({
+            select: { id: true, nombre: true }
+        });
+
+        const seriesParaCrear = [];
+        ejerciciosPayload.forEach((ej) => {
+            const ejercicioId = ej.ejercicioId
+                || catalogo.find((item) => normalizarTexto(item.nombre) === normalizarTexto(ej.nombre))?.id;
+
+            if (!ejercicioId || !Array.isArray(ej.series)) return;
+
+            ej.series.forEach((s, idx) => {
+                seriesParaCrear.push({
+                    ejercicio_id: ejercicioId,
+                    numero_serie: idx + 1,
+                    peso_kg: Number(s.peso || 0),
+                    repeticiones_reales: parseInt(s.reps, 10) || 0
+                });
+            });
+        });
+
+        if (seriesParaCrear.length === 0) {
+            return res.status(400).json({ error: "No hay ejercicios válidos para registrar" });
+        }
 
         const entrenamiento = await prisma.entrenamiento.create({
             data: {
                 usuario_id: parseInt(userId),
                 rutina_id: rutinaId ? parseInt(rutinaId) : null,
+                nombre: nombreEntrenamiento?.trim() || null,
                 fecha_inicio: now,
                 fecha_fin: now,
                 fecha: new Date(fechaStr),
                 hora: horaStr,
                 series: {
-                    create: ejercicios.flatMap((ej) => 
-                        ej.series.map((s, idx) => ({
-                            ejercicio_id: ej.ejercicioId,
-                            numero_serie: idx + 1,
-                            peso_kg: Number(s.peso),
-                            repeticiones_reales: parseInt(s.reps)
-                        }))
-                    )
+                    create: seriesParaCrear
                 }
             },
-            include: { series: true }
+            include: { series: { include: { ejercicio: true } } }
         });
         const volumen = entrenamiento.series.reduce((acc, s) => acc + (Number(s.peso_kg) * s.repeticiones_reales), 0);
         await prisma.entrenamiento.update({
             where: { id: entrenamiento.id },
             data: { volumen_total_kg: volumen }
         });
-        res.json({ success: true, id: entrenamiento.id, volumen });
+        res.json({ success: true, id: entrenamiento.id, volumen, entrenamiento });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Error al registrar entrenamiento" });
@@ -581,7 +608,7 @@ app.get('/api/usuarios/:id/historial', async (req, res) => {
 
         const entrenamientos = await prisma.entrenamiento.findMany({
             where: { usuario_id: userId, ...(fechaLimite && { fecha_inicio: { gte: fechaLimite } }) },
-            include: { series: { include: { ejercicio: true } } },
+            include: { rutina: true, series: { include: { ejercicio: true } } },
             orderBy: { fecha_inicio: 'desc' }
         });
 
