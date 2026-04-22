@@ -580,30 +580,38 @@ app.post('/api/historial/entrenamiento', async (req, res) => {
     }
 });
 
-// Registrar Comida (HU-11)
-app.post('/api/historial/comida', async (req, res) => {
-    const { userId, alimentoId, cantidad, franja, fecha, hora } = req.body;
+// Registrar Comida COMPLETA (HU-11)
+app.post('/api/dieta/comida', async (req, res) => {
+    const { userId, titulo, items, franja, fecha, hora } = req.body;
     try {
         const now = new Date();
         const fechaStr = fecha ? new Date(fecha).toISOString().split('T')[0] : now.toISOString().split('T')[0];
         const horaStr = hora || now.toTimeString().substring(0, 5);
 
-        const registro = await prisma.registro_Comidas.create({
+        const result = await prisma.comida.create({
             data: {
                 usuario_id: parseInt(userId),
-                alimento_id: parseInt(alimentoId),
-                cantidad_gramos: Number(cantidad),
-                franja_horaria: franja || 'Desayuno',
+                titulo: titulo || "Sin título",
                 fecha: new Date(fechaStr),
-                hora: horaStr
-            }
+                hora: horaStr,
+                franja_horaria: franja || 'Comida',
+                items: {
+                    create: items.map(it => ({
+                        alimento_id: parseInt(it.alimentoId),
+                        cantidad_gramos: Number(it.cantidad),
+                        usuario_id: parseInt(userId) 
+                    }))
+                }
+            },
+            include: { items: { include: { alimento: true } } }
         });
-        res.json({ success: true, id: registro.id });
+        res.json({ success: true, comida: result });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Error al registrar comida" });
+        res.status(500).json({ error: "Error al registrar la comida completa" });
     }
 });
+
 
 // Obtener Historial Unificado (HU-10, HU-12)
 app.get('/api/usuarios/:id/historial', async (req, res) => {
@@ -625,24 +633,51 @@ app.get('/api/usuarios/:id/historial', async (req, res) => {
             orderBy: { fecha_inicio: 'desc' }
         });
 
-        const comidas = await prisma.registro_Comidas.findMany({
-            where: { usuario_id: userId, ...(fechaLimite && { fecha: { gte: fechaLimite } }) },
-            include: { alimento: true },
-            orderBy: { fecha: 'desc' }
+        const comidas = await prisma.comida.findMany({
+            where: {
+                usuario_id: userId,
+                ...(fechaLimite && { fecha: { gte: fechaLimite } })
+            },
+            include: {
+                items: {
+                    include: {
+                        alimento: true
+                    }
+                }
+            },
+            orderBy: [
+                { fecha: 'desc' },
+                { hora: 'desc' }
+            ]
         });
 
         const historial = {};
         entrenamientos.forEach(e => {
-            // Usar la nueva columna fecha (que está garantizada al ser default(now()))
             const fechaStr = e.fecha ? e.fecha.toISOString().split('T')[0] : e.fecha_inicio.toISOString().split('T')[0];
             if (!historial[fechaStr]) historial[fechaStr] = { entrenamientos: [], comidas: [] };
             historial[fechaStr].entrenamientos.push(e);
         });
+
         comidas.forEach(c => {
             const fechaStr = c.fecha.toISOString().split('T')[0];
             if (!historial[fechaStr]) historial[fechaStr] = { entrenamientos: [], comidas: [] };
-            historial[fechaStr].comidas.push(c);
+            
+            // Calculamos macros totales de la comida para que el frontend lo tenga fácil
+            let kcal = 0, prot = 0, carb = 0, gras = 0;
+            c.items.forEach(it => {
+                const factor = Number(it.cantidad_gramos) / 100;
+                kcal += Number(it.alimento.calorias_100g) * factor;
+                prot += Number(it.alimento.proteinas_100g) * factor;
+                carb += Number(it.alimento.carbohidratos_100g) * factor;
+                gras += Number(it.alimento.grasas_100g) * factor;
+            });
+
+            historial[fechaStr].comidas.push({
+                ...c,
+                macros: { kcal, prot, carb, gras }
+            });
         });
+
 
         res.json({ success: true, es_premium: usuario.es_premium, historial });
     } catch (error) {
