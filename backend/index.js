@@ -626,6 +626,44 @@ app.delete('/api/dieta/comida/:id', async (req, res) => {
     }
 });
 
+// Editar Comida (HU-11 - Lápiz)
+app.put('/api/dieta/comida/:id', async (req, res) => {
+    const { id } = req.params;
+    const { titulo, items, franja, fecha, hora, userId } = req.body;
+    try {
+        // 1. Actualizar datos básicos de la comida
+        await prisma.comida.update({
+            where: { id: parseInt(id) },
+            data: {
+                titulo: titulo,
+                franja_horaria: franja,
+                fecha: fecha ? new Date(fecha) : undefined,
+                hora: hora
+            }
+        });
+
+        // 2. Actualizar ingredientes (borrar anteriores y crear nuevos)
+        // Usamos una transacción para que si algo falla, no se borre nada
+        await prisma.$transaction([
+            prisma.registro_Comidas.deleteMany({ where: { comida_id: parseInt(id) } }),
+            prisma.registro_Comidas.createMany({
+                data: items.map(it => ({
+                    comida_id: parseInt(id),
+                    alimento_id: parseInt(it.alimentoId),
+                    cantidad_gramos: Number(it.cantidad),
+                    usuario_id: parseInt(userId)
+                }))
+            })
+        ]);
+
+        res.json({ success: true, message: "Comida actualizada correctamente" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al actualizar la comida" });
+    }
+});
+
+
 
 
 // Obtener Historial Unificado (HU-10, HU-12)
