@@ -89,6 +89,19 @@ app.get('/api/ejercicios', async (req, res) => {
     }
 });
 
+// Catálogo de alimentos (HU-11)
+app.get('/api/alimentos', async (req, res) => {
+    try {
+        const alimentos = await prisma.alimento.findMany({
+            orderBy: { nombre: 'asc' }
+        });
+        res.json(alimentos);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener catálogo de alimentos' });
+    }
+});
+
+
 // --- MOTOR DE RUTINAS INTELIGENTE (Punto 1 y 2) ---
 
 const nivelesCompatibles = {
