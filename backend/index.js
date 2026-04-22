@@ -612,6 +612,21 @@ app.post('/api/dieta/comida', async (req, res) => {
     }
 });
 
+// Eliminar Comida (HU-11 - Papelera)
+app.delete('/api/dieta/comida/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await prisma.comida.delete({
+            where: { id: parseInt(id) }
+        });
+        res.json({ success: true, message: "Comida eliminada correctamente" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al eliminar la comida" });
+    }
+});
+
+
 
 // Obtener Historial Unificado (HU-10, HU-12)
 app.get('/api/usuarios/:id/historial', async (req, res) => {
