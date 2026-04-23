@@ -1075,66 +1075,7 @@ export default function Rutina() {
                     </>
                 )}
 
-                {vistaActiva === 'dieta' && (
-                    <View style={{ flex: 1 }}>
-                         <View style={styles.header}>
-                            <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
-                            <Text style={styles.title}>Registro de Comidas</Text>
-                        </View>
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-                            <View style={styles.dietBanner}>
-                                <Text style={styles.dietBannerText}>El historial unificado está disponible en el menú superior ↗</Text>
-                            </View>
-                            
-                            {(() => {
-                                const objMacros = calcularMacrosObjetivo(calcularTDEE(usuarioCompleto), usuarioCompleto);
-                                const pctKcal = Math.min(100, (macrosHoy.kcal / objMacros.kcal) * 100) || 0;
-                                const pctProt = Math.min(100, (macrosHoy.prot / objMacros.prot) * 100) || 0;
-                                const pctCarb = Math.min(100, (macrosHoy.carb / objMacros.carb) * 100) || 0;
-                                const pctGras = Math.min(100, (macrosHoy.gras / objMacros.gras) * 100) || 0;
 
-                                return (
-                                    <>
-                                        <View style={styles.dashboardCard}>
-                                            <Text style={styles.dashboardTitle}>Calorías Consumidas</Text>
-                                            <View style={styles.progressBg}>
-                                                <View style={[styles.progressFill, { width: `${pctKcal}%`, backgroundColor: '#ff7a00' }]} />
-                                            </View>
-                                            <Text style={styles.dashboardSub}>{Math.round(macrosHoy.kcal)} / {objMacros.kcal} Kcal</Text>
-                                        </View>
-
-                                        <View style={styles.macrosRow}>
-                                            <View style={styles.macroCol}>
-                                                <Text style={styles.macroLabel}>Proteínas</Text>
-                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctProt}%`, backgroundColor: '#3498db'}]} /></View>
-                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot}g</Text>
-                                            </View>
-                                            <View style={styles.macroCol}>
-                                                <Text style={styles.macroLabel}>Carbos</Text>
-                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctCarb}%`, backgroundColor: '#2ecc71'}]} /></View>
-                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb}g</Text>
-                                            </View>
-                                            <View style={styles.macroCol}>
-                                                <Text style={styles.macroLabel}>Grasas</Text>
-                                                <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctGras}%`, backgroundColor: '#f1c40f'}]} /></View>
-                                                <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras}g</Text>
-                                            </View>
-                                        </View>
-                                    </>
-                                );
-                            })()}
-
-                            <TouchableOpacity 
-                                style={[styles.btnAdd, { borderStyle: 'solid', backgroundColor: 'rgba(255,122,0,0.1)', borderColor: '#ff7a00' }]}
-                                onPress={() => simulateFoodLog()}
-                            >
-                                <Text style={styles.btnAddText}>Registrar dieta</Text>
-                            </TouchableOpacity>
-
-                            <Text style={styles.noDataText}>Las funciones de búsqueda avanzada de alimentos estarán disponibles próximamente.</Text>
-                        </ScrollView>
-                    </View>
-                )}
             </View>
 
             {/* MODALES GUARDAR/ELEGIR/CATÁLOGO (Sin cambios) */}
@@ -1218,8 +1159,8 @@ export default function Rutina() {
                     <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('rutinas_menu')}>
                         <Text style={[styles.tabBarText, ['rutinas_menu', 'automatica', 'propia'].includes(vistaActiva) && styles.tabBarTextActive]}>MIS RUTINAS</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.tabBarItem} onPress={() => setVistaActiva('dieta')}>
-                        <Text style={[styles.tabBarText, vistaActiva === 'dieta' && styles.tabBarTextActive]}>MI DIETA</Text>
+                    <TouchableOpacity style={styles.tabBarItem} onPress={() => router.push('/dieta')}>
+                        <Text style={styles.tabBarText}>MI DIETA</Text>
                     </TouchableOpacity>
                 </View>
             </View>
