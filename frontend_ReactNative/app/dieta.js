@@ -69,15 +69,24 @@ export default function Dieta() {
     const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
     const [loading, setLoading] = useState(true);
 
+    // --- ESTADOS PARA CRUD ---
+    const [modalVisible, setModalVisible] = useState(false);
+    const [alimentosCatalogo, setAlimentosCatalogo] = useState([]);
+    const [busqueda, setBusqueda] = useState('');
+    const [itemsReceta, setItemsReceta] = useState([]); // Ingredientes temporales
+    const [tituloComida, setTituloComida] = useState('');
+
     useEffect(() => {
         const cargarData = async () => {
             try {
                 const userId = await AsyncStorage.getItem("userId");
                 if (userId) {
+                    // Cargar perfil
                     const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
                     const userData = await userRes.json();
                     if (userData.success) setUsuarioCompleto(userData.usuario);
 
+                    // Cargar historial para macros
                     const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial`);
                     const histData = await histRes.json();
                     if (histData.success && histData.historial) {
@@ -87,6 +96,11 @@ export default function Dieta() {
                             setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
                         }
                     }
+
+                    // Cargar catálogo de alimentos
+                    const alimRes = await fetch(`${API_URL}/alimentos`);
+                    const alimData = await alimRes.json();
+                    setAlimentosCatalogo(alimData);
                 }
             } catch (e) {
                 console.error(e);
@@ -114,8 +128,15 @@ export default function Dieta() {
 
             <View style={styles.mainCard}>
                 <View style={styles.header}>
-                    <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
-                    <Text style={styles.title}>Registro de Comidas</Text>
+                    <View style={styles.headerRow}>
+                        <View>
+                            <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
+                            <Text style={styles.title}>Registro de Comidas</Text>
+                        </View>
+                        <TouchableOpacity style={styles.btnAddCircle} onPress={() => setModalVisible(true)}>
+                            <Text style={styles.btnAddText}>+</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
@@ -172,6 +193,9 @@ const styles = StyleSheet.create({
     header: { marginBottom: 15 },
     methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.9 },
     title: { fontSize: 20, fontWeight: '900', color: '#ffffff' },
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    btnAddCircle: { backgroundColor: 'rgba(255,255,255,0.2)', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'white' },
+    btnAddText: { color: 'white', fontSize: 24, fontWeight: 'bold' },
     dashboardCard: { backgroundColor: 'white', borderRadius: 20, padding: 20, marginBottom: 20 },
     dashboardTitle: { color: '#333', fontSize: 14, fontWeight: 'bold', marginBottom: 10 },
     progressBg: { height: 8, backgroundColor: '#eee', borderRadius: 4, marginBottom: 8 },
