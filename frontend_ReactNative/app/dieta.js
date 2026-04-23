@@ -170,6 +170,34 @@ export default function Dieta() {
                 </ScrollView>
             </View>
 
+            {/* MODAL DE REGISTRO DE COMIDA */}
+            <Modal visible={modalVisible} animationType="slide">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Registrar Comida</Text>
+                        <TouchableOpacity onPress={() => setModalVisible(false)}>
+                            <Text style={styles.closeModalText}>Cerrar</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView contentContainerStyle={{ padding: 20 }}>
+                        <Text style={styles.inputLabel}>¿Qué has comido?</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="Ej: Desayuno, Almuerzo, Cheat Meal..."
+                            placeholderTextColor="#999"
+                            value={tituloComida}
+                            onChangeText={setTituloComida}
+                        />
+
+                        {/* Espacio para el Buscador */}
+                        <View style={styles.searchPlaceholder}>
+                            <Text style={{color: '#999', textAlign: 'center'}}>Próximo paso: El Buscador de Alimentos</Text>
+                        </View>
+                    </ScrollView>
+                </View>
+            </Modal>
+
             {/* NAV BAR */}
             <View style={styles.navContainer}>
                 <View style={styles.tabBar}>
@@ -208,6 +236,16 @@ const styles = StyleSheet.create({
     macroFill: { height: '100%', borderRadius: 3 },
     macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
     noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', marginTop: 30, lineHeight: 18 },
+    
+    // MODAL STYLES
+    modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
+    modalTitle: { fontSize: 18, fontWeight: '900', color: '#333' },
+    closeModalText: { color: '#ff7a00', fontWeight: 'bold' },
+    inputLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 8, marginTop: 10 },
+    modalInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#ddd', fontSize: 16, color: '#333' },
+    searchPlaceholder: { marginTop: 30, padding: 40, borderStyle: 'dashed', borderWidth: 1, borderColor: '#ccc', borderRadius: 12 },
+
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
     tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
     tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
