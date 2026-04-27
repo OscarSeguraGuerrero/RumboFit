@@ -10,7 +10,11 @@ import {
     Text,
     TouchableOpacity,
     View,
-    Dimensions
+    Dimensions,
+    Modal,
+    TextInput,
+    Alert,
+    ActivityIndicator
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -67,6 +71,7 @@ export default function Dieta() {
     const router = useRouter();
     const [usuarioCompleto, setUsuarioCompleto] = useState(null);
     const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
+    const [comidasHoy, setComidasHoy] = useState([]); // Nueva lista de comidas del día
     const [loading, setLoading] = useState(true);
 
     // --- ESTADOS PARA CRUD ---
@@ -94,6 +99,7 @@ export default function Dieta() {
                         const dataHoy = histData.historial[hoyStr];
                         if (dataHoy && dataHoy.comidas) {
                             setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
+                            setComidasHoy(dataHoy.comidas);
                         }
                     }
 
