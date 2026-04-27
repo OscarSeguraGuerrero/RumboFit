@@ -117,6 +117,27 @@ export default function Dieta() {
         cargarData();
     }, []);
 
+    // --- FUNCIONES CRUD FRONTEND ---
+    const añadirAlimento = (alim) => {
+        // Evitar duplicados simples (opcional, pero mejora la UX)
+        if (itemsReceta.find(it => it.id === alim.id)) {
+            Alert.alert("Aviso", "Este alimento ya está en la lista.");
+            return;
+        }
+        setItemsReceta([...itemsReceta, { ...alim, cantidad: 100 }]);
+        setBusqueda(''); // Limpiar búsqueda al añadir
+    };
+
+    const quitarAlimento = (id) => {
+        setItemsReceta(itemsReceta.filter(it => it.id !== id));
+    };
+
+    const actualizarGramos = (id, gramos) => {
+        setItemsReceta(itemsReceta.map(it => 
+            it.id === id ? { ...it, cantidad: Number(gramos) || 0 } : it
+        ));
+    };
+
     const objMacros = calcularMacrosObjetivo(calcularTDEE(usuarioCompleto), usuarioCompleto);
     const pctKcal = Math.min(100, (macrosHoy.kcal / objMacros.kcal) * 100) || 0;
     const pctProt = Math.min(100, (macrosHoy.prot / objMacros.prot) * 100) || 0;
@@ -196,6 +217,35 @@ export default function Dieta() {
                             onChangeText={setTituloComida}
                         />
 
+                        {/* LISTA DE INGREDIENTES SELECCIONADOS */}
+                        {itemsReceta.length > 0 && (
+                            <View style={styles.selectedItemsSection}>
+                                <Text style={styles.inputLabel}>Ingredientes añadidos</Text>
+                                {itemsReceta.map((it, idx) => (
+                                    <View key={idx} style={styles.selectedItemCard}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.selectedItemName}>{it.nombre}</Text>
+                                            <Text style={styles.selectedItemMacros}>
+                                                {Math.round((Number(it.calorias_100g) * it.cantidad) / 100)} Kcal
+                                            </Text>
+                                        </View>
+                                        <View style={styles.qtyContainer}>
+                                            <TextInput
+                                                style={styles.inputGrams}
+                                                keyboardType="numeric"
+                                                value={String(it.cantidad)}
+                                                onChangeText={(text) => actualizarGramos(it.id, text)}
+                                            />
+                                            <Text style={styles.gramsLabel}>g</Text>
+                                        </View>
+                                        <TouchableOpacity onPress={() => quitarAlimento(it.id)} style={styles.btnRemove}>
+                                            <Text style={styles.removeIcon}>✕</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
                         <Text style={styles.inputLabel}>Buscar alimento</Text>
                         <TextInput
                             style={styles.searchInput}
@@ -209,9 +259,9 @@ export default function Dieta() {
                         <View style={styles.resultsContainer}>
                             {alimentosCatalogo
                                 .filter(a => a.nombre.toLowerCase().includes(busqueda.toLowerCase()))
-                                .slice(0, 10) // Limitamos a 10 para la UI inicial
+                                .slice(0, 10)
                                 .map((alim, i) => (
-                                    <TouchableOpacity key={i} style={styles.foodItem} onPress={() => {}}>
+                                    <TouchableOpacity key={i} style={styles.foodItem} onPress={() => añadirAlimento(alim)}>
                                         <View>
                                             <Text style={styles.foodName}>{alim.nombre}</Text>
                                             <Text style={styles.foodSub}>{Math.round(alim.calorias_100g)} Kcal / 100g</Text>
@@ -278,6 +328,17 @@ const styles = StyleSheet.create({
     foodName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
     foodSub: { fontSize: 12, color: '#999', marginTop: 2 },
     plusIcon: { fontSize: 24, color: '#ff7a00', fontWeight: 'bold', paddingRight: 5 },
+
+    // ESTILOS INGREDIENTES SELECCIONADOS
+    selectedItemsSection: { marginBottom: 20 },
+    selectedItemCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: '#eee' },
+    selectedItemName: { fontSize: 14, fontWeight: 'bold', color: '#333' },
+    selectedItemMacros: { fontSize: 11, color: '#ff7a00', fontWeight: '600' },
+    qtyContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f0', borderRadius: 8, paddingHorizontal: 8, marginHorizontal: 10 },
+    inputGrams: { paddingVertical: 4, width: 45, textAlign: 'center', fontWeight: 'bold', color: '#333' },
+    gramsLabel: { fontSize: 12, color: '#666', fontWeight: 'bold' },
+    btnRemove: { padding: 5 },
+    removeIcon: { color: '#ff4444', fontSize: 16, fontWeight: 'bold' },
 
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
     tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
