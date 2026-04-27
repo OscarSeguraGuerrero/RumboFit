@@ -10,10 +10,7 @@ import {
     Text,
     TouchableOpacity,
     View,
-    Dimensions,
-    Modal,
-    TextInput,
-    Alert
+    Dimensions
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -21,7 +18,7 @@ const { width } = Dimensions.get('window');
 // --- FUNCIONES DE CÁLCULO (Copiadas de rutina.js para mantener lógica) ---
 const calcularTDEE = (user) => {
     if (!user || !user.peso || !user.altura || !user.edad) return 2000;
-    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5; 
+    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5;
     let multiplicador = 1.2;
     if (user.frecuencia_semanal >= 1 && user.frecuencia_semanal <= 2) multiplicador = 1.375;
     else if (user.frecuencia_semanal >= 3 && user.frecuencia_semanal <= 5) multiplicador = 1.55;
@@ -120,7 +117,7 @@ export default function Dieta() {
     const pctCarb = Math.min(100, (macrosHoy.carb / objMacros.carb) * 100) || 0;
     const pctGras = Math.min(100, (macrosHoy.gras / objMacros.gras) * 100) || 0;
 
-    if (loading) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
+    if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }}>Cargando...</Text></View>;
 
     return (
         <View style={styles.container}>
@@ -154,17 +151,17 @@ export default function Dieta() {
                     <View style={styles.macrosRow}>
                         <View style={styles.macroCol}>
                             <Text style={styles.macroLabel}>Proteínas</Text>
-                            <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctProt}%`, backgroundColor: '#3498db'}]} /></View>
+                            <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctProt}%`, backgroundColor: '#3498db' }]} /></View>
                             <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot}g</Text>
                         </View>
                         <View style={styles.macroCol}>
                             <Text style={styles.macroLabel}>Carbos</Text>
-                            <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctCarb}%`, backgroundColor: '#2ecc71'}]} /></View>
+                            <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctCarb}%`, backgroundColor: '#2ecc71' }]} /></View>
                             <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb}g</Text>
                         </View>
                         <View style={styles.macroCol}>
                             <Text style={styles.macroLabel}>Grasas</Text>
-                            <View style={styles.macroBg}><View style={[styles.macroFill, {width: `${pctGras}%`, backgroundColor: '#f1c40f'}]} /></View>
+                            <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctGras}%`, backgroundColor: '#f1c40f' }]} /></View>
                             <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras}g</Text>
                         </View>
                     </View>
@@ -195,7 +192,7 @@ export default function Dieta() {
 
                         {/* Espacio para el Buscador */}
                         <View style={styles.searchPlaceholder}>
-                            <Text style={{color: '#999', textAlign: 'center'}}>Próximo paso: El Buscador de Alimentos</Text>
+                            <Text style={{ color: '#999', textAlign: 'center' }}>Próximo paso: El Buscador de Alimentos</Text>
                         </View>
                     </ScrollView>
                 </View>
@@ -239,7 +236,7 @@ const styles = StyleSheet.create({
     macroFill: { height: '100%', borderRadius: 3 },
     macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
     noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', marginTop: 30, lineHeight: 18 },
-    
+
     // MODAL STYLES
     modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
