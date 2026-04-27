@@ -147,36 +147,6 @@ function LaserRoutineCard({ children, style, contentStyle, onPress }) {
                             {children}
                         </View>
                     </View>
-                    <View pointerEvents="none" style={styles.laserOverlay}>
-                        <Animated.View
-                            style={[
-                                styles.laserBeamHorizontal,
-                                styles.laserBeamTop,
-                                { opacity: topOpacity, transform: [{ translateX: topBeamX }] }
-                            ]}
-                        />
-                        <Animated.View
-                            style={[
-                                styles.laserBeamVertical,
-                                styles.laserBeamRight,
-                                { opacity: rightOpacity, transform: [{ translateY: rightBeamY }] }
-                            ]}
-                        />
-                        <Animated.View
-                            style={[
-                                styles.laserBeamHorizontal,
-                                styles.laserBeamBottom,
-                                { opacity: bottomOpacity, transform: [{ translateX: bottomBeamX }] }
-                            ]}
-                        />
-                        <Animated.View
-                            style={[
-                                styles.laserBeamVertical,
-                                styles.laserBeamLeft,
-                                { opacity: leftOpacity, transform: [{ translateY: leftBeamY }] }
-                            ]}
-                        />
-                    </View>
                 </>
             )}
         </Pressable>
@@ -833,7 +803,7 @@ export default function Rutina() {
             {/* --- CARD PRINCIPAL --- */}
             <View style={styles.mainCard}>
                 {vistaActiva === 'rutinas_menu' && (
-                    <View style={{ flex: 1, paddingBottom: 100 }}>
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
                         <View style={styles.header}>
                             <Text style={styles.methodLabel}>GESTIÓN DE ENTRENAMIENTO</Text>
                             <Text style={styles.title}>Mis Rutinas</Text>
@@ -842,7 +812,7 @@ export default function Rutina() {
                                 onPress={() => setVistaActiva('propia')}
                                 activeOpacity={0.85}
                             >
-                                <Text style={styles.createRoutineButtonText}>+ Crear personalizada</Text>
+                                <Text style={styles.createRoutineButtonText}>+ Crear rutina</Text>
                             </TouchableOpacity>
                         </View>
                         <LaserRoutineCard contentStyle={styles.menuCard} onPress={() => setVistaActiva('automatica')}>
@@ -870,7 +840,7 @@ export default function Rutina() {
                                 })}
                             </View>
                         )}
-                    </View>
+                    </ScrollView>
                 )}
 
                 {vistaActiva === 'automatica' && (

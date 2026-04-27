@@ -5,14 +5,16 @@ WORKDIR /app
 # Copiar dependencias
 COPY package.json ./
 
-# Instalar dependencias
+# Instalar dependencias y dejar Prisma preparado en build
 RUN npm install
 
-# Copiar código fuente
+# Copiar codigo fuente
 COPY . .
+
+RUN npx prisma generate
 
 # Exponer el puerto del servidor
 EXPOSE 3000
 
-# El comando de arranque se deﬁnirá en el docker-compose.yml
+# El comando de arranque se definira en el docker-compose.yml
 CMD ["npm", "run", "dev"]

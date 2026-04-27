@@ -7,11 +7,11 @@ services:
     container_name: rumbofit_container
     ports:
       - "8081:8081"
-    environment:
-      - EXPO_NGROK_AUTHTOKEN=3Bl3MFAoTLqxKPwYzFZJAdiL3YY_V3XeWJhsY9Xc4PqWyFHF
     stdin_open: true
     tty: true
     init: true
+    # AÑADIDO: Forzamos el comando con npx para evitar el error "expo: not found"
+    command: sh -c "npm install && npx expo start --lan"
 
   # BASE DE DATOS: PostgreSQL
   db:
@@ -26,6 +26,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # AÑADIDO: Healthcheck para comprobar que Postgres está listo para recibir conexiones
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rumbofit -d rumbofit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # BACKEND: Node.js + Prisma
   backend:
@@ -39,10 +45,11 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+    # MODIFICADO: Ahora espera a que el healthcheck de la BD sea exitoso ("healthy")
     depends_on:
-      - db
-    # COMANDO CORREGIDO: Usamos db push para saltar el error de las columnas que faltan
-    command: sh -c "npx prisma generate && npx prisma db push --accept-data-loss && npx prisma db seed && npm run dev"
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma db push --accept-data-loss && npx prisma db seed && npm run dev"
 
 volumes:
   pgdata:

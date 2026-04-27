@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { API_URL } from '../config';
 import Svg, { Path, G, Circle } from 'react-native-svg';
 import { Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 // Eliminamos el uso de height fijo para el fondo para que pueda crecer
 const { width } = Dimensions.get('window');
@@ -147,6 +148,27 @@ export default function Perfil() {
         );
     };
 
+    const seleccionarImagen = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert("Permiso denegado", "Necesitamos acceso a tu galería para cambiar la foto.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.5, // Reducimos calidad para no sobrecargar el Base64
+            base64: true, // Importante para persistencia sin servidor de archivos
+        });
+
+        if (!result.canceled) {
+            const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+            setNuevaFoto(base64Image);
+        }
+    };
+
     const cerrarSesion = async () => {
         await AsyncStorage.clear();
         router.replace('/');
@@ -280,8 +302,8 @@ export default function Perfil() {
 
                     <View style={styles.headerPublico}>
                         <View style={styles.avatarContainer}>
-                            {usuario?.foto_perfil ? (
-                                <Image source={{ uri: usuario.foto_perfil }} style={styles.avatarImg} />
+                            {nuevaFoto || usuario?.foto_perfil ? (
+                                <Image source={{ uri: nuevaFoto || usuario.foto_perfil }} style={styles.avatarImg} />
                             ) : (
                                 <View style={styles.avatarGrande}>
                                     <Text style={styles.avatarLetra}>
@@ -290,12 +312,9 @@ export default function Perfil() {
                                 </View>
                             )}
                             {editando && (
-                                <TextInput
-                                    style={styles.inputFoto}
-                                    placeholder="URL de foto"
-                                    value={nuevaFoto}
-                                    onChangeText={setNuevaFoto}
-                                />
+                                <TouchableOpacity style={styles.changePhotoBtn} onPress={seleccionarImagen}>
+                                    <Text style={styles.changePhotoText}>Cambiar foto</Text>
+                                </TouchableOpacity>
                             )}
                         </View>
 
@@ -373,7 +392,7 @@ export default function Perfil() {
                             <View style={styles.infoCard}>
                                 <View style={styles.rowInfo}>
                                     <View style={styles.infoBox}>
-                                        <Text style={styles.label}>Peso (kg)</Text>
+                                        <Text style={styles.label}>Peso</Text>
                                         {editando ? (
                                             <TextInput style={styles.inputEdit} value={nuevoPeso} onChangeText={setNuevoPeso} keyboardType="numeric" />
                                         ) : (
@@ -381,7 +400,7 @@ export default function Perfil() {
                                         )}
                                     </View>
                                     <View style={styles.infoBox}>
-                                        <Text style={styles.label}>Altura (cm)</Text>
+                                        <Text style={styles.label}>Altura</Text>
                                         {editando ? (
                                             <TextInput style={styles.inputEdit} value={nuevaAltura} onChangeText={setNuevaAltura} keyboardType="numeric" />
                                         ) : (
@@ -426,7 +445,9 @@ export default function Perfil() {
                                         </TouchableOpacity>
                                     </View>
                                 ) : (
-                                    <Text style={styles.valor}>{usuario?.sexo || 'No definido'}</Text>
+                                    <Text style={styles.valor}>
+                                        {usuario?.sexo ? usuario.sexo.charAt(0).toUpperCase() + usuario.sexo.slice(1) : 'No definido'}
+                                    </Text>
                                 )}
 
                                 <View style={styles.divider} />
@@ -447,7 +468,9 @@ export default function Perfil() {
                                         ))}
                                     </View>
                                 ) : (
-                                    <Text style={styles.valor}>{usuario?.objetivo || 'No definido'}</Text>
+                                    <Text style={styles.valor}>
+                                        {usuario?.objetivo ? usuario.objetivo.charAt(0).toUpperCase() + usuario.objetivo.slice(1) : 'No definido'}
+                                    </Text>
                                 )}
 
                                 <View style={styles.divider} />
@@ -491,9 +514,7 @@ export default function Perfil() {
                                 </TouchableOpacity>
                             )}
                             
-                            <TouchableOpacity style={styles.logoutBtn} onPress={cerrarSesion}>
-                                <Text style={styles.logoutText}>Cerrar Sesión</Text>
-                            </TouchableOpacity>
+
                         </View>
                     )}
 
@@ -555,6 +576,8 @@ const styles = StyleSheet.create({
     headerPublico: { flexDirection: 'row', width: '100%', alignItems: 'center', marginBottom: 20, backgroundColor: 'rgba(255,255,255,0.1)', padding: 15, borderRadius: 20 },
     avatarContainer: { alignItems: 'center' },
     avatarImg: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: 'white' },
+    changePhotoBtn: { backgroundColor: 'rgba(0,0,0,0.5)', position: 'absolute', bottom: 0, width: 80, paddingVertical: 4, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
+    changePhotoText: { color: 'white', fontSize: 9, textAlign: 'center', fontWeight: 'bold' },
     inputFoto: { backgroundColor: 'white', borderRadius: 5, padding: 5, fontSize: 10, width: 80, marginTop: 5 },
     statsContainer: { flex: 1, flexDirection: 'row', justifyContent: 'space-around', marginLeft: 10 },
     statBox: { alignItems: 'center' },
@@ -573,10 +596,10 @@ const styles = StyleSheet.create({
     imcValueText: { fontSize: 34, fontWeight: 'bold' },
     imcStatusText: { fontSize: 16, fontWeight: 'bold', color: '#888' },
     infoCard: { backgroundColor: 'rgba(255,255,255,0.95)', width: '100%', borderRadius: 20, padding: 25, alignItems: 'center' },
-    rowInfo: { flexDirection: 'row', justifyContent: 'space-between' },
+    rowInfo: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
     infoBox: { flex: 1, alignItems: 'center' },
-    label: { color: '#999', fontSize: 11, fontWeight: 'bold', marginBottom: 5, textTransform: 'uppercase', textAlign: 'center', width: '100%' },
-    valor: { color: '#333', fontSize: 18, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', width: '100%' },
+    label: { color: '#999', fontSize: 11, fontWeight: 'bold', marginBottom: 5, textTransform: 'uppercase', textAlign: 'center' },
+    valor: { color: '#333', fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
     inputEdit: { backgroundColor: '#e8e8e8', borderRadius: 8, padding: 8, fontSize: 16, fontWeight: 'bold', color: '#ff7a00', width: '80%', textAlign: 'center' },
     inputNombre: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 5, textAlign: 'center', minWidth: 200, color: 'white' },
     inputEmailEdit: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 3, textAlign: 'center', minWidth: 180, color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },

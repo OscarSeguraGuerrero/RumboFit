@@ -749,5 +749,5 @@ app.get('/api/usuarios/:id/historial', async (req, res) => {
 
 // --- ARRANCAR SERVIDOR ---
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor RumboFit corriendo en http://0.0.0.0:${PORT}`);
+    console.log(`Servidor RumboFit corriendo en http://192.168.1.39:${PORT}`);
 });
