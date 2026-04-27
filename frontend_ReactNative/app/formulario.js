@@ -41,7 +41,8 @@ export default function Formulario() {
                     edad: datos.edad,
                     experiencia: nivel,
                     objetivo: objetivo,
-                    dias: numDias
+                    dias: numDias,
+                    sexo: sexo
                 })
             });
 

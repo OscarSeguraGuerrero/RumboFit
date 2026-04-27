@@ -29,9 +29,11 @@ app.use(express.json()); // Permite leer el cuerpo de los JSON
 // --- RUTAS ---
 
 // Registro
+// Localiza tu ruta de Registro y cámbiala por esta:
 app.post('/api/register', async (req, res) => {
-    console.log("Petición recibida en /api/register:", req.body); // LOG PARA DEPURAR
-    const { nombre, email, password, telefono } = req.body;
+    console.log("Petición recibida en /api/register:", req.body);
+    // 1. Agregamos 'sexo' a la extracción de datos
+    const { nombre, email, password, telefono, sexo } = req.body;
 
     try {
         const salt = await bcrypt.genSalt(10);
@@ -42,11 +44,20 @@ app.post('/api/register', async (req, res) => {
                 nombre: nombre,
                 email: email,
                 password_hash: passwordHash,
-                telefono: String(telefono)
+                telefono: String(telefono),
+                sexo: sexo // 2. Guardamos el sexo en la base de datos
             },
         });
 
-        res.status(201).json({ success: true, user: { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email } });
+        res.status(201).json({
+            success: true,
+            user: {
+                id: nuevoUsuario.id,
+                nombre: nuevoUsuario.nombre,
+                email: nuevoUsuario.email,
+                sexo: nuevoUsuario.sexo // Opcional: devolverlo en la respuesta
+            }
+        });
     } catch (error) {
         console.error("Error en Prisma:", error);
         if (error.code === 'P2002') {
@@ -281,7 +292,7 @@ app.post('/api/rutinas/generar', async (req, res) => {
         // --- PERSISTENCIA ---
         await prisma.usuario.update({
             where: { id: parseInt(userId) },
-            data: { peso: weightNum, altura: heightNum, edad: ageNum, nivel: nivel, objetivo: objetivo, frecuencia_semanal: daysNum }
+            data: { peso: weightNum, altura: heightNum, edad: ageNum, nivel: nivel, objetivo: objetivo, frecuencia_semanal: daysNum, sexo: req.body.sexo}
         });
 
         const rutinaExistente = await prisma.rutina.findFirst({ where: { usuario_id: parseInt(userId) } });
