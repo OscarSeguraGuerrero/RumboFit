@@ -196,9 +196,29 @@ export default function Dieta() {
                             onChangeText={setTituloComida}
                         />
 
-                        {/* Espacio para el Buscador */}
-                        <View style={styles.searchPlaceholder}>
-                            <Text style={{ color: '#999', textAlign: 'center' }}>Próximo paso: El Buscador de Alimentos</Text>
+                        <Text style={styles.inputLabel}>Buscar alimento</Text>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Buscar en el catálogo..."
+                            placeholderTextColor="#999"
+                            value={busqueda}
+                            onChangeText={setBusqueda}
+                        />
+
+                        {/* RESULTADOS DE BÚSQUEDA */}
+                        <View style={styles.resultsContainer}>
+                            {alimentosCatalogo
+                                .filter(a => a.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+                                .slice(0, 10) // Limitamos a 10 para la UI inicial
+                                .map((alim, i) => (
+                                    <TouchableOpacity key={i} style={styles.foodItem} onPress={() => {}}>
+                                        <View>
+                                            <Text style={styles.foodName}>{alim.nombre}</Text>
+                                            <Text style={styles.foodSub}>{Math.round(alim.calorias_100g)} Kcal / 100g</Text>
+                                        </View>
+                                        <Text style={styles.plusIcon}>+</Text>
+                                    </TouchableOpacity>
+                                ))}
                         </View>
                     </ScrollView>
                 </View>
@@ -248,9 +268,16 @@ const styles = StyleSheet.create({
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
     modalTitle: { fontSize: 18, fontWeight: '900', color: '#333' },
     closeModalText: { color: '#ff7a00', fontWeight: 'bold' },
-    inputLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 8, marginTop: 10 },
-    modalInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#ddd', fontSize: 16, color: '#333' },
-    searchPlaceholder: { marginTop: 30, padding: 40, borderStyle: 'dashed', borderWidth: 1, borderColor: '#ccc', borderRadius: 12 },
+    inputLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 8, marginTop: 15 },
+    modalInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#ddd', fontSize: 16, color: '#333', marginBottom: 10 },
+    
+    // ESTILOS BUSCADOR (Estilo Rutina)
+    searchInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, fontSize: 16, color: '#333', marginBottom: 20 },
+    resultsContainer: { marginTop: 5 },
+    foodItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'white', padding: 15, borderRadius: 15, marginBottom: 10, elevation: 1 },
+    foodName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
+    foodSub: { fontSize: 12, color: '#999', marginTop: 2 },
+    plusIcon: { fontSize: 24, color: '#ff7a00', fontWeight: 'bold', paddingRight: 5 },
 
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
     tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
