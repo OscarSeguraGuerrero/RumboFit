@@ -10,7 +10,10 @@ import {
     Text,
     TouchableOpacity,
     View,
-    Dimensions
+    Dimensions,
+    Modal,
+    TextInput,
+    Alert
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
