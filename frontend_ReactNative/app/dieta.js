@@ -14,7 +14,8 @@ import {
     Modal,
     TextInput,
     Alert,
-    ActivityIndicator
+    ActivityIndicator,
+    Platform
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -62,7 +63,7 @@ const calcularMacrosConsumidos = (comidas) => {
             totales.prot += c.macros.prot;
             totales.carb += c.macros.carb;
             totales.gras += c.macros.gras;
-        } 
+        }
         // Soporte para items anidados si no viene con macros precalculados
         else if (c.items) {
             c.items.forEach(it => {
@@ -153,7 +154,7 @@ export default function Dieta() {
     };
 
     const actualizarGramos = (id, gramos) => {
-        setItemsReceta(itemsReceta.map(it => 
+        setItemsReceta(itemsReceta.map(it =>
             it.id === id ? { ...it, cantidad: Number(gramos) || 0 } : it
         ));
     };
@@ -227,6 +228,46 @@ export default function Dieta() {
         }
     };
 
+    const ejecutarEliminar = async (id) => {
+        try {
+            const res = await fetch(`${API_URL}/dieta/comida/${id}`, {
+                method: 'DELETE',
+            });
+            const data = await res.json();
+            if (data.success) {
+                const nuevasComidas = comidasHoy.filter(c => c.id !== id);
+                setComidasHoy(nuevasComidas);
+                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+            } else {
+                Alert.alert("Error", "No se pudo eliminar la comida.");
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "No se pudo conectar con el servidor.");
+        }
+    };
+
+    const handleEliminarComida = async (id) => {
+        if (Platform.OS === 'web') {
+            if (window.confirm("¿Estás seguro de que quieres eliminar esta comida?")) {
+                ejecutarEliminar(id);
+            }
+        } else {
+            Alert.alert(
+                "Eliminar comida",
+                "¿Estás seguro de que quieres eliminar esta comida?",
+                [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                        text: "Eliminar",
+                        style: "destructive",
+                        onPress: () => ejecutarEliminar(id)
+                    }
+                ]
+            );
+        }
+    };
+
     const objMacros = calcularMacrosObjetivo(calcularTDEE(usuarioCompleto), usuarioCompleto);
     const pctKcal = Math.min(100, (macrosHoy.kcal / objMacros.kcal) * 100) || 0;
     const pctProt = Math.min(100, (macrosHoy.prot / objMacros.prot) * 100) || 0;
@@ -289,8 +330,13 @@ export default function Dieta() {
                             {comidasHoy.map((comida, index) => (
                                 <View key={comida.id || index} style={styles.comidaCard}>
                                     <View style={styles.comidaHeader}>
-                                        <Text style={styles.comidaTitle}>{comida.titulo || comida.franja_horaria}</Text>
-                                        <Text style={styles.comidaTime}>{comida.hora}</Text>
+                                        <View>
+                                            <Text style={styles.comidaTitle}>{comida.titulo || comida.franja_horaria}</Text>
+                                            <Text style={styles.comidaTime}>{comida.hora}</Text>
+                                        </View>
+                                        <TouchableOpacity onPress={() => handleEliminarComida(comida.id)} style={styles.btnDeleteComida}>
+                                            <Text style={styles.deleteComidaIcon}>🗑️</Text>
+                                        </TouchableOpacity>
                                     </View>
                                     <View style={styles.comidaMacros}>
                                         <Text style={styles.comidaKcal}>{Math.round(comida.macros?.kcal || 0)} Kcal</Text>
@@ -387,10 +433,10 @@ export default function Dieta() {
                                     </TouchableOpacity>
                                 ))}
                         </View>
-                        
+
                         {/* BOTÓN GUARDAR */}
-                        <TouchableOpacity 
-                            style={[styles.btnConfirm, guardando && { opacity: 0.7 }]} 
+                        <TouchableOpacity
+                            style={[styles.btnConfirm, guardando && { opacity: 0.7 }]}
                             onPress={handleGuardarComida}
                             disabled={guardando}
                         >
@@ -442,7 +488,7 @@ const styles = StyleSheet.create({
     macroFill: { height: '100%', borderRadius: 3 },
     macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
     noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', marginTop: 30, lineHeight: 18, fontWeight: '600' },
-    
+
     // ESTILOS COMIDAS REGISTRADAS
     comidasList: { marginTop: 10 },
     sectionTitle: { color: 'white', fontSize: 16, fontWeight: '900', marginBottom: 15, letterSpacing: 0.5 },
@@ -455,6 +501,8 @@ const styles = StyleSheet.create({
     comidaMacroItem: { fontSize: 12, color: '#666', fontWeight: 'bold', marginRight: 10 },
     comidaItems: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 },
     comidaItemText: { fontSize: 13, color: '#555', marginBottom: 4 },
+    btnDeleteComida: { padding: 5, backgroundColor: '#ffeeee', borderRadius: 8 },
+    deleteComidaIcon: { fontSize: 16 },
 
     // MODAL STYLES
     modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
@@ -463,7 +511,7 @@ const styles = StyleSheet.create({
     closeModalText: { color: '#ff7a00', fontWeight: 'bold' },
     inputLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 8, marginTop: 15 },
     modalInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#ddd', fontSize: 16, color: '#333', marginBottom: 10 },
-    
+
     // ESTILOS BUSCADOR (Estilo Rutina)
     searchInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, fontSize: 16, color: '#333', marginBottom: 20 },
     resultsContainer: { marginTop: 5 },
