@@ -56,13 +56,32 @@ const calcularMacrosConsumidos = (comidas) => {
     let totales = { kcal: 0, prot: 0, carb: 0, gras: 0 };
     if (!comidas) return totales;
     comidas.forEach(c => {
-        const factor = Number(c.cantidad_gramos) / 100;
-        // Dependiendo de si es el formato viejo u nuevo
-        const itemAlimento = c.alimento || c;
-        totales.kcal += Number(itemAlimento.calorias_100g || 0) * factor;
-        totales.prot += Number(itemAlimento.proteinas_100g || 0) * factor;
-        totales.carb += Number(itemAlimento.carbohidratos_100g || 0) * factor;
-        totales.gras += Number(itemAlimento.grasas_100g || 0) * factor;
+        // Soporte para el nuevo esquema (comida.macros calculado en backend)
+        if (c.macros) {
+            totales.kcal += c.macros.kcal;
+            totales.prot += c.macros.prot;
+            totales.carb += c.macros.carb;
+            totales.gras += c.macros.gras;
+        } 
+        // Soporte para items anidados si no viene con macros precalculados
+        else if (c.items) {
+            c.items.forEach(it => {
+                const factor = Number(it.cantidad_gramos || it.cantidad) / 100;
+                totales.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
+                totales.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
+                totales.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
+                totales.gras += Number(it.alimento?.grasas_100g || 0) * factor;
+            });
+        }
+        // Soporte para esquema viejo (flat list)
+        else {
+            const factor = Number(c.cantidad_gramos) / 100;
+            const itemAlimento = c.alimento || c;
+            totales.kcal += Number(itemAlimento.calorias_100g || 0) * factor;
+            totales.prot += Number(itemAlimento.proteinas_100g || 0) * factor;
+            totales.carb += Number(itemAlimento.carbohidratos_100g || 0) * factor;
+            totales.gras += Number(itemAlimento.grasas_100g || 0) * factor;
+        }
     });
     return totales;
 };
@@ -172,8 +191,22 @@ export default function Dieta() {
 
             const data = await res.json();
             if (data.success) {
+                // Calculamos los macros para que estén listos (si no vienen del backend)
+                let macrosComida = data.comida.macros;
+                if (!macrosComida) {
+                    macrosComida = { kcal: 0, prot: 0, carb: 0, gras: 0 };
+                    data.comida.items.forEach(it => {
+                        const factor = Number(it.cantidad_gramos || it.cantidad) / 100;
+                        macrosComida.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
+                        macrosComida.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
+                        macrosComida.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
+                        macrosComida.gras += Number(it.alimento?.grasas_100g || 0) * factor;
+                    });
+                }
+                const comidaConMacros = { ...data.comida, macros: macrosComida };
+
                 // Actualizar estado local
-                const nuevasComidas = [data.comida, ...comidasHoy];
+                const nuevasComidas = [comidaConMacros, ...comidasHoy];
                 setComidasHoy(nuevasComidas);
                 setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
 
@@ -249,7 +282,35 @@ export default function Dieta() {
                         </View>
                     </View>
 
-                    <Text style={styles.noDataText}>Las funciones de búsqueda avanzada de alimentos estarán disponibles próximamente.</Text>
+                    {/* LISTA DE COMIDAS REGISTRADAS */}
+                    {comidasHoy.length > 0 ? (
+                        <View style={styles.comidasList}>
+                            <Text style={styles.sectionTitle}>Comidas de hoy</Text>
+                            {comidasHoy.map((comida, index) => (
+                                <View key={comida.id || index} style={styles.comidaCard}>
+                                    <View style={styles.comidaHeader}>
+                                        <Text style={styles.comidaTitle}>{comida.titulo || comida.franja_horaria}</Text>
+                                        <Text style={styles.comidaTime}>{comida.hora}</Text>
+                                    </View>
+                                    <View style={styles.comidaMacros}>
+                                        <Text style={styles.comidaKcal}>{Math.round(comida.macros?.kcal || 0)} Kcal</Text>
+                                        <Text style={styles.comidaMacroItem}>P: {Math.round(comida.macros?.prot || 0)}g</Text>
+                                        <Text style={styles.comidaMacroItem}>C: {Math.round(comida.macros?.carb || 0)}g</Text>
+                                        <Text style={styles.comidaMacroItem}>G: {Math.round(comida.macros?.gras || 0)}g</Text>
+                                    </View>
+                                    <View style={styles.comidaItems}>
+                                        {comida.items && comida.items.map((it, i) => (
+                                            <Text key={i} style={styles.comidaItemText}>
+                                                • {it.alimento?.nombre} ({it.cantidad_gramos || it.cantidad}g)
+                                            </Text>
+                                        ))}
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    ) : (
+                        <Text style={styles.noDataText}>No has registrado ninguna comida hoy.</Text>
+                    )}
                 </ScrollView>
             </View>
 
@@ -380,7 +441,20 @@ const styles = StyleSheet.create({
     macroBg: { height: 6, backgroundColor: '#eee', borderRadius: 3, marginBottom: 5 },
     macroFill: { height: '100%', borderRadius: 3 },
     macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
-    noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', marginTop: 30, lineHeight: 18 },
+    noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', marginTop: 30, lineHeight: 18, fontWeight: '600' },
+    
+    // ESTILOS COMIDAS REGISTRADAS
+    comidasList: { marginTop: 10 },
+    sectionTitle: { color: 'white', fontSize: 16, fontWeight: '900', marginBottom: 15, letterSpacing: 0.5 },
+    comidaCard: { backgroundColor: 'white', borderRadius: 20, padding: 18, marginBottom: 15, elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+    comidaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    comidaTitle: { fontSize: 16, fontWeight: '900', color: '#333' },
+    comidaTime: { fontSize: 12, color: '#999', fontWeight: 'bold' },
+    comidaMacros: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff7ef', padding: 10, borderRadius: 10, marginBottom: 10 },
+    comidaKcal: { color: '#ff7a00', fontWeight: '900', fontSize: 14, marginRight: 15 },
+    comidaMacroItem: { fontSize: 12, color: '#666', fontWeight: 'bold', marginRight: 10 },
+    comidaItems: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 },
+    comidaItemText: { fontSize: 13, color: '#555', marginBottom: 4 },
 
     // MODAL STYLES
     modalContainer: { flex: 1, backgroundColor: '#f8f9fa' },
