@@ -201,7 +201,13 @@ export default function Historial() {
                                 const agrupados = ev.datos.series.reduce((acc, s) => {
                                     const nombre = s.ejercicio.nombre;
                                     if (!acc[nombre]) {
-                                        acc[nombre] = { nombre, conteo: 0, reps: s.repeticiones_reales };
+                                        acc[nombre] = { 
+                                            nombre, 
+                                            conteo: 0, 
+                                            reps: s.repeticiones_reales,
+                                            peso: Number(s.peso_kg) || 0,
+                                            ritmo: s.ritmo ? Number(s.ritmo) : null
+                                        };
                                     }
                                     acc[nombre].conteo += 1;
                                     return acc;
@@ -218,6 +224,8 @@ export default function Historial() {
                                             {listaEjercicios.map((ej, idx) => (
                                                 <Text key={idx} style={styles.exerciseLine}>
                                                     • {ej.nombre}: <Text style={{fontWeight: 'bold', color: '#ff7a00'}}>{ej.conteo} x {ej.reps}</Text>
+                                                    {ej.peso > 0 && <Text style={{fontSize: 11, color: '#666'}}> ({ej.peso}kg)</Text>}
+                                                    {ej.ritmo && <Text style={{fontSize: 11, color: '#666'}}> ({ej.ritmo} min/km)</Text>}
                                                 </Text>
                                             ))}
                                         </View>

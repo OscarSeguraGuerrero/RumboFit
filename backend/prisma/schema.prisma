@@ -32,6 +32,7 @@ model Usuario {
   expiracion_codigo   DateTime?
   foto_perfil         String?   // URL de foto de perfil (HU-14)
   calorias_objetivo   Int?      // TDEE/objetivo calórico diario (HU-13)
+  rutina_sugerida     String?   @db.Text  // Almacena el JSON de la rutina inteligente modificada
 
   // Relaciones
   rutinas             Rutina[]
@@ -138,6 +139,7 @@ model Serie_Entrenamiento {
   ejercicio_id        Int
   numero_serie        Int
   peso_kg             Decimal       @db.Decimal
+  ritmo               Decimal?      @db.Decimal
   repeticiones_reales Int
 
   entrenamiento       Entrenamiento @relation(fields: [entrenamiento_id], references: [id], onDelete: Cascade)

@@ -4,18 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="fotos y perfil">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/backend/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/backend/prisma/schema.prisma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/historial.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/historial.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -160,7 +155,8 @@
       <workItem from="1777237123017" duration="24000" />
       <workItem from="1777306925154" duration="1655000" />
       <workItem from="1777308842318" duration="3564000" />
-      <workItem from="1777323973068" duration="2547000" />
+      <workItem from="1777323973068" duration="3144000" />
+      <workItem from="1777369084308" duration="3417000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -418,7 +414,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776797308450</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="cambios en el perfil">
+      <option name="closed" value="true" />
+      <created>1777326690101</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1777326690101</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -436,7 +440,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="implementación frontend con react y node.js" />
     <MESSAGE value="modificaciones en el frontend con react" />
     <MESSAGE value="Dockerfile para ver la aplicacion" />
     <MESSAGE value="Dockerfile" />
@@ -461,6 +464,7 @@
     <MESSAGE value="Ahora se pueden modificar las series y repeticiones al crear una rutina personalizada :D" />
     <MESSAGE value="cambios en rutinas" />
     <MESSAGE value="botones series repeticiones" />
-    <option name="LAST_COMMIT_MESSAGE" value="botones series repeticiones" />
+    <MESSAGE value="cambios en el perfil" />
+    <option name="LAST_COMMIT_MESSAGE" value="cambios en el perfil" />
   </component>
 </project>

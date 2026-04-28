@@ -163,6 +163,8 @@ export default function Rutina() {
     const [menuVisible, setMenuVisible] = useState(false);
     const [rutinaEditable, setRutinaEditable] = useState({});
     const [entrenamientoCompletado, setEntrenamientoCompletado] = useState(false);
+    const [editando, setEditando] = useState(false);
+    const [perfData, setPerfData] = useState({}); // { [index]: { peso: "", ritmo: "" } }
 
     // --- ESTADOS RUTINA PROPIA Y NAVEGACIÓN ---
     const [vistaActiva, setVistaActiva] = useState('rutinas_menu');
@@ -183,6 +185,8 @@ export default function Rutina() {
     const [nombreEntrenamiento, setNombreEntrenamiento] = useState('');
     const [guardandoEntrenamiento, setGuardandoEntrenamiento] = useState(false);
     const [listaRutinas, setListaRutinas] = useState([]);
+    const [idRutinaActual, setIdRutinaActual] = useState(null);
+    const [nombreRutinaActual, setNombreRutinaActual] = useState('');
 
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -438,8 +442,9 @@ export default function Rutina() {
 
             return {
                 nombre: ejercicio.nombre,
-                series: Array.from({ length: Number(ejercicio.series) || 0 }, () => ({
-                    peso: 0,
+                series: Array.from({ length: Number(ejercicio.series) || 0 }, (_, idx) => ({
+                    peso: perfData[ej.id || ej.nombre]?.peso || 0,
+                    ritmo: perfData[ej.id || ej.nombre]?.ritmo || null,
                     reps: Number(ejercicio.reps) || 0
                 }))
             };
@@ -556,6 +561,8 @@ export default function Rutina() {
                     });
 
                     setRutinaEditable(rutinaConvertida);
+                    setIdRutinaActual(parsed.id || null);
+                    setNombreRutinaActual(parsed.nombre || 'Mi rutina');
                 }
 
                 const propiaGuardada = await AsyncStorage.getItem("rutina_propia");
@@ -620,28 +627,78 @@ export default function Rutina() {
     };
 
     const handleGuardarEnDB = async () => {
-        if (!nombreNuevaRutina.trim()) return Alert.alert("Error", "Ponle un nombre a tu rutina");
         const userId = await AsyncStorage.getItem("userId");
+        const esquemaCompleto = {
+            ejercicios: vistaActiva === 'automatica' ? rutinaEditable : rutinaPropia,
+            completados: completados
+        };
+
         try {
-            const esquemaCompleto = {
-                ejercicios: rutinaPropia,
-                completados: completados
-            };
-            const response = await fetch(`${API_URL}/rutinas/guardar-personalizada`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId,
-                    nombreRutina: nombreNuevaRutina,
-                    esquema: esquemaCompleto
-                })
-            });
+            let response;
+            if (vistaActiva === 'automatica') {
+                // Persistir cambios en la rutina sugerida propia del usuario en el backend
+                response = await fetch(`${API_URL}/usuarios/${userId}/rutina-sugerida`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        esquema: {
+                            ...data,
+                            rutina: rutinaEditable
+                        }
+                    })
+                });
+                
+                const resData = await response.json();
+                if (resData.success) {
+                    setEditando(false);
+                    // Actualizamos el objeto data local para reflejar los cambios
+                    setData(prev => ({ ...prev, rutina: rutinaEditable }));
+                    await AsyncStorage.setItem("rutina", JSON.stringify({ ...data, rutina: rutinaEditable }));
+                    Alert.alert("Éxito", "Cambios guardados en tu rutina sugerida");
+                    return;
+                }
+            }
+
+            if (idRutinaActual && vistaActiva === 'propia') {
+                // Actualizar existente
+                response = await fetch(`${API_URL}/rutinas/${idRutinaActual}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nombre: nombreRutinaActual,
+                        esquema: esquemaCompleto
+                    })
+                });
+            } else {
+                // Crear nueva
+                const nombreParaGuardar = vistaActiva === 'automatica' ? data.metodo : nombreNuevaRutina;
+                
+                if (!nombreParaGuardar.trim() && vistaActiva !== 'automatica') {
+                    setModalGuardar(true);
+                    return;
+                }
+                response = await fetch(`${API_URL}/rutinas/guardar-personalizada`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId,
+                        nombreRutina: nombreParaGuardar || 'Mi Rutina',
+                        esquema: esquemaCompleto
+                    })
+                });
+            }
+
             const resData = await response.json();
             if (resData.success) {
                 setModalGuardar(false);
-                setNombreNuevaRutina('');
+                setEditando(false);
+                if (!idRutinaActual) {
+                    setNombreNuevaRutina('');
+                    setIdRutinaActual(resData.rutina.id);
+                    setNombreRutinaActual(resData.rutina.nombre);
+                }
                 await cargarRutinasGuardadas();
-                Alert.alert("Éxito", "Rutina y progreso guardados");
+                Alert.alert("Éxito", "Rutina actualizada correctamente");
             }
         } catch (e) { Alert.alert("Error", "No se pudo guardar"); }
     };
@@ -653,13 +710,11 @@ export default function Rutina() {
 
     const cargarRutinaSeleccionada = (rutina) => {
         const esquema = JSON.parse(rutina.descripcion);
-        if (esquema.ejercicios) {
-            setRutinaPropia(esquema.ejercicios);
-            setCompletados(esquema.completados || {});
-        } else {
-            setRutinaPropia(esquema);
-        }
-        AsyncStorage.setItem("rutina_propia", rutina.descripcion);
+        setRutinaPropia(esquema.ejercicios || esquema);
+        setCompletados(esquema.completados || {});
+        setIdRutinaActual(rutina.id);
+        setNombreRutinaActual(rutina.nombre);
+        AsyncStorage.setItem("rutina_propia", JSON.stringify(esquema));
         setModalElegir(false);
         Alert.alert("Cargada", `Rutina: ${rutina.nombre}`);
     };
@@ -845,71 +900,143 @@ export default function Rutina() {
 
                 {vistaActiva === 'automatica' && (
                     <>
-                        <View style={styles.header}>
-                            <TouchableOpacity onPress={() => setVistaActiva('rutinas_menu')}>
-                                <Text style={styles.backToMenuText}>← Volver al menú</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.methodLabel}>MÉTODO INTELIGENTE</Text>
-                            <Text style={styles.title}>{data.metodo}</Text>
+                        <View style={styles.headerWithButton}>
+                            <View style={{ flex: 1 }}>
+                                <TouchableOpacity onPress={() => setVistaActiva('rutinas_menu')}>
+                                    <Text style={styles.backToMenuText}>← Volver al menú</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.methodLabel}>MÉTODO INTELIGENTE</Text>
+                                <Text style={styles.title}>{data.metodo}</Text>
+                            </View>
+                            <View style={styles.actionButtons}>
+                                <TouchableOpacity 
+                                    style={[styles.btnSmall, editando && { backgroundColor: '#2ecc71', borderColor: '#2ecc71' }]} 
+                                    onPress={editando ? handleGuardarEnDB : () => setEditando(true)}
+                                >
+                                    <Text style={styles.btnSmallText}>{editando ? 'GUARDAR' : 'EDITAR'}</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                         <View style={styles.tabsWrapper}>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                {Object.keys(data.rutina).map(dia => (
-                                    <TouchableOpacity key={dia} style={[styles.tab, diaActual === dia && styles.tabActive]} onPress={() => setDiaActual(dia)}>
-                                        <Text style={[styles.tabText, diaActual === dia && styles.textOrange]}>{dia.split(' (')[0]}</Text>
-                                    </TouchableOpacity>
-                                ))}
+                                {Object.keys(data.rutina).map(dia => {
+                                    const diaNumStr = dia.split(' (')[0];
+                                    const index = parseInt(diaNumStr.replace('Día ', '')) - 1;
+                                    const totalDias = Object.keys(data.rutina).length;
+                                    
+                                    const esquemas = {
+                                        2: ['Martes', 'Jueves'],
+                                        3: ['Lunes', 'Miércoles', 'Viernes'],
+                                        4: ['Lunes', 'Martes', 'Jueves', 'Viernes'],
+                                        5: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
+                                    };
+                                    const esquema = esquemas[totalDias] || ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                                    const nombreDia = esquema[index] || diaNumStr;
+                                    
+                                    return (
+                                        <TouchableOpacity key={dia} style={[styles.tab, diaActual === dia && styles.tabActive]} onPress={() => setDiaActual(dia)}>
+                                            <Text style={[styles.tabText, diaActual === dia && styles.textOrange]}>{nombreDia}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </ScrollView>
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
                             <View style={styles.imageContainer}>
                                 <Image source={obtenerImagenMusculo(diaActual)} style={styles.muscleImage} resizeMode="cover" />
                                 <View style={styles.imageOverlay}>
-                                    <Text style={styles.overlayDia}>{diaActual}</Text>
+                                    <Text style={styles.overlayDia}>
+                                        {(() => {
+                                            const diaNumStr = diaActual.split(' (')[0];
+                                            const index = parseInt(diaNumStr.replace('Día ', '')) - 1;
+                                            const totalDias = Object.keys(data.rutina).length;
+                                            const esquemas = { 2: ['Martes', 'Jueves'], 3: ['Lunes', 'Miércoles', 'Viernes'], 4: ['Lunes', 'Martes', 'Jueves', 'Viernes'], 5: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] };
+                                            const esquema = esquemas[totalDias] || ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                                            const nombreDia = esquema[index] || diaNumStr;
+                                            return diaActual.replace(diaNumStr, nombreDia);
+                                        })()}
+                                    </Text>
                                     <Text style={styles.overlayCount}>{data.rutina[diaActual]?.length || 0} ejercicios</Text>
                                 </View>
                             </View>
 
                             {rutinaEditable[diaActual]?.map((ej, i) => {
-                                const nombre = ej.nombre;
-                                const estaCompletado = completados[nombre];
-                                return (
-                                    <Pressable
-                                        key={i}
-                                        onPress={() => {}}
-                                        style={({ pressed, hovered }) => [
-                                            styles.exerciseCard,
-                                            estaCompletado && styles.exerciseCardCompleted,
-                                            (pressed || hovered) && styles.exerciseCardActive
-                                        ]}
-                                    >
-                                        <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
-                                        <View style={styles.exerciseInfo}>
-                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
-                                                {nombre} {estaCompletado ? "(COMPLETADO)" : ""}
-                                            </Text>
-                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
+                                 const nombre = ej.nombre;
+                                 const estaCompletado = completados[nombre];
+                                 const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
+                                 const categoria = infoCat?.categoria || 'Fuerza';
 
-                                                <TextInput
-                                                    style={styles.inputSeries}
-                                                    keyboardType="numeric"
-                                                    value={String(ej.series)}
-                                                    onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
-                                                />
+                                 return (
+                                     <Pressable
+                                         key={i}
+                                         onPress={() => {}}
+                                         style={({ pressed, hovered }) => [
+                                             styles.exerciseCard,
+                                             estaCompletado && styles.exerciseCardCompleted,
+                                             (pressed || hovered) && styles.exerciseCardActive
+                                         ]}
+                                     >
+                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
+                                         <View style={styles.exerciseInfo}>
+                                             <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
+                                                 {nombre} {estaCompletado ? "✓" : ""}
+                                             </Text>
+                                             
+                                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
+                                                 {editando ? (
+                                                     <>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ej.series)}
+                                                             onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>series</Text>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ej.reps)}
+                                                             onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>reps</Text>
+                                                     </>
+                                                 ) : (
+                                                     <Text style={styles.seriesTextStatic}>
+                                                         {ej.series} series x {ej.reps} repeticiones
+                                                     </Text>
+                                                 )}
+                                             </View>
 
-                                                <Text style={{ alignSelf: 'center' }}> series </Text>
-
-                                                <TextInput
-                                                    style={styles.inputSeries}
-                                                    keyboardType="numeric"
-                                                    value={String(ej.reps)}
-                                                    onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
-                                                />
-                                                <Text style={{ alignSelf: 'center'  }}>repeticiones</Text>
-                                            </View>
-                                        </View>
-                                    </Pressable>
-                                );
+                                             {!editando && !estaCompletado && (
+                                                 <View style={styles.performanceSection}>
+                                                     {categoria === 'Cardio' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Ritmo:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="min/km"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.ritmo || ""}
+                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), ritmo: text}}))}
+                                                             />
+                                                         </View>
+                                                     ) : categoria === 'Fuerza' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Peso:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="kg"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.peso || ""}
+                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), peso: text}}))}
+                                                             />
+                                                         </View>
+                                                     ) : null}
+                                                 </View>
+                                             )}
+                                         </View>
+                                     </Pressable>
+                                 );
                             })}
                         </ScrollView>
                         <View style={styles.routineFooterActions}>
@@ -943,11 +1070,11 @@ export default function Rutina() {
                                 <Text style={styles.title}>Diseña tu semana</Text>
                             </View>
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity style={styles.btnSmall} onPress={abrirElegirRutina}>
-                                    <Text style={styles.btnSmallText}>ELEGIR</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: '#2ecc71' }]} onPress={() => setModalGuardar(true)}>
-                                    <Text style={styles.btnSmallText}>GUARDAR</Text>
+                                <TouchableOpacity 
+                                    style={[styles.btnSmall, editando && { backgroundColor: '#2ecc71', borderColor: '#2ecc71' }]} 
+                                    onPress={editando ? handleGuardarEnDB : () => setEditando(true)}
+                                >
+                                    <Text style={styles.btnSmallText}>{editando ? 'GUARDAR' : 'EDITAR'}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -973,59 +1100,85 @@ export default function Rutina() {
                                     })()
                                     : ej;
 
-                                const nombre = ejercicio.nombre;
-                                const estaCompletado = completados[nombre];
-                                return (
-                                    <Pressable
-                                        key={i}
-                                        onPress={() => {}}
-                                        style={({ pressed, hovered }) => [
-                                            styles.exerciseCard,
-                                            estaCompletado && styles.exerciseCardCompleted,
-                                            (pressed || hovered) && styles.exerciseCardActive
-                                        ]}
-                                    >
-                                        <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
-                                        <View style={styles.exerciseInfo}>
-                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
-                                                {nombre} {estaCompletado ? "✓" : ""}
-                                            </Text>
-                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
+                                 const nombre = ejercicio.nombre;
+                                 const estaCompletado = completados[nombre];
+                                 const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
+                                 const categoria = infoCat?.categoria || 'Fuerza';
 
-                                                <TextInput
-                                                    style={{
-                                                        backgroundColor: '#eee',
-                                                        padding: 5,
-                                                        borderRadius: 5,
-                                                        width: 40,
-                                                        textAlign: 'center'
-                                                    }}
-                                                    keyboardType="numeric"
-                                                    value={String(ejercicio.series)}
-                                                    onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
-                                                />
+                                 return (
+                                     <Pressable
+                                         key={i}
+                                         onPress={() => {}}
+                                         style={({ pressed, hovered }) => [
+                                             styles.exerciseCard,
+                                             estaCompletado && styles.exerciseCardCompleted,
+                                             (pressed || hovered) && styles.exerciseCardActive
+                                         ]}
+                                     >
+                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
+                                         <View style={styles.exerciseInfo}>
+                                             <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
+                                                 {nombre} {estaCompletado ? "✓" : ""}
+                                             </Text>
+                                             
+                                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
+                                                 {editando ? (
+                                                     <>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ejercicio.series)}
+                                                             onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>series</Text>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ejercicio.reps)}
+                                                             onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>reps</Text>
+                                                     </>
+                                                 ) : (
+                                                     <Text style={styles.seriesTextStatic}>
+                                                         {ejercicio.series} series x {ejercicio.reps} repeticiones
+                                                     </Text>
+                                                 )}
+                                             </View>
 
-                                                <Text style={{ alignSelf: 'center' }}>series </Text>
-
-                                                <TextInput
-                                                    style={{
-                                                        backgroundColor: '#eee',
-                                                        padding: 5,
-                                                        borderRadius: 5,
-                                                        width: 40,
-                                                        textAlign: 'center'
-                                                    }}
-                                                    keyboardType="numeric"
-                                                    value={String(ejercicio.reps)}
-                                                    onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
-                                                />
-                                                <Text style={{ alignSelf: 'center'  }}>repeticiones</Text>
-
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
-                                    </Pressable>
-                                );
+                                             {!editando && !estaCompletado && (
+                                                 <View style={styles.performanceSection}>
+                                                     {categoria === 'Cardio' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Ritmo:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="min/km"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.ritmo || ""}
+                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), ritmo: text}}))}
+                                                             />
+                                                         </View>
+                                                     ) : categoria === 'Fuerza' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Peso:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="kg"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.peso || ""}
+                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), peso: text}}))}
+                                                             />
+                                                         </View>
+                                                     ) : null}
+                                                 </View>
+                                             )}
+                                         </View>
+                                         {editando && (
+                                             <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
+                                         )}
+                                     </Pressable>
+                                 );
                             })}
                             <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
                                 <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
@@ -1217,6 +1370,7 @@ const styles = StyleSheet.create({
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
     header: { marginBottom: 15, position: 'relative', paddingRight: 150 },
+    headerWithButton: { marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     createRoutineButton: {
         position: 'absolute',
         top: 10,
@@ -1235,9 +1389,10 @@ const styles = StyleSheet.create({
     btnSmallText: { color: 'white', fontSize: 10, fontWeight: '900' },
 
     methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.9 },
-    title: { fontSize: 20, fontWeight: '900', color: '#ffffff' },
+    title: { color: 'white', fontSize: 18, fontWeight: '900', textTransform: 'uppercase' },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
 
-    tabsWrapper: { marginBottom: 15, marginHorizontal: -18 },
+    tabsWrapper: { marginBottom: 20, marginHorizontal: -18 },
     tab: { paddingHorizontal: 15, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, marginHorizontal: 5 },
     tabActive: { backgroundColor: '#ffffff' },
     tabText: { fontSize: 12, fontWeight: '800', color: '#ffffff' },
@@ -1441,4 +1596,11 @@ const styles = StyleSheet.create({
     savedRoutineMeta: { color: '#7a583e', fontSize: 12, fontWeight: '800', marginBottom: 6 },
     savedRoutineHint: { color: '#7a583e', fontSize: 11, fontWeight: '700' },
     backToMenuText: { color: 'white', fontWeight: 'bold', fontSize: 14, marginBottom: 15, opacity: 0.9 },
+    inputSeriesSmall: { backgroundColor: '#eee', padding: 4, borderRadius: 6, width: 35, textAlign: 'center', fontSize: 12, fontWeight: 'bold' },
+    labelSmall: { fontSize: 11, color: '#666', fontWeight: '700' },
+    seriesTextStatic: { fontSize: 13, color: '#666', fontWeight: '700' },
+    performanceSection: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
+    perfRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    perfLabel: { fontSize: 12, fontWeight: '800', color: '#ff7a00' },
+    perfInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ff7a00', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, width: 80, fontSize: 12, fontWeight: 'bold', color: '#333' },
 });

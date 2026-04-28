@@ -468,18 +468,42 @@ app.get('/api/usuarios/:id/rutina', async (req, res) => {
         const usuario = await prisma.usuario.findUnique({ where: { id: userId } });
         if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
 
-        // Verificamos si tiene el registro de rutina
-        const rutinaReg = await prisma.rutina.findFirst({ where: { usuario_id: userId } });
-        if (!rutinaReg) return res.status(404).json({ error: "El usuario no tiene una rutina asignada" });
+        // Si ya tiene una rutina sugerida guardada (y modificada), la devolvemos
+        if (usuario.rutina_sugerida) {
+            return res.json({ success: true, ...JSON.parse(usuario.rutina_sugerida) });
+        }
 
-        // Regeneramos el JSON basado en sus datos actuales
+        // Si no, generamos una nueva
         const daysNum = usuario.frecuencia_semanal || 3;
         const resultado = await generarJSONRutina(usuario.nivel || 'Principiante', daysNum, usuario.edad || 25, usuario.objetivo);
+
+        // La guardamos por primera vez para que sea persistente
+        await prisma.usuario.update({
+            where: { id: userId },
+            data: { rutina_sugerida: JSON.stringify(resultado) }
+        });
 
         res.json({ success: true, ...resultado });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Error al recuperar la rutina" });
+    }
+});
+
+// Guardar/Actualizar rutina sugerida modificada
+app.put('/api/usuarios/:id/rutina-sugerida', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const { esquema } = req.body;
+        
+        await prisma.usuario.update({
+            where: { id: userId },
+            data: { rutina_sugerida: JSON.stringify(esquema) }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: "Error al guardar rutina sugerida" });
     }
 });
 
@@ -604,6 +628,24 @@ app.post('/api/rutinas/guardar-personalizada', async (req, res) => {
     }
 });
 
+// Actualizar rutina existente
+app.put('/api/rutinas/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nombre, esquema } = req.body;
+    try {
+        const rutinaActualizada = await prisma.rutina.update({
+            where: { id: parseInt(id) },
+            data: {
+                nombre: nombre || undefined,
+                descripcion: JSON.stringify(esquema)
+            }
+        });
+        res.json({ success: true, rutina: rutinaActualizada });
+    } catch (error) {
+        res.status(500).json({ error: "Error al actualizar rutina" });
+    }
+});
+
 // Listar rutinas de un usuario
 app.get('/api/usuarios/:id/rutinas-guardadas', async (req, res) => {
     try {
@@ -651,6 +693,7 @@ app.post('/api/historial/entrenamiento', async (req, res) => {
                     ejercicio_id: ejercicioId,
                     numero_serie: idx + 1,
                     peso_kg: Number(s.peso || 0),
+                    ritmo: s.ritmo ? Number(s.ritmo) : null,
                     repeticiones_reales: parseInt(s.reps, 10) || 0
                 });
             });
