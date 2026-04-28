@@ -80,6 +80,7 @@ export default function Dieta() {
     const [busqueda, setBusqueda] = useState('');
     const [itemsReceta, setItemsReceta] = useState([]); // Ingredientes temporales
     const [tituloComida, setTituloComida] = useState('');
+    const [guardando, setGuardando] = useState(false);
 
     useEffect(() => {
         const cargarData = async () => {
@@ -136,6 +137,61 @@ export default function Dieta() {
         setItemsReceta(itemsReceta.map(it => 
             it.id === id ? { ...it, cantidad: Number(gramos) || 0 } : it
         ));
+    };
+
+    const handleGuardarComida = async () => {
+        if (!tituloComida.trim()) {
+            Alert.alert("Aviso", "Por favor, introduce un título para la comida (Ej: Desayuno).");
+            return;
+        }
+        if (itemsReceta.length === 0) {
+            Alert.alert("Aviso", "Añade al menos un alimento a la comida.");
+            return;
+        }
+
+        setGuardando(true);
+        try {
+            const userId = await AsyncStorage.getItem("userId");
+            if (!userId) return;
+
+            const payload = {
+                userId,
+                titulo: tituloComida.trim(),
+                items: itemsReceta.map(it => ({
+                    alimentoId: it.id,
+                    cantidad: it.cantidad
+                })),
+                franja: tituloComida.trim() // Usamos el título como franja temporalmente
+            };
+
+            const res = await fetch(`${API_URL}/dieta/comida`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                // Actualizar estado local
+                const nuevasComidas = [data.comida, ...comidasHoy];
+                setComidasHoy(nuevasComidas);
+                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+
+                // Limpiar modal y cerrar
+                setTituloComida('');
+                setItemsReceta([]);
+                setBusqueda('');
+                setModalVisible(false);
+                Alert.alert("¡Éxito!", "Comida registrada correctamente.");
+            } else {
+                Alert.alert("Error", data.error || "No se pudo guardar la comida.");
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "No se pudo conectar con el servidor.");
+        } finally {
+            setGuardando(false);
+        }
     };
 
     const objMacros = calcularMacrosObjetivo(calcularTDEE(usuarioCompleto), usuarioCompleto);
@@ -270,6 +326,19 @@ export default function Dieta() {
                                     </TouchableOpacity>
                                 ))}
                         </View>
+                        
+                        {/* BOTÓN GUARDAR */}
+                        <TouchableOpacity 
+                            style={[styles.btnConfirm, guardando && { opacity: 0.7 }]} 
+                            onPress={handleGuardarComida}
+                            disabled={guardando}
+                        >
+                            {guardando ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.btnConfirmText}>GUARDAR COMIDA</Text>
+                            )}
+                        </TouchableOpacity>
                     </ScrollView>
                 </View>
             </Modal>
@@ -339,6 +408,8 @@ const styles = StyleSheet.create({
     gramsLabel: { fontSize: 12, color: '#666', fontWeight: 'bold' },
     btnRemove: { padding: 5 },
     removeIcon: { color: '#ff4444', fontSize: 16, fontWeight: 'bold' },
+    btnConfirm: { backgroundColor: '#ff7a00', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
+    btnConfirmText: { color: 'white', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
 
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
     tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
