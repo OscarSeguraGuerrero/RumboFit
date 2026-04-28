@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { API_URL } from '../config';
 
 const { width } = Dimensions.get('window');
@@ -15,9 +16,12 @@ export default function Historial() {
     const [fechaReferencia, setFechaReferencia] = useState(new Date());
     const [diaSeleccionado, setDiaSeleccionado] = useState(new Date().toISOString().split('T')[0]);
 
-    useEffect(() => {
-        cargarHistorial();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            cargarHistorial();
+        }, [])
+    );
+
 
     const cargarHistorial = async () => {
         setLoading(true);
@@ -83,11 +87,22 @@ export default function Historial() {
     const calcularMacrosTotales = (comidas) => {
         let totales = { kcal: 0, prot: 0, carb: 0, gras: 0 };
         comidas.forEach(c => {
-            const factor = Number(c.cantidad_gramos) / 100;
-            totales.kcal += Number(c.alimento?.calorias_100g || 0) * factor;
-            totales.prot += Number(c.alimento?.proteinas_100g || 0) * factor;
-            totales.carb += Number(c.alimento?.carbohidratos_100g || 0) * factor;
-            totales.gras += Number(c.alimento?.grasas_100g || 0) * factor;
+            if (c.macros) {
+                // El backend ya devuelve los macros precalculados por comida
+                totales.kcal += Number(c.macros.kcal || 0);
+                totales.prot += Number(c.macros.prot || 0);
+                totales.carb += Number(c.macros.carb || 0);
+                totales.gras += Number(c.macros.gras || 0);
+            } else if (c.items) {
+                // Fallback: calcular desde los items si no hay macros precalculados
+                c.items.forEach(it => {
+                    const factor = Number(it.cantidad_gramos) / 100;
+                    totales.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
+                    totales.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
+                    totales.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
+                    totales.gras += Number(it.alimento?.grasas_100g || 0) * factor;
+                });
+            }
         });
         return totales;
     };
@@ -235,10 +250,18 @@ export default function Historial() {
                                 return (
                                     <View key={i} style={styles.card}>
                                         <View style={styles.cardHeader}>
-                                            <Text style={styles.cardTitle}>{ev.datos.franja_horaria}</Text>
+                                            <Text style={styles.cardTitle}>{ev.datos.franja_horaria || ev.datos.titulo}</Text>
                                             <Text style={styles.cardCount}>{horaFormateada}</Text>
                                         </View>
-                                        <Text style={styles.foodLine}>• {ev.datos.alimento?.nombre} ({ev.datos.cantidad_gramos}g)</Text>
+                                        {ev.datos.items && ev.datos.items.length > 0 ? (
+                                            ev.datos.items.map((it, idx) => (
+                                                <Text key={idx} style={styles.foodLine}>
+                                                    • {it.alimento?.nombre || '?'} ({Number(it.cantidad_gramos || 0).toFixed(0)}g)
+                                                </Text>
+                                            ))
+                                        ) : (
+                                            <Text style={styles.foodLine}>Sin alimentos registrados</Text>
+                                        )}
                                     </View>
                                 );
                             }
