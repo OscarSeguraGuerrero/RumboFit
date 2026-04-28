@@ -103,6 +103,11 @@ export default function Dieta() {
     const [tituloComida, setTituloComida] = useState(franjasDisponibles[0]);
     const [guardando, setGuardando] = useState(false);
 
+    // Estado para crear alimento nuevo
+    const [modalAlimentoVisible, setModalAlimentoVisible] = useState(false);
+    const [nuevoAlim, setNuevoAlim] = useState({ nombre: '', kcal: '', prot: '', carb: '', gras: '' });
+    const [creandoAlimento, setCreandoAlimento] = useState(false);
+
     useEffect(() => {
         const cargarData = async () => {
             try {
@@ -158,6 +163,42 @@ export default function Dieta() {
         setItemsReceta(itemsReceta.map(it =>
             it.id === id ? { ...it, cantidad: Number(gramos) || 0 } : it
         ));
+    };
+
+    const handleCrearAlimentoCustom = async () => {
+        if (!nuevoAlim.nombre || !nuevoAlim.kcal) {
+            Alert.alert("Aviso", "El nombre y las calorías son obligatorios.");
+            return;
+        }
+        setCreandoAlimento(true);
+        try {
+            const payload = {
+                nombre: nuevoAlim.nombre,
+                calorias_100g: nuevoAlim.kcal,
+                proteinas_100g: nuevoAlim.prot || '0',
+                carbohidratos_100g: nuevoAlim.carb || '0',
+                grasas_100g: nuevoAlim.gras || '0'
+            };
+            const res = await fetch(`${API_URL}/alimentos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAlimentosCatalogo([...alimentosCatalogo, data.alimento]);
+                setModalAlimentoVisible(false);
+                añadirAlimento(data.alimento);
+                setNuevoAlim({ nombre: '', kcal: '', prot: '', carb: '', gras: '' });
+                Alert.alert("¡Éxito!", "Alimento añadido al catálogo general.");
+            } else {
+                Alert.alert("Error", data.error || "Error al crear el alimento.");
+            }
+        } catch (error) {
+            Alert.alert("Error", "Problema de conexión con el servidor.");
+        } finally {
+            setCreandoAlimento(false);
+        }
     };
 
     const handleGuardarComida = async () => {
@@ -439,6 +480,21 @@ export default function Dieta() {
                                         <Text style={styles.plusIcon}>+</Text>
                                     </TouchableOpacity>
                                 ))}
+                            
+                            {/* BOTÓN PARA AÑADIR ALIMENTO PERSONALIZADO */}
+                            {busqueda.length > 0 && (
+                                <TouchableOpacity 
+                                    style={styles.btnAñadirCustom} 
+                                    onPress={() => {
+                                        setNuevoAlim({ ...nuevoAlim, nombre: busqueda });
+                                        setModalAlimentoVisible(true);
+                                    }}
+                                >
+                                    <Text style={styles.btnAñadirCustomText}>
+                                        ¿No encuentras "{busqueda}"? Añádelo aquí +
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
 
                         {/* BOTÓN GUARDAR */}
@@ -454,6 +510,48 @@ export default function Dieta() {
                             )}
                         </TouchableOpacity>
                     </ScrollView>
+                </View>
+            </Modal>
+
+            {/* MODAL CREAR ALIMENTO PERSONALIZADO */}
+            <Modal visible={modalAlimentoVisible} animationType="fade" transparent>
+                <View style={styles.fullOverlay}>
+                    <View style={styles.modalSmall}>
+                        <Text style={styles.modalSub}>Añadir Nuevo Alimento</Text>
+                        
+                        <Text style={styles.smallLabel}>Nombre del alimento</Text>
+                        <TextInput style={styles.modalInputSmall} value={nuevoAlim.nombre} onChangeText={(t) => setNuevoAlim({...nuevoAlim, nombre: t})} />
+                        
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.smallLabel}>Kcal (100g)</Text>
+                                <TextInput style={styles.modalInputSmall} keyboardType="numeric" placeholder="Ej: 250" value={nuevoAlim.kcal} onChangeText={(t) => setNuevoAlim({...nuevoAlim, kcal: t})} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.smallLabel}>Proteínas (g)</Text>
+                                <TextInput style={styles.modalInputSmall} keyboardType="numeric" placeholder="Ej: 20" value={nuevoAlim.prot} onChangeText={(t) => setNuevoAlim({...nuevoAlim, prot: t})} />
+                            </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.smallLabel}>Carbos (g)</Text>
+                                <TextInput style={styles.modalInputSmall} keyboardType="numeric" placeholder="Ej: 0" value={nuevoAlim.carb} onChangeText={(t) => setNuevoAlim({...nuevoAlim, carb: t})} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.smallLabel}>Grasas (g)</Text>
+                                <TextInput style={styles.modalInputSmall} keyboardType="numeric" placeholder="Ej: 15" value={nuevoAlim.gras} onChangeText={(t) => setNuevoAlim({...nuevoAlim, gras: t})} />
+                            </View>
+                        </View>
+
+                        <TouchableOpacity style={[styles.btnConfirm, creandoAlimento && {opacity: 0.7}]} onPress={handleCrearAlimentoCustom} disabled={creandoAlimento}>
+                            <Text style={styles.btnConfirmText}>{creandoAlimento ? 'Guardando...' : 'GUARDAR ALIMENTO'}</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity onPress={() => setModalAlimentoVisible(false)} style={{ marginTop: 15 }}>
+                            <Text style={{ color: 'red', textAlign: 'center', fontWeight: 'bold' }}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
 
@@ -533,6 +631,15 @@ const styles = StyleSheet.create({
     foodName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
     foodSub: { fontSize: 12, color: '#999', marginTop: 2 },
     plusIcon: { fontSize: 24, color: '#ff7a00', fontWeight: 'bold', paddingRight: 5 },
+    btnAñadirCustom: { padding: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: '#ff7a00', borderRadius: 12, alignItems: 'center', marginTop: 10, backgroundColor: '#fff7ef' },
+    btnAñadirCustomText: { color: '#ff7a00', fontWeight: 'bold', fontSize: 13 },
+    
+    // MODAL PEQUEÑO
+    fullOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    modalSmall: { backgroundColor: 'white', width: '85%', borderRadius: 20, padding: 20 },
+    modalSub: { fontWeight: '900', fontSize: 18, color: '#333', marginBottom: 15, textAlign: 'center' },
+    modalInputSmall: { backgroundColor: '#f0f0f0', padding: 12, borderRadius: 10, marginBottom: 10, color: '#333', fontWeight: 'bold' },
+    smallLabel: { fontSize: 11, color: '#666', fontWeight: 'bold', marginBottom: 4 },
 
     // ESTILOS INGREDIENTES SELECCIONADOS
     selectedItemsSection: { marginBottom: 20 },

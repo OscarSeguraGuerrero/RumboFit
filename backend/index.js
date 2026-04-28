@@ -580,6 +580,26 @@ app.post('/api/historial/entrenamiento', async (req, res) => {
     }
 });
 
+// Crear Alimento Personalizado (HU-11)
+app.post('/api/alimentos', async (req, res) => {
+    const { nombre, calorias_100g, proteinas_100g, carbohidratos_100g, grasas_100g } = req.body;
+    try {
+        const nuevoAlimento = await prisma.alimento.create({
+            data: {
+                nombre: nombre.trim(),
+                calorias_100g: Number(calorias_100g) || 0,
+                proteinas_100g: Number(proteinas_100g) || 0,
+                carbohidratos_100g: Number(carbohidratos_100g) || 0,
+                grasas_100g: Number(grasas_100g) || 0
+            }
+        });
+        res.json({ success: true, alimento: nuevoAlimento });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al crear el alimento. Es posible que el nombre ya exista." });
+    }
+});
+
 // Registrar Comida COMPLETA (HU-11)
 app.post('/api/dieta/comida', async (req, res) => {
     const { userId, titulo, items, franja, fecha, hora } = req.body;
