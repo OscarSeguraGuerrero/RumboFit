@@ -396,7 +396,7 @@ export default function Perfil() {
                                         {editando ? (
                                             <TextInput style={styles.inputEdit} value={nuevoPeso} onChangeText={setNuevoPeso} keyboardType="numeric" />
                                         ) : (
-                                            <Text style={styles.valor}>{usuario?.peso} kg</Text>
+                                            <Text style={styles.valor}>{usuario?.peso} </Text>
                                         )}
                                     </View>
                                     <View style={styles.infoBox}>
@@ -404,7 +404,7 @@ export default function Perfil() {
                                         {editando ? (
                                             <TextInput style={styles.inputEdit} value={nuevaAltura} onChangeText={setNuevaAltura} keyboardType="numeric" />
                                         ) : (
-                                            <Text style={styles.valor}>{usuario?.altura} cm</Text>
+                                            <Text style={styles.valor}>{usuario?.altura} </Text>
                                         )}
                                     </View>
                                     <View style={styles.infoBox}>

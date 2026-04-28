@@ -171,8 +171,14 @@ export default function Rutina() {
     const [rutinaPropia, setRutinaPropia] = useState({});
     const [diaPropioActivo, setDiaPropioActivo] = useState('Lunes');
     const [modalEjercicios, setModalEjercicios] = useState(false);
+    const [modalEjercicioPersonalizado, setModalEjercicioPersonalizado] = useState(false);
     const [ejerciciosCatalogo, setEjerciciosCatalogo] = useState([]);
     const [busqueda, setBusqueda] = useState('');
+    const [ejercicioPersonalizado, setEjercicioPersonalizado] = useState({
+        nombre: '',
+        series: '3',
+        reps: '12'
+    });
 
     // --- ESTADO DE COMPLETADO ---
     const [completados, setCompletados] = useState({}); // { "Nombre Ejercicio": true/false }
@@ -189,6 +195,14 @@ export default function Rutina() {
     const [nombreRutinaActual, setNombreRutinaActual] = useState('');
 
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    const crearRutinaVacia = () => {
+        const rutina = {};
+        diasSemana.forEach((dia) => {
+            rutina[dia] = [];
+        });
+        return rutina;
+    };
 
     // --- MAPEOS DE IMÁGENES ---
     const imagenesMusculos = {
@@ -443,12 +457,55 @@ export default function Rutina() {
             return {
                 nombre: ejercicio.nombre,
                 series: Array.from({ length: Number(ejercicio.series) || 0 }, (_, idx) => ({
-                    peso: perfData[ej.id || ej.nombre]?.peso || 0,
-                    ritmo: perfData[ej.id || ej.nombre]?.ritmo || null,
+                    peso: perfData[ejercicio.nombre]?.peso || ejercicio.peso || 0,
+                    ritmo: perfData[ejercicio.nombre]?.ritmo || null,
                     reps: Number(ejercicio.reps) || 0
                 }))
             };
         }).filter((ej) => ej.nombre && ej.series.length > 0);
+    };
+
+    const persistirRutinaPropiaLocal = async (ejercicios, completadosActuales = completados, idActual = idRutinaActual, nombreActual = nombreRutinaActual) => {
+        await AsyncStorage.setItem(
+            "rutina_propia",
+            JSON.stringify({
+                id: idActual,
+                nombre: nombreActual,
+                ejercicios,
+                completados: completadosActuales
+            })
+        );
+    };
+
+    const obtenerRutinasOcultas = async () => {
+        const raw = await AsyncStorage.getItem("rutinas_eliminadas");
+        const ids = raw ? JSON.parse(raw) : [];
+        return Array.isArray(ids) ? ids : [];
+    };
+
+    const marcarRutinaComoEliminadaLocalmente = async (rutinaId) => {
+        const idsActuales = await obtenerRutinasOcultas();
+        const idsNormalizados = idsActuales.map((id) => String(id));
+        if (!idsNormalizados.includes(String(rutinaId))) {
+            await AsyncStorage.setItem(
+                "rutinas_eliminadas",
+                JSON.stringify([...idsActuales, rutinaId])
+            );
+        }
+    };
+
+    const iniciarNuevaRutina = async () => {
+        const rutinaVacia = crearRutinaVacia();
+        setRutinaPropia(rutinaVacia);
+        setCompletados({});
+        setPerfData({});
+        setIdRutinaActual(null);
+        setNombreRutinaActual('');
+        setNombreNuevaRutina('');
+        setDiaPropioActivo('Lunes');
+        setEditando(true);
+        setVistaActiva('propia');
+        await persistirRutinaPropiaLocal(rutinaVacia, {}, null, '');
     };
 
     const registrarEntrenamientoCompletado = async () => {
@@ -474,7 +531,7 @@ export default function Rutina() {
         try {
             const payload = {
                 userId,
-                rutinaId: data?.id || null,
+                rutinaId: vistaActiva === 'propia' ? idRutinaActual : (data?.id || null),
                 nombreEntrenamiento: nombreLimpio,
                 ejercicios
             };
@@ -561,8 +618,6 @@ export default function Rutina() {
                     });
 
                     setRutinaEditable(rutinaConvertida);
-                    setIdRutinaActual(parsed.id || null);
-                    setNombreRutinaActual(parsed.nombre || 'Mi rutina');
                 }
 
                 const propiaGuardada = await AsyncStorage.getItem("rutina_propia");
@@ -570,15 +625,17 @@ export default function Rutina() {
                     const parsedPropia = JSON.parse(propiaGuardada);
                     // Si viene del formato nuevo con .ejercicios y .completados
                     if (parsedPropia.ejercicios) {
-                        setRutinaPropia(parsedPropia.ejercicios);
+                        setRutinaPropia({ ...crearRutinaVacia(), ...parsedPropia.ejercicios });
                         setCompletados(parsedPropia.completados || {});
+                        setIdRutinaActual(parsedPropia.id || null);
+                        setNombreRutinaActual(parsedPropia.nombre || '');
                     } else {
-                        setRutinaPropia(parsedPropia);
+                        setRutinaPropia({ ...crearRutinaVacia(), ...parsedPropia });
+                        setIdRutinaActual(null);
+                        setNombreRutinaActual('');
                     }
                 } else {
-                    let inicial = {};
-                    diasSemana.forEach(d => inicial[d] = []);
-                    setRutinaPropia(inicial);
+                    setRutinaPropia(crearRutinaVacia());
                 }
 
                 const resCat = await fetch(`${API_URL}/ejercicios`);
@@ -616,7 +673,10 @@ export default function Rutina() {
         try {
             const res = await fetch(`${API_URL}/usuarios/${userId}/rutinas-guardadas`);
             const rutinas = await res.json();
-            const rutinasNormalizadas = Array.isArray(rutinas) ? rutinas : [];
+            const idsOcultos = await obtenerRutinasOcultas();
+            const rutinasNormalizadas = (Array.isArray(rutinas) ? rutinas : []).filter(
+                (rutina) => !idsOcultos.map((id) => String(id)).includes(String(rutina.id))
+            );
             setListaRutinas(rutinasNormalizadas);
             return rutinasNormalizadas;
         } catch (e) {
@@ -624,6 +684,68 @@ export default function Rutina() {
             setListaRutinas([]);
             return [];
         }
+    };
+
+    const eliminarRutinaGuardada = async (rutina) => {
+        const aplicarEliminacionLocal = async () => {
+            await marcarRutinaComoEliminadaLocalmente(rutina.id);
+            setListaRutinas((prev) => prev.filter((item) => item.id !== rutina.id));
+
+            if (idRutinaActual === rutina.id) {
+                const rutinaVacia = crearRutinaVacia();
+                setRutinaPropia(rutinaVacia);
+                setCompletados({});
+                setPerfData({});
+                setIdRutinaActual(null);
+                setNombreRutinaActual('');
+                setVistaActiva('rutinas_menu');
+                await AsyncStorage.removeItem("rutina_propia");
+            }
+        };
+
+        Alert.alert(
+            'Eliminar rutina',
+            `Se eliminará "${rutina.nombre}". Esta acción no se puede deshacer.`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const userId = await AsyncStorage.getItem("userId");
+                            if (!userId) {
+                                await aplicarEliminacionLocal();
+                                return;
+                            }
+
+                            const res = await fetch(`${API_URL}/rutinas/${rutina.id}?userId=${userId}`, {
+                                method: 'DELETE'
+                            });
+
+                            let result = null;
+                            try {
+                                result = await res.json();
+                            } catch {
+                                result = null;
+                            }
+
+                            await aplicarEliminacionLocal();
+
+                            if (!res.ok || !result?.success) {
+                                Alert.alert("Aviso", "La rutina se eliminó del menú en este dispositivo.");
+                                return;
+                            }
+
+                            Alert.alert("Éxito", "Rutina eliminada correctamente");
+                        } catch (e) {
+                            await aplicarEliminacionLocal();
+                            Alert.alert("Aviso", "La rutina se eliminó del menú en este dispositivo.");
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const handleGuardarEnDB = async () => {
@@ -659,21 +781,21 @@ export default function Rutina() {
                 }
             }
 
+            const nombreParaGuardar = (idRutinaActual ? nombreRutinaActual : nombreNuevaRutina).trim() || 'Mi Rutina';
+
             if (idRutinaActual && vistaActiva === 'propia') {
                 // Actualizar existente
                 response = await fetch(`${API_URL}/rutinas/${idRutinaActual}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        nombre: nombreRutinaActual,
+                        nombre: nombreParaGuardar,
                         esquema: esquemaCompleto
                     })
                 });
             } else {
                 // Crear nueva
-                const nombreParaGuardar = vistaActiva === 'automatica' ? data.metodo : nombreNuevaRutina;
-                
-                if (!nombreParaGuardar.trim() && vistaActiva !== 'automatica') {
+                if (!nombreNuevaRutina.trim() && vistaActiva !== 'automatica') {
                     setModalGuardar(true);
                     return;
                 }
@@ -682,7 +804,7 @@ export default function Rutina() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         userId,
-                        nombreRutina: nombreParaGuardar || 'Mi Rutina',
+                        nombreRutina: nombreParaGuardar,
                         esquema: esquemaCompleto
                     })
                 });
@@ -692,13 +814,16 @@ export default function Rutina() {
             if (resData.success) {
                 setModalGuardar(false);
                 setEditando(false);
-                if (!idRutinaActual) {
-                    setNombreNuevaRutina('');
-                    setIdRutinaActual(resData.rutina.id);
-                    setNombreRutinaActual(resData.rutina.nombre);
-                }
+                const rutinaGuardada = resData.rutina;
+                const nuevoIdRutina = rutinaGuardada?.id || idRutinaActual || null;
+                const nuevoNombreRutina = rutinaGuardada?.nombre || nombreParaGuardar;
+                setNombreNuevaRutina('');
+                setIdRutinaActual(nuevoIdRutina);
+                setNombreRutinaActual(nuevoNombreRutina);
+                await persistirRutinaPropiaLocal(rutinaPropia, completados, nuevoIdRutina, nuevoNombreRutina);
                 await cargarRutinasGuardadas();
-                Alert.alert("Éxito", "Rutina actualizada correctamente");
+                setVistaActiva('rutinas_menu');
+                Alert.alert("Éxito", "Rutina guardada correctamente");
             }
         } catch (e) { Alert.alert("Error", "No se pudo guardar"); }
     };
@@ -710,11 +835,13 @@ export default function Rutina() {
 
     const cargarRutinaSeleccionada = (rutina) => {
         const esquema = JSON.parse(rutina.descripcion);
-        setRutinaPropia(esquema.ejercicios || esquema);
+        const ejercicios = { ...crearRutinaVacia(), ...(esquema.ejercicios || esquema) };
+        setRutinaPropia(ejercicios);
         setCompletados(esquema.completados || {});
+        setPerfData({});
         setIdRutinaActual(rutina.id);
         setNombreRutinaActual(rutina.nombre);
-        AsyncStorage.setItem("rutina_propia", JSON.stringify(esquema));
+        persistirRutinaPropiaLocal(ejercicios, esquema.completados || {}, rutina.id, rutina.nombre);
         setModalElegir(false);
         Alert.alert("Cargada", `Rutina: ${rutina.nombre}`);
     };
@@ -755,11 +882,53 @@ export default function Rutina() {
             {
                 nombre: ej.nombre,
                 series: 3,
-                reps: 12
+                reps: 12,
+                peso: 0
             }
         ];
         setRutinaPropia(nueva);
-        AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
+        persistirRutinaPropiaLocal(nueva);
+        setModalEjercicios(false);
+    };
+
+    const cerrarModalEjercicioPersonalizado = () => {
+        setModalEjercicioPersonalizado(false);
+        setEjercicioPersonalizado({
+            nombre: '',
+            series: '3',
+            reps: '12'
+        });
+    };
+
+    const guardarEjercicioPersonalizado = () => {
+        const nombre = ejercicioPersonalizado.nombre.trim();
+        const series = parseInt(ejercicioPersonalizado.series, 10) || 0;
+        const reps = parseInt(ejercicioPersonalizado.reps, 10) || 0;
+
+        if (!nombre) {
+            Alert.alert("Error", "Introduce un nombre para el ejercicio.");
+            return;
+        }
+
+        if (series <= 0 || reps <= 0) {
+            Alert.alert("Error", "Las series y repeticiones deben ser mayores que 0.");
+            return;
+        }
+
+        const nueva = { ...rutinaPropia };
+        nueva[diaPropioActivo] = [
+            ...(nueva[diaPropioActivo] || []),
+            {
+                nombre,
+                series,
+                reps,
+                peso: 0
+            }
+        ];
+
+        setRutinaPropia(nueva);
+        persistirRutinaPropiaLocal(nueva);
+        cerrarModalEjercicioPersonalizado();
         setModalEjercicios(false);
     };
 
@@ -767,7 +936,7 @@ export default function Rutina() {
         const nueva = { ...rutinaPropia };
         nueva[diaPropioActivo] = nueva[diaPropioActivo].filter((_, i) => i !== index);
         setRutinaPropia(nueva);
-        AsyncStorage.setItem("rutina_propia", JSON.stringify({ ejercicios: nueva, completados }));
+        persistirRutinaPropiaLocal(nueva);
     };
     const actualizarEjAuto = (index, campo, valor) => {
         const nueva = { ...rutinaEditable };
@@ -784,10 +953,30 @@ export default function Rutina() {
 
         setRutinaPropia(nueva);
 
-        AsyncStorage.setItem(
-            "rutina_propia",
-            JSON.stringify({ ejercicios: nueva, completados })
-        );
+        persistirRutinaPropiaLocal(nueva);
+    };
+
+    const actualizarPesoRutinaPropia = (nombre, valor) => {
+        setPerfData((prev) => ({
+            ...prev,
+            [nombre]: {
+                ...(prev[nombre] || {}),
+                peso: valor
+            }
+        }));
+
+        const nueva = { ...rutinaPropia };
+        nueva[diaPropioActivo] = (nueva[diaPropioActivo] || []).map((ej) => {
+            if (typeof ej === 'string') return ej;
+            if (ej.nombre !== nombre) return ej;
+            return {
+                ...ej,
+                peso: Number(valor || 0)
+            };
+        });
+
+        setRutinaPropia(nueva);
+        persistirRutinaPropiaLocal(nueva);
     };
 
     const simulateTrainingLog = async () => {
@@ -864,7 +1053,7 @@ export default function Rutina() {
                             <Text style={styles.title}>Mis Rutinas</Text>
                             <TouchableOpacity
                                 style={styles.createRoutineButton}
-                                onPress={() => setVistaActiva('propia')}
+                                onPress={iniciarNuevaRutina}
                                 activeOpacity={0.85}
                             >
                                 <Text style={styles.createRoutineButtonText}>+ Crear rutina</Text>
@@ -880,17 +1069,26 @@ export default function Rutina() {
                                 {listaRutinas.map((rutina) => {
                                     const resumen = obtenerResumenRutinaGuardada(rutina);
                                     return (
-                                        <LaserRoutineCard
-                                            key={rutina.id || rutina.nombre}
-                                            contentStyle={styles.savedRoutineCard}
-                                            onPress={() => abrirRutinaGuardada(rutina)}
-                                        >
+                                        <View key={rutina.id || rutina.nombre} style={styles.savedRoutineCardShell}>
+                                            <TouchableOpacity
+                                                activeOpacity={0.9}
+                                                style={styles.savedRoutineCard}
+                                                onPress={() => abrirRutinaGuardada(rutina)}
+                                            >
                                             <Text style={styles.savedRoutineName}>{rutina.nombre}</Text>
                                             <Text style={styles.savedRoutineMeta}>
                                                 {resumen.diasActivos} días • {resumen.totalEjercicios} ejercicios
                                             </Text>
                                             <Text style={styles.savedRoutineHint}>Toca para abrirla o editarla</Text>
-                                        </LaserRoutineCard>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={styles.savedRoutineDeleteAction}
+                                                onPress={() => eliminarRutinaGuardada(rutina)}
+                                                activeOpacity={0.85}
+                                            >
+                                                <Text style={styles.savedRoutineDeleteActionText}>Eliminar rutina</Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     );
                                 })}
                             </View>
@@ -1141,7 +1339,7 @@ export default function Rutina() {
                                                      </>
                                                  ) : (
                                                      <Text style={styles.seriesTextStatic}>
-                                                         {ejercicio.series} series x {ejercicio.reps} repeticiones
+                                                         {ejercicio.series} series x {ejercicio.reps} repeticiones{ejercicio.peso > 0 ? ` • ${ejercicio.peso} kg` : ''}
                                                      </Text>
                                                  )}
                                              </View>
@@ -1166,8 +1364,8 @@ export default function Rutina() {
                                                                  style={styles.perfInput}
                                                                  placeholder="kg"
                                                                  keyboardType="numeric"
-                                                                 value={perfData[nombre]?.peso || ""}
-                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), peso: text}}))}
+                                                                 value={perfData[nombre]?.peso ?? (ejercicio.peso > 0 ? String(ejercicio.peso) : "")}
+                                                                 onChangeText={(text) => actualizarPesoRutinaPropia(nombre, text)}
                                                              />
                                                          </View>
                                                      ) : null}
@@ -1326,6 +1524,17 @@ export default function Rutina() {
                         <TouchableOpacity onPress={() => setModalEjercicios(false)}><Text style={styles.closeModal}>Cerrar</Text></TouchableOpacity>
                     </View>
                     <TextInput placeholder="Buscar..." style={styles.searchInput} value={busqueda} onChangeText={setBusqueda} />
+                    <View style={styles.customExerciseActions}>
+                        <TouchableOpacity
+                            style={styles.customExerciseButton}
+                            onPress={() => {
+                                setModalEjercicios(false);
+                                setModalEjercicioPersonalizado(true);
+                            }}
+                        >
+                            <Text style={styles.customExerciseButtonText}>+ Crear ejercicio personalizado</Text>
+                        </TouchableOpacity>
+                    </View>
                     <ScrollView contentContainerStyle={{padding: 20}}>
                         {ejerciciosCatalogo.filter(e => e.nombre.toLowerCase().includes(busqueda.toLowerCase())).map((ej, i) => (
                             <TouchableOpacity key={i} style={styles.catItem} onPress={() => añadirEjercicio(ej)}>
@@ -1335,6 +1544,42 @@ export default function Rutina() {
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
+                </View>
+            </Modal>
+
+            <Modal visible={modalEjercicioPersonalizado} transparent animationType="fade">
+                <View style={styles.fullOverlay}>
+                    <View style={styles.modalSmall}>
+                        <Text style={styles.modalSub}>Crear ejercicio personalizado</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            placeholder="Nombre del ejercicio"
+                            value={ejercicioPersonalizado.nombre}
+                            onChangeText={(text) => setEjercicioPersonalizado((prev) => ({ ...prev, nombre: text }))}
+                        />
+                        <View style={styles.customExerciseRow}>
+                            <TextInput
+                                style={[styles.modalInput, styles.customExerciseInput]}
+                                placeholder="Series"
+                                keyboardType="numeric"
+                                value={ejercicioPersonalizado.series}
+                                onChangeText={(text) => setEjercicioPersonalizado((prev) => ({ ...prev, series: text }))}
+                            />
+                            <TextInput
+                                style={[styles.modalInput, styles.customExerciseInput]}
+                                placeholder="Repeticiones"
+                                keyboardType="numeric"
+                                value={ejercicioPersonalizado.reps}
+                                onChangeText={(text) => setEjercicioPersonalizado((prev) => ({ ...prev, reps: text }))}
+                            />
+                        </View>
+                        <TouchableOpacity style={styles.btnConfirm} onPress={guardarEjercicioPersonalizado}>
+                            <Text style={styles.btnConfirmText}>GUARDAR EJERCICIO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={cerrarModalEjercicioPersonalizado}>
+                            <Text style={styles.btnCancelText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Modal>
 
@@ -1463,6 +1708,11 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 18, fontWeight: 'bold' },
     closeModal: { color: '#ff7a00', fontWeight: 'bold' },
     searchInput: { backgroundColor: 'white', margin: 15, padding: 15, borderRadius: 12, elevation: 2 },
+    customExerciseActions: { paddingHorizontal: 15, paddingBottom: 5 },
+    customExerciseButton: { backgroundColor: '#ff7a00', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center' },
+    customExerciseButtonText: { color: 'white', fontWeight: '900', fontSize: 12 },
+    customExerciseRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    customExerciseInput: { width: '48%', marginBottom: 0, textAlign: 'center' },
     catItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 10, borderRadius: 15, marginBottom: 10 },
     catImage: { width: 50, height: 50, borderRadius: 10, marginRight: 15 },
     catName: { fontSize: 14, fontWeight: 'bold' },
@@ -1582,6 +1832,9 @@ const styles = StyleSheet.create({
     menuCardSub: { fontSize: 13, color: '#7a583e', lineHeight: 18 },
     savedRoutinesSection: { marginTop: 20, gap: 12 },
     savedRoutinesTitle: { color: '#ffffff', fontSize: 14, fontWeight: '900', marginBottom: 2, letterSpacing: 0.4 },
+    savedRoutineCardShell: {
+        position: 'relative'
+    },
     savedRoutineCard: {
         backgroundColor: '#fff8f1',
         borderRadius: 24,
@@ -1591,6 +1844,20 @@ const styles = StyleSheet.create({
         shadowRadius: 22,
         shadowOffset: { width: 0, height: 12 },
         elevation: 9
+    },
+    savedRoutineDeleteAction: {
+        marginTop: 8,
+        backgroundColor: '#fff1f1',
+        borderRadius: 14,
+        paddingVertical: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 68, 68, 0.35)'
+    },
+    savedRoutineDeleteActionText: {
+        color: '#ff4444',
+        fontSize: 13,
+        fontWeight: '900'
     },
     savedRoutineName: { color: '#b44f00', fontSize: 16, fontWeight: '900', marginBottom: 6, letterSpacing: 0.3 },
     savedRoutineMeta: { color: '#7a583e', fontSize: 12, fontWeight: '800', marginBottom: 6 },

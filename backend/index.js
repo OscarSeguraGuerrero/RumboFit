@@ -646,6 +646,37 @@ app.put('/api/rutinas/:id', async (req, res) => {
     }
 });
 
+app.delete('/api/rutinas/:id', async (req, res) => {
+    const { id } = req.params;
+    const userId = parseInt(req.query.userId || req.body?.userId);
+
+    if (!userId) {
+        return res.status(400).json({ success: false, error: "Falta el usuario." });
+    }
+
+    try {
+        const rutina = await prisma.rutina.findFirst({
+            where: {
+                id: parseInt(id),
+                usuario_id: userId,
+                es_generada: false
+            }
+        });
+
+        if (!rutina) {
+            return res.status(404).json({ success: false, error: "Rutina no encontrada." });
+        }
+
+        await prisma.rutina.delete({
+            where: { id: rutina.id }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Error al eliminar rutina" });
+    }
+});
+
 // Listar rutinas de un usuario
 app.get('/api/usuarios/:id/rutinas-guardadas', async (req, res) => {
     try {
