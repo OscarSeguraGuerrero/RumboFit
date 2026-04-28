@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/backend/prisma/schema.prisma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/historial.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/historial.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
-    </list>
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Cambios en la edición de las rutinas." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -156,7 +149,7 @@
       <workItem from="1777306925154" duration="1655000" />
       <workItem from="1777308842318" duration="3564000" />
       <workItem from="1777323973068" duration="3144000" />
-      <workItem from="1777369084308" duration="3417000" />
+      <workItem from="1777369084308" duration="4369000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -422,7 +415,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777326690101</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL-00034" summary="Cambios en la edición de las rutinas.">
+      <option name="closed" value="true" />
+      <created>1777375505760</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1777375505760</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -440,7 +441,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="modificaciones en el frontend con react" />
     <MESSAGE value="Dockerfile para ver la aplicacion" />
     <MESSAGE value="Dockerfile" />
     <MESSAGE value="Implementación en React Native para aplicaciones móbiles" />
@@ -465,6 +465,7 @@
     <MESSAGE value="cambios en rutinas" />
     <MESSAGE value="botones series repeticiones" />
     <MESSAGE value="cambios en el perfil" />
-    <option name="LAST_COMMIT_MESSAGE" value="cambios en el perfil" />
+    <MESSAGE value="Cambios en la edición de las rutinas." />
+    <option name="LAST_COMMIT_MESSAGE" value="Cambios en la edición de las rutinas." />
   </component>
 </project>
