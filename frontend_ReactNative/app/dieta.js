@@ -99,7 +99,8 @@ export default function Dieta() {
     const [alimentosCatalogo, setAlimentosCatalogo] = useState([]);
     const [busqueda, setBusqueda] = useState('');
     const [itemsReceta, setItemsReceta] = useState([]); // Ingredientes temporales
-    const [tituloComida, setTituloComida] = useState('');
+    const franjasDisponibles = ['Desayuno', 'Media mañana', 'Almuerzo', 'Merienda', 'Cena', 'Comida extra'];
+    const [tituloComida, setTituloComida] = useState(franjasDisponibles[0]);
     const [guardando, setGuardando] = useState(false);
 
     useEffect(() => {
@@ -160,8 +161,8 @@ export default function Dieta() {
     };
 
     const handleGuardarComida = async () => {
-        if (!tituloComida.trim()) {
-            Alert.alert("Aviso", "Por favor, introduce un título para la comida (Ej: Desayuno).");
+        if (!tituloComida) {
+            Alert.alert("Aviso", "Por favor, selecciona una franja horaria.");
             return;
         }
         if (itemsReceta.length === 0) {
@@ -212,7 +213,7 @@ export default function Dieta() {
                 setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
 
                 // Limpiar modal y cerrar
-                setTituloComida('');
+                setTituloComida(franjasDisponibles[0]);
                 setItemsReceta([]);
                 setBusqueda('');
                 setModalVisible(false);
@@ -371,14 +372,20 @@ export default function Dieta() {
                     </View>
 
                     <ScrollView contentContainerStyle={{ padding: 20 }}>
-                        <Text style={styles.inputLabel}>¿Qué has comido?</Text>
-                        <TextInput
-                            style={styles.modalInput}
-                            placeholder="Ej: Desayuno, Almuerzo, Cheat Meal..."
-                            placeholderTextColor="#999"
-                            value={tituloComida}
-                            onChangeText={setTituloComida}
-                        />
+                        <Text style={styles.inputLabel}>Franja Horaria</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.franjasContainer}>
+                            {franjasDisponibles.map((franja, idx) => (
+                                <TouchableOpacity 
+                                    key={idx} 
+                                    style={[styles.franjaChip, tituloComida === franja && styles.franjaChipActive]}
+                                    onPress={() => setTituloComida(franja)}
+                                >
+                                    <Text style={[styles.franjaChipText, tituloComida === franja && styles.franjaChipTextActive]}>
+                                        {franja}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
 
                         {/* LISTA DE INGREDIENTES SELECCIONADOS */}
                         {itemsReceta.length > 0 && (
@@ -511,6 +518,13 @@ const styles = StyleSheet.create({
     closeModalText: { color: '#ff7a00', fontWeight: 'bold' },
     inputLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 8, marginTop: 15 },
     modalInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#ddd', fontSize: 16, color: '#333', marginBottom: 10 },
+    
+    // ESTILOS FRANJAS HORARIAS
+    franjasContainer: { flexDirection: 'row', marginBottom: 15, paddingBottom: 5 },
+    franjaChip: { backgroundColor: '#f0f0f0', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, marginRight: 10 },
+    franjaChipActive: { backgroundColor: '#ff7a00' },
+    franjaChipText: { color: '#666', fontWeight: 'bold', fontSize: 13 },
+    franjaChipTextActive: { color: '#fff' },
 
     // ESTILOS BUSCADOR (Estilo Rutina)
     searchInput: { backgroundColor: 'white', padding: 15, borderRadius: 12, elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, fontSize: 16, color: '#333', marginBottom: 20 },
