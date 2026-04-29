@@ -262,6 +262,14 @@ export default function Historial() {
                                         ) : (
                                             <Text style={styles.foodLine}>Sin alimentos registrados</Text>
                                         )}
+                                        {ev.datos.macros && (
+                                            <View style={styles.mealMacrosRow}>
+                                                <Text style={styles.mealMacroItem}>{Math.round(ev.datos.macros.kcal)} Kcal</Text>
+                                                <Text style={[styles.mealMacroItem, {color: '#3498db'}]}>P: {Math.round(ev.datos.macros.prot)}g</Text>
+                                                <Text style={[styles.mealMacroItem, {color: '#2ecc71'}]}>C: {Math.round(ev.datos.macros.carb)}g</Text>
+                                                <Text style={[styles.mealMacroItem, {color: '#f1c40f'}]}>G: {Math.round(ev.datos.macros.gras)}g</Text>
+                                            </View>
+                                        )}
                                     </View>
                                 );
                             }
@@ -306,5 +314,7 @@ const styles = StyleSheet.create({
     nutItem: { alignItems: 'center' },
     nutVal: { color: '#1a1a1a', fontSize: 16, fontWeight: 'bold' },
     nutLab: { color: '#888', fontSize: 10 },
-    noData: { color: '#aaa', textAlign: 'center', marginTop: 20 }
+    noData: { color: '#aaa', textAlign: 'center', marginTop: 20 },
+    mealMacrosRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
+    mealMacroItem: { fontSize: 12, fontWeight: '700', color: '#ff7a00' },
 });
