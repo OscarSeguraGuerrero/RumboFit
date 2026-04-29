@@ -24,7 +24,9 @@ const { width } = Dimensions.get('window');
 // --- FUNCIONES DE CÁLCULO (Copiadas de rutina.js para mantener lógica) ---
 const calcularTDEE = (user) => {
     if (!user || !user.peso || !user.altura || !user.edad) return 2000;
-    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5;
+    const sexo = user.sexo?.toLowerCase() || '';
+    const constSexo = (sexo === 'femenino' || sexo === 'mujer' || sexo === 'f') ? -161 : 5;
+    let tmb = (10 * Number(user.peso)) + (6.25 * Number(user.altura)) - (5 * Number(user.edad)) + constSexo;
     let multiplicador = 1.2;
     if (user.frecuencia_semanal >= 1 && user.frecuencia_semanal <= 2) multiplicador = 1.375;
     else if (user.frecuencia_semanal >= 3 && user.frecuencia_semanal <= 5) multiplicador = 1.55;
