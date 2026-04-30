@@ -476,28 +476,38 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                         {itemsReceta.length > 0 && (
                             <View style={styles.selectedItemsSection}>
                                 <Text style={styles.inputLabel}>Ingredientes añadidos</Text>
-                                {itemsReceta.map((it, idx) => (
-                                    <View key={idx} style={styles.selectedItemCard}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.selectedItemName}>{it.nombre}</Text>
-                                            <Text style={styles.selectedItemMacros}>
-                                                {Math.round((Number(it.calorias_100g) * it.cantidad) / 100)} Kcal
-                                            </Text>
+                                {itemsReceta.map((it, idx) => {
+                                    const factor = Number(it.cantidad) / 100;
+                                    const kcal = Math.round(Number(it.calorias_100g) * factor);
+                                    const prot = (Number(it.proteinas_100g) * factor).toFixed(1);
+                                    const carb = (Number(it.carbohidratos_100g) * factor).toFixed(1);
+                                    const gras = (Number(it.grasas_100g) * factor).toFixed(1);
+                                    return (
+                                        <View key={idx} style={styles.selectedItemCard}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.selectedItemName}>{it.nombre}</Text>
+                                                <Text style={styles.selectedItemMacros}>{kcal} Kcal</Text>
+                                                <View style={styles.ingredientMacrosRow}>
+                                                    <Text style={[styles.ingredientMacroText, {color: '#3498db'}]}>P: {prot}g</Text>
+                                                    <Text style={[styles.ingredientMacroText, {color: '#2ecc71'}]}>C: {carb}g</Text>
+                                                    <Text style={[styles.ingredientMacroText, {color: '#f1c40f'}]}>G: {gras}g</Text>
+                                                </View>
+                                            </View>
+                                            <View style={styles.qtyContainer}>
+                                                <TextInput
+                                                    style={styles.inputGrams}
+                                                    keyboardType="numeric"
+                                                    value={String(it.cantidad)}
+                                                    onChangeText={(text) => actualizarGramos(it.id, text)}
+                                                />
+                                                <Text style={styles.gramsLabel}>g</Text>
+                                            </View>
+                                            <TouchableOpacity onPress={() => quitarAlimento(it.id)} style={styles.btnRemove}>
+                                                <Text style={styles.removeIcon}>✕</Text>
+                                            </TouchableOpacity>
                                         </View>
-                                        <View style={styles.qtyContainer}>
-                                            <TextInput
-                                                style={styles.inputGrams}
-                                                keyboardType="numeric"
-                                                value={String(it.cantidad)}
-                                                onChangeText={(text) => actualizarGramos(it.id, text)}
-                                            />
-                                            <Text style={styles.gramsLabel}>g</Text>
-                                        </View>
-                                        <TouchableOpacity onPress={() => quitarAlimento(it.id)} style={styles.btnRemove}>
-                                            <Text style={styles.removeIcon}>✕</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
+                                    );
+                                })}
                             </View>
                         )}
 
@@ -703,6 +713,8 @@ const styles = StyleSheet.create({
     selectedItemCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: '#eee' },
     selectedItemName: { fontSize: 14, fontWeight: 'bold', color: '#333' },
     selectedItemMacros: { fontSize: 11, color: '#ff7a00', fontWeight: '600' },
+    ingredientMacrosRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
+    ingredientMacroText: { fontSize: 10, fontWeight: '700' },
     qtyContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f0', borderRadius: 8, paddingHorizontal: 8, marginHorizontal: 10 },
     inputGrams: { paddingVertical: 4, width: 45, textAlign: 'center', fontWeight: 'bold', color: '#333' },
     gramsLabel: { fontSize: 12, color: '#666', fontWeight: 'bold' },
