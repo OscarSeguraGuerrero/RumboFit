@@ -156,6 +156,7 @@ function LaserRoutineCard({ children, style, contentStyle, onPress }) {
 export default function Rutina() {
     const router = useRouter();
     const [data, setData] = useState(null);
+    const [cargando, setCargando] = useState(true);
     const [diaActual, setDiaActual] = useState(null);
     const [usuario, setUsuario] = useState({ nombre: 'Usuario' });
     const [usuarioCompleto, setUsuarioCompleto] = useState(null);
@@ -174,6 +175,7 @@ export default function Rutina() {
     const [modalEjercicioPersonalizado, setModalEjercicioPersonalizado] = useState(false);
     const [ejerciciosCatalogo, setEjerciciosCatalogo] = useState([]);
     const [busqueda, setBusqueda] = useState('');
+    const [indiceSustituir, setIndiceSustituir] = useState(null);
     const [ejercicioPersonalizado, setEjercicioPersonalizado] = useState({
         nombre: '',
         series: '3',
@@ -193,6 +195,7 @@ export default function Rutina() {
     const [listaRutinas, setListaRutinas] = useState([]);
     const [idRutinaActual, setIdRutinaActual] = useState(null);
     const [nombreRutinaActual, setNombreRutinaActual] = useState('');
+    const [confirmModal, setConfirmModal] = useState({ visible: false, title: '', message: '', onConfirm: null });
 
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -495,6 +498,11 @@ export default function Rutina() {
     };
 
     const iniciarNuevaRutina = async () => {
+        if (!usuarioCompleto?.es_premium && listaRutinas.length >= 3) {
+            Alert.alert("Límite alcanzado", "Las cuentas gratuitas solo pueden tener hasta 3 rutinas propias. Elimina una existente para crear una nueva.");
+            return;
+        }
+
         const rutinaVacia = crearRutinaVacia();
         setRutinaPropia(rutinaVacia);
         setCompletados({});
@@ -564,6 +572,7 @@ export default function Rutina() {
     useEffect(() => {
         const cargarData = async () => {
             try {
+                setCargando(true);
                 setData(null);
                 setUsuario({ nombre: 'Usuario' });
                 setRutinaPropia({});
@@ -576,20 +585,27 @@ export default function Rutina() {
                 if (userName) setUsuario({ nombre: userName });
 
                 if (userId) {
-                    const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
-                    const userData = await userRes.json();
-                    if (userData.success) setUsuarioCompleto(userData.usuario);
+                    // Cargar perfil del usuario
+                    try {
+                        const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
+                        const userData = await userRes.json();
+                        if (userData.success) setUsuarioCompleto(userData.usuario);
+                    } catch (e) { console.warn('No se pudo cargar perfil', e); }
 
-                    const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial`);
-                    const histData = await histRes.json();
-                    if (histData.success && histData.historial) {
-                        const hoyStr = new Date().toISOString().split('T')[0];
-                        const dataHoy = histData.historial[hoyStr];
-                        if (dataHoy && dataHoy.comidas) {
-                            setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
+                    // Cargar historial (no crítico, no bloquea si falla)
+                    try {
+                        const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial`);
+                        const histData = await histRes.json();
+                        if (histData.success && histData.historial) {
+                            const hoyStr = new Date().toISOString().split('T')[0];
+                            const dataHoy = histData.historial[hoyStr];
+                            if (dataHoy && dataHoy.comidas) {
+                                setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
+                            }
                         }
-                    }
+                    } catch (e) { console.warn('No se pudo cargar historial', e); }
 
+                    // Cargar rutina sugerida (crítico)
                     if (!resRutina) {
                         const response = await fetch(`${API_URL}/usuarios/${userId}/rutina`);
                         const result = await response.json();
@@ -638,15 +654,21 @@ export default function Rutina() {
                     setRutinaPropia(crearRutinaVacia());
                 }
 
-                const resCat = await fetch(`${API_URL}/ejercicios`);
-                const dataCat = await resCat.json();
-                setEjerciciosCatalogo(dataCat);
+                // Cargar catálogo de ejercicios (no crítico)
+                try {
+                    const resCat = await fetch(`${API_URL}/ejercicios`);
+                    const dataCat = await resCat.json();
+                    setEjerciciosCatalogo(dataCat);
+                } catch (e) { console.warn('No se pudo cargar catálogo', e); }
+
                 await cargarRutinasGuardadas();
 
                 Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: false }).start();
             } catch (err) {
                 console.error(err);
                 setData(null);
+            } finally {
+                setCargando(false);
             }
         };
         cargarData();
@@ -703,49 +725,26 @@ export default function Rutina() {
             }
         };
 
-        Alert.alert(
-            'Eliminar rutina',
-            `Se eliminará "${rutina.nombre}". Esta acción no se puede deshacer.`,
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Eliminar',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const userId = await AsyncStorage.getItem("userId");
-                            if (!userId) {
-                                await aplicarEliminacionLocal();
-                                return;
-                            }
+        setConfirmModal({
+            visible: true,
+            title: 'Eliminar rutina',
+            message: `¿Estás seguro de que quieres eliminar "${rutina.nombre}"? Esta acción no se puede deshacer.`,
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, visible: false }));
+                try {
+                    const userId = await AsyncStorage.getItem("userId");
+                    if (!userId) { await aplicarEliminacionLocal(); return; }
 
-                            const res = await fetch(`${API_URL}/rutinas/${rutina.id}?userId=${userId}`, {
-                                method: 'DELETE'
-                            });
+                    const res = await fetch(`${API_URL}/rutinas/${rutina.id}?userId=${userId}`, { method: 'DELETE' });
+                    let result = null;
+                    try { result = await res.json(); } catch { result = null; }
 
-                            let result = null;
-                            try {
-                                result = await res.json();
-                            } catch {
-                                result = null;
-                            }
-
-                            await aplicarEliminacionLocal();
-
-                            if (!res.ok || !result?.success) {
-                                Alert.alert("Aviso", "La rutina se eliminó del menú en este dispositivo.");
-                                return;
-                            }
-
-                            Alert.alert("Éxito", "Rutina eliminada correctamente");
-                        } catch (e) {
-                            await aplicarEliminacionLocal();
-                            Alert.alert("Aviso", "La rutina se eliminó del menú en este dispositivo.");
-                        }
-                    }
+                    await aplicarEliminacionLocal();
+                } catch (e) {
+                    await aplicarEliminacionLocal();
                 }
-            ]
-        );
+            }
+        });
     };
 
     const handleGuardarEnDB = async () => {
@@ -876,14 +875,36 @@ export default function Rutina() {
     };
 
     const añadirEjercicio = (ej) => {
+        if (indiceSustituir !== null && vistaActiva === 'automatica') {
+            const nueva = { ...rutinaEditable };
+            if (!nueva[diaActual]) nueva[diaActual] = [];
+            nueva[diaActual][indiceSustituir].nombre = ej.nombre;
+            setRutinaEditable(nueva);
+            setIndiceSustituir(null);
+            setModalEjercicios(false);
+            return;
+        }
+
+        let totalEjercicios = 0;
+        Object.values(rutinaPropia).forEach(dia => {
+            if (Array.isArray(dia)) totalEjercicios += dia.length;
+        });
+
+        if (totalEjercicios >= 20) {
+            Alert.alert("Límite alcanzado", "Una rutina no puede tener más de 20 ejercicios en total.");
+            return;
+        }
+
         const nueva = { ...rutinaPropia };
+        if (!nueva[diaPropioActivo]) nueva[diaPropioActivo] = [];
         nueva[diaPropioActivo] = [
             ...nueva[diaPropioActivo],
             {
                 nombre: ej.nombre,
                 series: 3,
                 reps: 12,
-                peso: 0
+                peso: 0,
+                notas: ''
             }
         ];
         setRutinaPropia(nueva);
@@ -1003,7 +1024,7 @@ export default function Rutina() {
     };
 
 
-    if (!data) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
+    if (cargando || !data) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -1044,6 +1065,24 @@ export default function Rutina() {
                 </TouchableWithoutFeedback>
             </Modal>
 
+            {/* MODAL CONFIRMACIÓN ELIMINAR RUTINA */}
+            <Modal transparent={true} visible={confirmModal.visible} animationType="fade">
+                <View style={styles.confirmOverlay}>
+                    <View style={styles.confirmCard}>
+                        <Text style={styles.confirmTitle}>{confirmModal.title}</Text>
+                        <Text style={styles.confirmMsg}>{confirmModal.message}</Text>
+                        <View style={styles.confirmActions}>
+                            <TouchableOpacity style={styles.confirmBtnCancel} onPress={() => setConfirmModal(prev => ({ ...prev, visible: false }))}>
+                                <Text style={styles.confirmBtnCancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.confirmBtnDelete} onPress={confirmModal.onConfirm}>
+                                <Text style={styles.confirmBtnDeleteText}>Eliminar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             {/* --- CARD PRINCIPAL --- */}
             <View style={styles.mainCard}>
                 {vistaActiva === 'rutinas_menu' && (
@@ -1075,18 +1114,18 @@ export default function Rutina() {
                                                 style={styles.savedRoutineCard}
                                                 onPress={() => abrirRutinaGuardada(rutina)}
                                             >
-                                            <Text style={styles.savedRoutineName}>{rutina.nombre}</Text>
-                                            <Text style={styles.savedRoutineMeta}>
-                                                {resumen.diasActivos} días • {resumen.totalEjercicios} ejercicios
-                                            </Text>
-                                            <Text style={styles.savedRoutineHint}>Toca para abrirla o editarla</Text>
+                                                <Text style={styles.savedRoutineName}>{rutina.nombre}</Text>
+                                                <Text style={styles.savedRoutineMeta}>
+                                                    {resumen.diasActivos} días • {resumen.totalEjercicios} ejercicios
+                                                </Text>
+                                                <Text style={styles.savedRoutineHint}>Toca para abrirla o editarla</Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
-                                                style={styles.savedRoutineDeleteAction}
+                                                style={styles.savedRoutineDeleteX}
                                                 onPress={() => eliminarRutinaGuardada(rutina)}
-                                                activeOpacity={0.85}
+                                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                             >
-                                                <Text style={styles.savedRoutineDeleteActionText}>Eliminar rutina</Text>
+                                                <Text style={styles.savedRoutineDeleteXText}>✕</Text>
                                             </TouchableOpacity>
                                         </View>
                                     );
@@ -1232,7 +1271,16 @@ export default function Rutina() {
                                                      ) : null}
                                                  </View>
                                              )}
+                                             )}
                                          </View>
+                                         {editando && (
+                                             <TouchableOpacity 
+                                                 onPress={() => { setIndiceSustituir(i); setModalEjercicios(true); }} 
+                                                 style={[styles.btnDelete, { backgroundColor: '#3498db' }]}
+                                             >
+                                                 <Text style={[styles.deleteIcon, { fontSize: 12 }]}>Sustituir</Text>
+                                             </TouchableOpacity>
+                                         )}
                                      </Pressable>
                                  );
                             })}
@@ -1371,10 +1419,23 @@ export default function Rutina() {
                                                      ) : null}
                                                  </View>
                                              )}
+
+                                             {editando && (
+                                                 <View style={{ gap: 5, marginTop: 10, width: '100%' }}>
+                                                     <TextInput
+                                                         style={{ backgroundColor: '#f9f9f9', width: '100%', minHeight: 35, textAlign: 'left', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, fontSize: 12, borderWidth: 1, borderColor: '#eee', color: '#555' }}
+                                                         placeholder="Añadir notas/observaciones (opcional)"
+                                                         placeholderTextColor="#aaa"
+                                                         value={ejercicio.notas || ""}
+                                                         onChangeText={(text) => actualizarEjercicio(i, 'notas', text)}
+                                                     />
+                                                     <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={[styles.btnDelete, { alignSelf: 'flex-end', marginTop: 5, padding: 5 }]}><Text style={[styles.deleteIcon, { fontSize: 12 }]}>✕ Eliminar</Text></TouchableOpacity>
+                                                 </View>
+                                             )}
+                                             {!editando && ejercicio.notas ? (
+                                                 <Text style={{ color: '#bdc3c7', fontSize: 12, marginTop: 10, fontStyle: 'italic', width: '100%' }}>Notas: {ejercicio.notas}</Text>
+                                             ) : null}
                                          </View>
-                                         {editando && (
-                                             <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={styles.btnDelete}><Text style={styles.deleteIcon}>✕</Text></TouchableOpacity>
-                                         )}
                                      </Pressable>
                                  );
                             })}
@@ -1786,20 +1847,33 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 12 },
         elevation: 9
     },
-    savedRoutineDeleteAction: {
-        marginTop: 8,
-        backgroundColor: '#fff1f1',
+    savedRoutineDeleteX: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        width: 28,
+        height: 28,
         borderRadius: 14,
-        paddingVertical: 12,
+        backgroundColor: 'rgba(255,68,68,0.15)',
+        justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 68, 68, 0.35)'
     },
-    savedRoutineDeleteActionText: {
+    savedRoutineDeleteXText: {
         color: '#ff4444',
-        fontSize: 13,
-        fontWeight: '900'
+        fontSize: 14,
+        fontWeight: '900',
+        lineHeight: 18,
     },
+    // MODAL CONFIRMACIÓN
+    confirmOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
+    confirmCard: { backgroundColor: 'white', width: '82%', padding: 25, borderRadius: 20, elevation: 12 },
+    confirmTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+    confirmMsg: { fontSize: 14, color: '#666', marginBottom: 25, lineHeight: 20 },
+    confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
+    confirmBtnCancel: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, backgroundColor: '#f0f0f0' },
+    confirmBtnCancelText: { color: '#666', fontWeight: 'bold' },
+    confirmBtnDelete: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, backgroundColor: '#ff4444' },
+    confirmBtnDeleteText: { color: 'white', fontWeight: 'bold' },
     savedRoutineName: { color: '#b44f00', fontSize: 16, fontWeight: '900', marginBottom: 6, letterSpacing: 0.3 },
     savedRoutineMeta: { color: '#7a583e', fontSize: 12, fontWeight: '800', marginBottom: 6 },
     savedRoutineHint: { color: '#7a583e', fontSize: 11, fontWeight: '700' },

@@ -71,15 +71,12 @@ export default function Auth() {
                 const data = await response.json();
 
                 if (data.success) {
-                    // Guardamos el ID del usuario en el móvil para saber quién es en el formulario
+                    // Guardamos el ID del usuario en el móvil para saber quién es
                     await AsyncStorage.setItem("userId", data.user.id.toString());
                     await AsyncStorage.setItem("userName", data.user.nombre);
-
-                    if (data.hasRoutine) {
-                        router.replace('/rutina');
-                    } else {
-                        router.replace('/formulario');
-                    }
+                    // Limpiamos la rutina cacheada para evitar cargar datos de otro usuario
+                    await AsyncStorage.removeItem("rutina");
+                    router.replace('/rutina');
                 } else {
                     setError(data.error || "Credenciales incorrectas");
                 }

@@ -73,8 +73,10 @@ export default function Historial() {
         if (nueva.getFullYear() > hoy.getFullYear() || (nueva.getFullYear() === hoy.getFullYear() && nueva.getMonth() > hoy.getMonth())) return;
 
         if (nueva.getFullYear() < limiteAtras.getFullYear() || (nueva.getFullYear() === limiteAtras.getFullYear() && nueva.getMonth() < limiteAtras.getMonth())) {
-            Alert.alert("Historial Limitado", "Las cuentas gratuitas solo ven los últimos 3 meses.");
-            return;
+            if (!esPremium) {
+                Alert.alert("Plan Premium requerido", "Las cuentas gratuitas solo ven los últimos 3 meses.");
+                return;
+            }
         }
         setFechaReferencia(nueva);
     };
@@ -88,13 +90,11 @@ export default function Historial() {
         let totales = { kcal: 0, prot: 0, carb: 0, gras: 0 };
         comidas.forEach(c => {
             if (c.macros) {
-                // El backend ya devuelve los macros precalculados por comida
                 totales.kcal += Number(c.macros.kcal || 0);
                 totales.prot += Number(c.macros.prot || 0);
                 totales.carb += Number(c.macros.carb || 0);
                 totales.gras += Number(c.macros.gras || 0);
             } else if (c.items) {
-                // Fallback: calcular desde los items si no hay macros precalculados
                 c.items.forEach(it => {
                     const factor = Number(it.cantidad_gramos) / 100;
                     totales.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
@@ -176,11 +176,24 @@ export default function Historial() {
                             const actividadDia = historialData[item.fechaStr];
                             const esSeleccionado = diaSeleccionado === item.fechaStr;
 
+                            const itemDate = new Date(item.fechaStr);
+                            const hoy = new Date();
+                            const limiteAtras = new Date();
+                            limiteAtras.setMonth(hoy.getMonth() - 3);
+                            limiteAtras.setHours(0,0,0,0);
+                            const estaBloqueado = !esPremium && itemDate < limiteAtras;
+
                             return (
                                 <TouchableOpacity
                                     key={item.fechaStr}
-                                    style={[styles.dayCell, esSeleccionado && styles.daySelected]}
-                                    onPress={() => setDiaSeleccionado(item.fechaStr)}
+                                    style={[styles.dayCell, esSeleccionado && styles.daySelected, estaBloqueado && { opacity: 0.3 }]}
+                                    onPress={() => {
+                                        if (estaBloqueado) {
+                                            Alert.alert("Plan Premium requerido", "Actualiza a Premium para ver registros de hace más de 3 meses.");
+                                        } else {
+                                            setDiaSeleccionado(item.fechaStr);
+                                        }
+                                    }}
                                 >
                                     <Text style={[styles.dayText, esSeleccionado && styles.dayTextActive]}>{item.dia}</Text>
                                     {actividadDia && <View style={styles.dot} />}

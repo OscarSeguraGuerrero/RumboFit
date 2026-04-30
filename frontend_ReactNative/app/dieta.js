@@ -112,6 +112,13 @@ export default function Dieta() {
     const [nuevoAlim, setNuevoAlim] = useState({ nombre: '', kcal: '', prot: '', carb: '', gras: '' });
     const [creandoAlimento, setCreandoAlimento] = useState(false);
 
+    // Estado para modal de confirmación general
+    const [confirmModal, setConfirmModal] = useState({ visible: false, title: '', message: '', onConfirm: null });
+
+    // Estado para edición inline de comida
+    const [editandoComida, setEditandoComida] = useState(null); // id de la comida en edición
+    const [editandoCantidades, setEditandoCantidades] = useState({}); // { [itemId]: gramos }
+
     useEffect(() => {
         const cargarData = async () => {
             try {
@@ -293,31 +300,117 @@ export default function Dieta() {
         }
     };
 
+    const ejecutarEliminarAlimento = async (comidaId, alimentoId) => {
+        try {
+            const res = await fetch(`${API_URL}/dieta/alimento/${alimentoId}`, {
+                method: 'DELETE',
+            });
+            const data = await res.json();
+            if (data.success) {
+                const nuevasComidas = comidasHoy.map(c => {
+                    if (c.id === comidaId) {
+                        const nuevosItems = c.items.filter(it => it.id !== alimentoId);
+                        let macrosComida = { kcal: 0, prot: 0, carb: 0, gras: 0 };
+                        nuevosItems.forEach(it => {
+                            const factor = Number(it.cantidad_gramos || it.cantidad || 0) / 100;
+                            macrosComida.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
+                            macrosComida.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
+                            macrosComida.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
+                            macrosComida.gras += Number(it.alimento?.grasas_100g || 0) * factor;
+                        });
+                        return { ...c, items: nuevosItems, macros: macrosComida };
+                    }
+                    return c;
+                }).filter(c => c.items && c.items.length > 0);
+
+                setComidasHoy(nuevasComidas);
+                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+            } else {
+                Alert.alert("Error", "No se pudo eliminar el alimento.");
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "No se pudo conectar con el servidor.");
+        }
+    };
+
+    const handleEliminarAlimento = (comidaId, alimentoId) => {
+        setConfirmModal({
+            visible: true,
+            title: "Eliminar alimento",
+            message: "¿Estás seguro de que quieres eliminar este alimento?",
+            onConfirm: () => {
+                setConfirmModal({ ...confirmModal, visible: false });
+                ejecutarEliminarAlimento(comidaId, alimentoId);
+            }
+        });
+    };
+
     const handleEliminarComida = async (id) => {
-        if (Platform.OS === 'web') {
-            if (window.confirm("¿Estás seguro de que quieres eliminar esta comida?")) {
+        setConfirmModal({
+            visible: true,
+            title: "Eliminar comida",
+            message: "¿Estás seguro de que quieres eliminar esta comida?",
+            onConfirm: () => {
+                setConfirmModal({ ...confirmModal, visible: false });
                 ejecutarEliminar(id);
             }
-        } else {
-            Alert.alert(
-                "Eliminar comida",
-                "¿Estás seguro de que quieres eliminar esta comida?",
-                [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                        text: "Eliminar",
-                        style: "destructive",
-                        onPress: () => ejecutarEliminar(id)
-                    }
-                ]
-            );
-        }
+        });
     };
 
     const cerrarSesion = async () => {
         setMenuVisible(false);
         await AsyncStorage.clear();
         router.replace('/');
+    };
+
+    const iniciarEdicionComida = (comida) => {
+        const cantidades = {};
+        (comida.items || []).forEach(it => {
+            cantidades[it.id] = String(it.cantidad_gramos || it.cantidad || '');
+        });
+        setEditandoCantidades(cantidades);
+        setEditandoComida(comida.id);
+    };
+
+    const handleGuardarEdicionComida = async (comida) => {
+        try {
+            await Promise.all(
+                (comida.items || []).map(it => {
+                    const nuevaCantidad = editandoCantidades[it.id];
+                    if (!nuevaCantidad || Number(nuevaCantidad) === (it.cantidad_gramos || it.cantidad)) return Promise.resolve();
+                    return fetch(`${API_URL}/dieta/alimento/${it.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cantidad_gramos: Number(nuevaCantidad) })
+                    });
+                })
+            );
+            // Actualizar estado local con los nuevos gramos
+            const nuevasComidas = comidasHoy.map(c => {
+                if (c.id !== comida.id) return c;
+                const nuevosItems = (c.items || []).map(it => ({
+                    ...it,
+                    cantidad_gramos: Number(editandoCantidades[it.id]) || (it.cantidad_gramos || it.cantidad)
+                }));
+                let macros = { kcal: 0, prot: 0, carb: 0, gras: 0 };
+                nuevosItems.forEach(it => {
+                    const factor = Number(it.cantidad_gramos) / 100;
+                    macros.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
+                    macros.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
+                    macros.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
+                    macros.gras += Number(it.alimento?.grasas_100g || 0) * factor;
+                });
+                return { ...c, items: nuevosItems, macros };
+            });
+            setComidasHoy(nuevasComidas);
+            setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setEditandoComida(null);
+            setEditandoCantidades({});
+        }
     };
 
     const objMacros = calcularMacrosObjetivo(calcularTDEE(usuarioCompleto), usuarioCompleto);
@@ -376,8 +469,8 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                             <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
                             <Text style={styles.title}>Registro de Comidas</Text>
                         </View>
-                        <TouchableOpacity style={styles.btnAddCircle} onPress={() => setModalVisible(true)}>
-                            <Text style={styles.btnAddText}>+</Text>
+                        <TouchableOpacity style={styles.btnAddPill} onPress={() => setModalVisible(true)}>
+                            <Text style={styles.btnAddPillText}>+ Registrar dieta</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -413,32 +506,74 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                     {comidasHoy.length > 0 ? (
                         <View style={styles.comidasList}>
                             <Text style={styles.sectionTitle}>Comidas de hoy</Text>
-                            {comidasHoy.map((comida, index) => (
-                                <View key={comida.id || index} style={styles.comidaCard}>
-                                    <View style={styles.comidaHeader}>
-                                        <View>
-                                            <Text style={styles.comidaTitle}>{comida.titulo || comida.franja_horaria}</Text>
-                                            <Text style={styles.comidaTime}>{comida.hora}</Text>
+                            {comidasHoy.map((comida, index) => {
+                                const enEdicion = editandoComida === comida.id;
+                                return (
+                                    <View key={comida.id || index} style={[styles.comidaCard, { position: 'relative' }]}>
+                                        {/* X eliminar comida — solo visible cuando no se está editando */}
+                                        {!enEdicion && (
+                                            <TouchableOpacity
+                                                style={styles.deleteComidaX}
+                                                onPress={() => handleEliminarComida(comida.id)}
+                                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                            >
+                                                <Text style={styles.deleteComidaXText}>✕</Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        {/* Header con título y botón EDITAR/GUARDAR */}
+                                        <View style={styles.comidaHeader}>
+                                            <View>
+                                                <Text style={styles.comidaTitle}>{comida.titulo || comida.franja_horaria}</Text>
+                                                <Text style={styles.comidaTime}>{comida.hora}</Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={[styles.comidaEditBtn, enEdicion && styles.comidaEditBtnActive]}
+                                                onPress={() => enEdicion ? handleGuardarEdicionComida(comida) : iniciarEdicionComida(comida)}
+                                            >
+                                                <Text style={[styles.comidaEditBtnText, enEdicion && styles.comidaEditBtnTextActive]}>
+                                                    {enEdicion ? 'GUARDAR' : 'EDITAR'}
+                                                </Text>
+                                            </TouchableOpacity>
                                         </View>
-                                        <TouchableOpacity onPress={() => handleEliminarComida(comida.id)} style={styles.btnDeleteComida}>
-                                            <Text style={styles.deleteComidaIcon}>🗑️</Text>
-                                        </TouchableOpacity>
+
+                                        <View style={styles.comidaMacros}>
+                                            <Text style={styles.comidaKcal}>{Math.round(comida.macros?.kcal || 0)} Kcal</Text>
+                                            <Text style={styles.comidaMacroItem}>P: {Math.round(comida.macros?.prot || 0)}g</Text>
+                                            <Text style={styles.comidaMacroItem}>C: {Math.round(comida.macros?.carb || 0)}g</Text>
+                                            <Text style={styles.comidaMacroItem}>G: {Math.round(comida.macros?.gras || 0)}g</Text>
+                                        </View>
+
+                                        <View style={styles.comidaItems}>
+                                            {comida.items && comida.items.map((it, i) => (
+                                                <View key={it.id || i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                                                    <Text style={styles.comidaItemText}>
+                                                        • {it.alimento?.nombre}
+                                                    </Text>
+                                                    {enEdicion ? (
+                                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                            <TextInput
+                                                                style={styles.comidaGramInput}
+                                                                keyboardType="numeric"
+                                                                value={editandoCantidades[it.id] ?? String(it.cantidad_gramos || it.cantidad || '')}
+                                                                onChangeText={(t) => setEditandoCantidades(prev => ({ ...prev, [it.id]: t }))}
+                                                            />
+                                                            <Text style={{ color: '#888', fontSize: 12, fontWeight: '600' }}>g</Text>
+                                                        </View>
+                                                    ) : (
+                                                        <Text style={{ color: '#999', fontSize: 12 }}>({it.cantidad_gramos || it.cantidad}g)</Text>
+                                                    )}
+                                                    {!enEdicion && (
+                                                        <TouchableOpacity onPress={() => handleEliminarAlimento(comida.id, it.id)}>
+                                                            <Text style={{ color: '#e74c3c', fontSize: 15, fontWeight: 'bold', paddingLeft: 6 }}>✕</Text>
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+                                            ))}
+                                        </View>
                                     </View>
-                                    <View style={styles.comidaMacros}>
-                                        <Text style={styles.comidaKcal}>{Math.round(comida.macros?.kcal || 0)} Kcal</Text>
-                                        <Text style={styles.comidaMacroItem}>P: {Math.round(comida.macros?.prot || 0)}g</Text>
-                                        <Text style={styles.comidaMacroItem}>C: {Math.round(comida.macros?.carb || 0)}g</Text>
-                                        <Text style={styles.comidaMacroItem}>G: {Math.round(comida.macros?.gras || 0)}g</Text>
-                                    </View>
-                                    <View style={styles.comidaItems}>
-                                        {comida.items && comida.items.map((it, i) => (
-                                            <Text key={i} style={styles.comidaItemText}>
-                                                • {it.alimento?.nombre} ({it.cantidad_gramos || it.cantidad}g)
-                                            </Text>
-                                        ))}
-                                    </View>
-                                </View>
-                            ))}
+                                );
+                            })}
                         </View>
                     ) : (
                         <Text style={styles.noDataText}>No has registrado ninguna comida hoy.</Text>
@@ -481,7 +616,7 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.selectedItemName}>{it.nombre}</Text>
                                             <Text style={styles.selectedItemMacros}>
-                                                {Math.round((Number(it.calorias_100g) * it.cantidad) / 100)} Kcal
+                                                {Math.round((Number(it.calorias_100g) * it.cantidad) / 100)} Kcal (P: {Math.round((Number(it.proteinas_100g) * it.cantidad) / 100)} C: {Math.round((Number(it.carbohidratos_100g) * it.cantidad) / 100)} G: {Math.round((Number(it.grasas_100g) * it.cantidad) / 100)})
                                             </Text>
                                         </View>
                                         <View style={styles.qtyContainer}>
@@ -519,7 +654,7 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                     <TouchableOpacity key={i} style={styles.foodItem} onPress={() => añadirAlimento(alim)}>
                                         <View>
                                             <Text style={styles.foodName}>{alim.nombre}</Text>
-                                            <Text style={styles.foodSub}>{Math.round(alim.calorias_100g)} Kcal / 100g</Text>
+                                            <Text style={styles.foodSub}>{Math.round(alim.calorias_100g)} Kcal (P: {Math.round(alim.proteinas_100g)} C: {Math.round(alim.carbohidratos_100g)} G: {Math.round(alim.grasas_100g)})</Text>
                                         </View>
                                         <Text style={styles.plusIcon}>+</Text>
                                     </TouchableOpacity>
@@ -599,6 +734,24 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                 </View>
             </Modal>
 
+            {/* MODAL CONFIRMACIÓN GENÉRICA */}
+            <Modal transparent={true} visible={confirmModal.visible} animationType="fade">
+                <View style={styles.confirmModalOverlay}>
+                    <View style={styles.confirmModalCard}>
+                        <Text style={styles.confirmModalTitle}>{confirmModal.title}</Text>
+                        <Text style={styles.confirmModalMsg}>{confirmModal.message}</Text>
+                        <View style={styles.confirmModalActions}>
+                            <TouchableOpacity style={styles.confirmModalBtnCancel} onPress={() => setConfirmModal({ ...confirmModal, visible: false })}>
+                                <Text style={styles.confirmModalBtnCancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.confirmModalBtnConfirm} onPress={confirmModal.onConfirm}>
+                                <Text style={styles.confirmModalBtnConfirmText}>Aceptar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             {/* NAV BAR */}
             <View style={styles.navContainer}>
                 <View style={styles.tabBar}>
@@ -638,6 +791,8 @@ const styles = StyleSheet.create({
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     btnAddCircle: { backgroundColor: 'rgba(255,255,255,0.2)', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'white' },
     btnAddText: { color: 'white', fontSize: 24, fontWeight: 'bold' },
+    btnAddPill: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'white' },
+    btnAddPillText: { color: 'white', fontSize: 13, fontWeight: 'bold' },
     dashboardCard: { backgroundColor: 'white', borderRadius: 20, padding: 20, marginBottom: 20 },
     dashboardTitle: { color: '#333', fontSize: 14, fontWeight: 'bold', marginBottom: 10 },
     progressBg: { height: 8, backgroundColor: '#eee', borderRadius: 4, marginBottom: 8 },
@@ -655,9 +810,16 @@ const styles = StyleSheet.create({
     comidasList: { marginTop: 10 },
     sectionTitle: { color: 'white', fontSize: 16, fontWeight: '900', marginBottom: 15, letterSpacing: 0.5 },
     comidaCard: { backgroundColor: 'white', borderRadius: 20, padding: 18, marginBottom: 15, elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-    comidaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    comidaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingRight: 30 },
     comidaTitle: { fontSize: 16, fontWeight: '900', color: '#333' },
     comidaTime: { fontSize: 12, color: '#999', fontWeight: 'bold' },
+    deleteComidaX: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,68,68,0.15)', justifyContent: 'center', alignItems: 'center' },
+    deleteComidaXText: { color: '#ff4444', fontSize: 14, fontWeight: '900', lineHeight: 18 },
+    comidaEditBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(255,122,0,0.12)', borderWidth: 1, borderColor: '#ff7a00' },
+    comidaEditBtnActive: { backgroundColor: '#2ecc71', borderColor: '#2ecc71' },
+    comidaEditBtnText: { color: '#ff7a00', fontSize: 11, fontWeight: '900' },
+    comidaEditBtnTextActive: { color: 'white' },
+    comidaGramInput: { backgroundColor: '#f0f0f0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, width: 50, textAlign: 'center', fontSize: 12, fontWeight: 'bold', color: '#333' },
     comidaMacros: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff7ef', padding: 10, borderRadius: 10, marginBottom: 10 },
     comidaKcal: { color: '#ff7a00', fontWeight: '900', fontSize: 14, marginRight: 15 },
     comidaMacroItem: { fontSize: 12, color: '#666', fontWeight: 'bold', marginRight: 10 },
@@ -710,6 +872,17 @@ const styles = StyleSheet.create({
     removeIcon: { color: '#ff4444', fontSize: 16, fontWeight: 'bold' },
     btnConfirm: { backgroundColor: '#ff7a00', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
     btnConfirmText: { color: 'white', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
+
+    // ESTILOS MODAL CONFIRMACIÓN
+    confirmModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    confirmModalCard: { backgroundColor: 'white', width: '80%', padding: 25, borderRadius: 20, elevation: 10 },
+    confirmModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+    confirmModalMsg: { fontSize: 14, color: '#666', marginBottom: 25, lineHeight: 20 },
+    confirmModalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 15 },
+    confirmModalBtnCancel: { paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10, backgroundColor: '#f0f0f0' },
+    confirmModalBtnCancelText: { color: '#666', fontWeight: 'bold' },
+    confirmModalBtnConfirm: { paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10, backgroundColor: '#ff4444' },
+    confirmModalBtnConfirmText: { color: 'white', fontWeight: 'bold' },
 
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
     tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },

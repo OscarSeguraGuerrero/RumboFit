@@ -77,13 +77,9 @@ app.post('/api/login', async (req, res) => {
         const validPassword = await bcrypt.compare(password, usuario.password_hash);
         if (!validPassword) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
-        // Verificamos si ya tiene alguna rutina en la DB
-        const rutinaExistente = await prisma.rutina.findFirst({ where: { usuario_id: usuario.id } });
-
         res.json({
             success: true,
-            user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email },
-            hasRoutine: !!rutinaExistente
+            user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
         });
     } catch (error) {
         res.status(500).json({ error: 'Error en el servidor' });
@@ -627,6 +623,28 @@ app.post('/api/reset-password', async (req, res) => {
 app.post('/api/rutinas/guardar-personalizada', async (req, res) => {
     const { userId, nombreRutina, esquema } = req.body;
     try {
+        const usuario = await prisma.usuario.findUnique({ where: { id: parseInt(userId) } });
+        if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
+
+        if (!usuario.es_premium) {
+            const numRutinas = await prisma.rutina.count({
+                where: { usuario_id: parseInt(userId), es_generada: false }
+            });
+            if (numRutinas >= 3) {
+                return res.status(403).json({ error: "Límite alcanzado. Las cuentas gratuitas solo pueden tener hasta 3 rutinas." });
+            }
+        }
+
+        let totalEjercicios = 0;
+        if (esquema && esquema.ejercicios) {
+            Object.values(esquema.ejercicios).forEach(dia => {
+                if (Array.isArray(dia)) totalEjercicios += dia.length;
+            });
+        }
+        if (totalEjercicios > 20) {
+            return res.status(400).json({ error: "Límite superado. Una rutina no puede tener más de 20 ejercicios en total." });
+        }
+
         const nuevaRutina = await prisma.rutina.create({
             data: {
                 usuario_id: parseInt(userId),
@@ -953,7 +971,79 @@ app.get('/api/usuarios/:id/historial', async (req, res) => {
     }
 });
 
+// Eliminar un alimento individual de una comida
+app.delete('/api/dieta/alimento/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const registro = await prisma.registro_Comidas.findUnique({
+            where: { id },
+            include: { comida: { include: { items: true } } }
+        });
+
+        if (!registro) return res.status(404).json({ error: "Registro no encontrado" });
+
+        await prisma.registro_Comidas.delete({ where: { id } });
+
+        // Si la comida se queda sin alimentos, la eliminamos también
+        if (registro.comida.items.length <= 1) {
+            await prisma.comida.delete({ where: { id: registro.comida_id } });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al eliminar alimento" });
+    }
+});
+
+// Actualizar gramos de un alimento en una comida
+app.put('/api/dieta/alimento/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { cantidad_gramos } = req.body;
+        if (!cantidad_gramos || isNaN(cantidad_gramos) || Number(cantidad_gramos) <= 0) {
+            return res.status(400).json({ error: "Cantidad inválida" });
+        }
+        const updated = await prisma.registro_Comidas.update({
+            where: { id },
+            data: { cantidad_gramos: Number(cantidad_gramos) },
+            include: { alimento: true }
+        });
+        res.json({ success: true, item: updated });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al actualizar alimento" });
+    }
+});
+
+// Obtener publicaciones propias del usuario
+app.get('/api/publicaciones/usuario/:id', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const publicaciones = await prisma.publicacion.findMany({
+            where: { usuario_id: userId },
+            orderBy: { fecha_publicacion: 'desc' }
+        });
+        res.json({ success: true, publicaciones });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al recuperar publicaciones" });
+    }
+});
+
+// Eliminar una publicación
+app.delete('/api/publicaciones/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        await prisma.publicacion.delete({ where: { id } });
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al eliminar publicación" });
+    }
+});
+
 // --- ARRANCAR SERVIDOR ---
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor RumboFit corriendo en http://192.168.1.39:${PORT}`);
+    console.log(`Servidor RumboFit corriendo en http://10.195.60.198:${PORT}`);
 });
