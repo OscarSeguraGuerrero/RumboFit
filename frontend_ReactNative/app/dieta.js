@@ -314,6 +314,29 @@ export default function Dieta() {
         }
     };
 
+    const handleEliminarItem = async (comidaId, itemId) => {
+        try {
+            const res = await fetch(`${API_URL}/dieta/comida/${comidaId}/item/${itemId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.comidaEliminada) {
+                    // La comida quedó vacía, quitarla entera del estado
+                    setComidasHoy(prev => prev.filter(c => c.id !== comidaId));
+                } else {
+                    // Solo quitar el item del estado local
+                    setComidasHoy(prev => prev.map(c => {
+                        if (c.id !== comidaId) return c;
+                        return { ...c, items: c.items.filter(it => it.id !== itemId) };
+                    }));
+                }
+            }
+        } catch (e) {
+            Alert.alert("Error", "No se pudo eliminar el alimento.");
+        }
+    };
+
     const cerrarSesion = async () => {
         setMenuVisible(false);
         await AsyncStorage.clear();
@@ -432,9 +455,17 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                     </View>
                                     <View style={styles.comidaItems}>
                                         {comida.items && comida.items.map((it, i) => (
-                                            <Text key={i} style={styles.comidaItemText}>
-                                                • {it.alimento?.nombre} ({it.cantidad_gramos || it.cantidad}g)
-                                            </Text>
+                                            <View key={i} style={styles.comidaItemRow}>
+                                                <Text style={styles.comidaItemText}>
+                                                    • {it.alimento?.nombre} ({it.cantidad_gramos || it.cantidad}g)
+                                                </Text>
+                                                <TouchableOpacity
+                                                    onPress={() => handleEliminarItem(comida.id, it.id)}
+                                                    style={styles.btnRemoveItem}
+                                                >
+                                                    <Text style={styles.removeItemIcon}>✕</Text>
+                                                </TouchableOpacity>
+                                            </View>
                                         ))}
                                     </View>
                                 </View>
@@ -672,7 +703,10 @@ const styles = StyleSheet.create({
     comidaKcal: { color: '#ff7a00', fontWeight: '900', fontSize: 14, marginRight: 15 },
     comidaMacroItem: { fontSize: 12, color: '#666', fontWeight: 'bold', marginRight: 10 },
     comidaItems: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 },
-    comidaItemText: { fontSize: 13, color: '#555', marginBottom: 4 },
+    comidaItemText: { fontSize: 13, color: '#555', flex: 1 },
+    comidaItemRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+    btnRemoveItem: { paddingHorizontal: 6, paddingVertical: 2 },
+    removeItemIcon: { color: '#ff4444', fontSize: 12, fontWeight: 'bold' },
     btnDeleteComida: { padding: 5, backgroundColor: '#ffeeee', borderRadius: 8 },
     deleteComidaIcon: { fontSize: 16 },
 
