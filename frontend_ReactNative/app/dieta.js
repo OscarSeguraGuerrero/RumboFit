@@ -523,7 +523,7 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                             <>
                                 <View style={styles.header}>
                                     <TouchableOpacity onPress={() => { setComidaDetalleId(null); setEditandoComida(null); }}>
-                                        <Text style={styles.backToMenuText}>← Volver</Text>
+                                        <Text style={styles.backToMenuText}>← Volver al menú</Text>
                                     </TouchableOpacity>
                                     <View style={[styles.headerRow, { marginTop: 8 }]}>
                                         <View style={{ flex: 1 }}>
@@ -931,6 +931,7 @@ const styles = StyleSheet.create({
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
     header: { marginBottom: 15 },
+    backToMenuText: { color: 'white', fontWeight: 'bold', fontSize: 14, marginBottom: 15, opacity: 0.9 },
     methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.9 },
     title: { fontSize: 20, fontWeight: '900', color: '#ffffff' },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
