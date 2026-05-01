@@ -858,6 +858,32 @@ app.delete('/api/dieta/comida/:id', async (req, res) => {
     }
 });
 
+// Eliminar un alimento individual de una comida (HU-11)
+app.delete('/api/dieta/comida/:comidaId/item/:itemId', async (req, res) => {
+    const comidaId = parseInt(req.params.comidaId);
+    const itemId = parseInt(req.params.itemId);
+    try {
+        // Eliminar el item
+        await prisma.registro_Comidas.delete({
+            where: { id: itemId }
+        });
+
+        // Si la comida quedó sin items, eliminarla también
+        const itemsRestantes = await prisma.registro_Comidas.count({
+            where: { comida_id: comidaId }
+        });
+        if (itemsRestantes === 0) {
+            await prisma.comida.delete({ where: { id: comidaId } });
+            return res.json({ success: true, comidaEliminada: true });
+        }
+
+        res.json({ success: true, comidaEliminada: false });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al eliminar el alimento" });
+    }
+});
+
 // Editar Comida (HU-11 - Lápiz)
 app.put('/api/dieta/comida/:id', async (req, res) => {
     const { id } = req.params;
