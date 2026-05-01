@@ -23,7 +23,7 @@ const { width } = Dimensions.get('window');
 
 const calcularTDEE = (user) => {
     if (!user || !user.peso || !user.altura || !user.edad) return 2000;
-    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5;
+    let tmb = (10 * user.peso) + (6.25 * user.altura) - (5 * user.edad) + 5; 
     let multiplicador = 1.2;
     if (user.frecuencia_semanal >= 1 && user.frecuencia_semanal <= 2) multiplicador = 1.375;
     else if (user.frecuencia_semanal >= 3 && user.frecuencia_semanal <= 5) multiplicador = 1.55;
@@ -778,7 +778,7 @@ export default function Rutina() {
                         }
                     })
                 });
-
+                
                 const resData = await response.json();
                 if (resData.success) {
                     setEditando(false);
@@ -1160,8 +1160,8 @@ export default function Rutina() {
                                 <Text style={styles.title}>{data.metodo}</Text>
                             </View>
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity
-                                    style={[styles.btnSmall, editando && { backgroundColor: '#2ecc71', borderColor: '#2ecc71' }]}
+                                <TouchableOpacity 
+                                    style={[styles.btnSmall, editando && { backgroundColor: '#2ecc71', borderColor: '#2ecc71' }]} 
                                     onPress={editando ? handleGuardarEnDB : () => setEditando(true)}
                                 >
                                     <Text style={styles.btnSmallText}>{editando ? 'GUARDAR' : 'EDITAR'}</Text>
@@ -1174,7 +1174,7 @@ export default function Rutina() {
                                     const diaNumStr = dia.split(' (')[0];
                                     const index = parseInt(diaNumStr.replace('Día ', '')) - 1;
                                     const totalDias = Object.keys(data.rutina).length;
-
+                                    
                                     const esquemas = {
                                         2: ['Martes', 'Jueves'],
                                         3: ['Lunes', 'Miércoles', 'Viernes'],
@@ -1183,7 +1183,7 @@ export default function Rutina() {
                                     };
                                     const esquema = esquemas[totalDias] || ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
                                     const nombreDia = esquema[index] || diaNumStr;
-
+                                    
                                     return (
                                         <TouchableOpacity key={dia} style={[styles.tab, diaActual === dia && styles.tabActive]} onPress={() => setDiaActual(dia)}>
                                             <Text style={[styles.tabText, diaActual === dia && styles.textOrange]}>{nombreDia}</Text>
@@ -1212,85 +1212,85 @@ export default function Rutina() {
                             </View>
 
                             {rutinaEditable[diaActual]?.map((ej, i) => {
-                                const nombre = ej.nombre;
-                                const estaCompletado = completados[nombre];
-                                const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
-                                const categoria = infoCat?.categoria || 'Fuerza';
+                                 const nombre = ej.nombre;
+                                 const estaCompletado = completados[nombre];
+                                 const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
+                                 const categoria = infoCat?.categoria || 'Fuerza';
 
-                                return (
-                                    <View
-                                        key={i}
-                                        style={[
-                                            styles.exerciseCard,
-                                            estaCompletado && styles.exerciseCardCompleted
-                                        ]}
-                                    >
-                                        <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
-                                        <View style={styles.exerciseInfo}>
-                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
-                                                {nombre} {estaCompletado ? "✓" : ""}
-                                            </Text>
+                                 return (
+                                     <View
+                                         key={i}
+                                         style={[
+                                             styles.exerciseCard,
+                                             estaCompletado && styles.exerciseCardCompleted
+                                         ]}
+                                     >
+                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
+                                         <View style={styles.exerciseInfo}>
+                                             <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
+                                                 {nombre} {estaCompletado ? "✓" : ""}
+                                             </Text>
+                                             
+                                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
+                                                 {editando ? (
+                                                     <>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ej.series)}
+                                                             onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>series</Text>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ej.reps)}
+                                                             onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>reps</Text>
+                                                     </>
+                                                 ) : (
+                                                     <Text style={styles.seriesTextStatic}>
+                                                         {ej.series} series x {ej.reps} repeticiones
+                                                     </Text>
+                                                 )}
+                                             </View>
 
-                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
-                                                {editando ? (
-                                                    <>
-                                                        <TextInput
-                                                            style={styles.inputSeriesSmall}
-                                                            keyboardType="numeric"
-                                                            value={String(ej.series)}
-                                                            onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
-                                                        />
-                                                        <Text style={styles.labelSmall}>series</Text>
-                                                        <TextInput
-                                                            style={styles.inputSeriesSmall}
-                                                            keyboardType="numeric"
-                                                            value={String(ej.reps)}
-                                                            onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
-                                                        />
-                                                        <Text style={styles.labelSmall}>reps</Text>
-                                                    </>
-                                                ) : (
-                                                    <Text style={styles.seriesTextStatic}>
-                                                        {ej.series} series x {ej.reps} repeticiones
-                                                    </Text>
-                                                )}
-                                            </View>
-
-                                            {!editando && !estaCompletado && (
-                                                <View style={styles.performanceSection}>
-                                                    {categoria === 'Cardio' ? (
-                                                        <View style={styles.perfRow}>
-                                                            <Text style={styles.perfLabel}>Ritmo:</Text>
-                                                            <TextInput
-                                                                style={styles.perfInput}
-                                                                placeholder="min/km"
-                                                                keyboardType="numeric"
-                                                                value={perfData[nombre]?.ritmo || ""}
-                                                                onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), ritmo: text}}))}
-                                                            />
-                                                        </View>
-                                                    ) : categoria === 'Fuerza' ? (
-                                                        <View style={styles.perfRow}>
-                                                            <Text style={styles.perfLabel}>Peso:</Text>
-                                                            <TextInput
-                                                                style={styles.perfInput}
-                                                                placeholder="kg"
-                                                                keyboardType="numeric"
-                                                                value={perfData[nombre]?.peso || ""}
-                                                                onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), peso: text}}))}
-                                                            />
-                                                        </View>
-                                                    ) : null}
-                                                </View>
-                                            )}
-                                            {editando && (
-                                                <TouchableOpacity onPress={() => eliminarEjAuto(i)} style={[styles.btnDelete, { alignSelf: 'flex-end', marginTop: 5, padding: 5 }]}>
-                                                    <Text style={[styles.deleteIcon, { fontSize: 12 }]}>✕ Eliminar</Text>
-                                                </TouchableOpacity>
-                                            )}
-                                        </View>
-                                    </View>
-                                );
+                                             {!editando && !estaCompletado && (
+                                                 <View style={styles.performanceSection}>
+                                                     {categoria === 'Cardio' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Ritmo:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="min/km"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.ritmo || ""}
+                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), ritmo: text}}))}
+                                                             />
+                                                         </View>
+                                                     ) : categoria === 'Fuerza' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Peso:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="kg"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.peso || ""}
+                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), peso: text}}))}
+                                                             />
+                                                         </View>
+                                                     ) : null}
+                                                 </View>
+                                             )}
+                                             {editando && (
+                                                 <TouchableOpacity onPress={() => eliminarEjAuto(i)} style={[styles.btnDelete, { alignSelf: 'flex-end', marginTop: 5, padding: 5 }]}>
+                                                     <Text style={[styles.deleteIcon, { fontSize: 12 }]}>✕ Eliminar</Text>
+                                                 </TouchableOpacity>
+                                             )}
+                                         </View>
+                                     </View>
+                                 );
                             })}
                             {editando && (
                                 <TouchableOpacity style={[styles.btnAdd, { marginTop: 10 }]} onPress={() => setModalEjercicios(true)}>
@@ -1330,8 +1330,8 @@ export default function Rutina() {
                                 <Text style={styles.title}>Diseña tu semana</Text>
                             </View>
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity
-                                    style={[styles.btnSmall, editando && { backgroundColor: '#2ecc71', borderColor: '#2ecc71' }]}
+                                <TouchableOpacity 
+                                    style={[styles.btnSmall, editando && { backgroundColor: '#2ecc71', borderColor: '#2ecc71' }]} 
                                     onPress={editando ? handleGuardarEnDB : () => setEditando(true)}
                                 >
                                     <Text style={styles.btnSmallText}>{editando ? 'GUARDAR' : 'EDITAR'}</Text>
@@ -1360,96 +1360,96 @@ export default function Rutina() {
                                     })()
                                     : ej;
 
-                                const nombre = ejercicio.nombre;
-                                const estaCompletado = completados[nombre];
-                                const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
-                                const categoria = infoCat?.categoria || 'Fuerza';
+                                 const nombre = ejercicio.nombre;
+                                 const estaCompletado = completados[nombre];
+                                 const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
+                                 const categoria = infoCat?.categoria || 'Fuerza';
 
-                                return (
-                                    <View
-                                        key={i}
-                                        style={[
-                                            styles.exerciseCard,
-                                            estaCompletado && styles.exerciseCardCompleted
-                                        ]}
-                                    >
-                                        <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
-                                        <View style={styles.exerciseInfo}>
-                                            <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
-                                                {nombre} {estaCompletado ? "✓" : ""}
-                                            </Text>
+                                 return (
+                                     <View
+                                         key={i}
+                                         style={[
+                                             styles.exerciseCard,
+                                             estaCompletado && styles.exerciseCardCompleted
+                                         ]}
+                                     >
+                                         <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
+                                         <View style={styles.exerciseInfo}>
+                                             <Text style={[styles.exerciseName, estaCompletado && styles.textCompleted]}>
+                                                 {nombre} {estaCompletado ? "✓" : ""}
+                                             </Text>
+                                             
+                                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
+                                                 {editando ? (
+                                                     <>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ejercicio.series)}
+                                                             onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>series</Text>
+                                                         <TextInput
+                                                             style={styles.inputSeriesSmall}
+                                                             keyboardType="numeric"
+                                                             value={String(ejercicio.reps)}
+                                                             onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
+                                                         />
+                                                         <Text style={styles.labelSmall}>reps</Text>
+                                                     </>
+                                                 ) : (
+                                                     <Text style={styles.seriesTextStatic}>
+                                                         {ejercicio.series} series x {ejercicio.reps} repeticiones{ejercicio.peso > 0 ? ` • ${ejercicio.peso} kg` : ''}
+                                                     </Text>
+                                                 )}
+                                             </View>
 
-                                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
-                                                {editando ? (
-                                                    <>
-                                                        <TextInput
-                                                            style={styles.inputSeriesSmall}
-                                                            keyboardType="numeric"
-                                                            value={String(ejercicio.series)}
-                                                            onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
-                                                        />
-                                                        <Text style={styles.labelSmall}>series</Text>
-                                                        <TextInput
-                                                            style={styles.inputSeriesSmall}
-                                                            keyboardType="numeric"
-                                                            value={String(ejercicio.reps)}
-                                                            onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
-                                                        />
-                                                        <Text style={styles.labelSmall}>reps</Text>
-                                                    </>
-                                                ) : (
-                                                    <Text style={styles.seriesTextStatic}>
-                                                        {ejercicio.series} series x {ejercicio.reps} repeticiones{ejercicio.peso > 0 ? ` • ${ejercicio.peso} kg` : ''}
-                                                    </Text>
-                                                )}
-                                            </View>
+                                             {!editando && !estaCompletado && (
+                                                 <View style={styles.performanceSection}>
+                                                     {categoria === 'Cardio' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Ritmo:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="min/km"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.ritmo || ""}
+                                                                 onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), ritmo: text}}))}
+                                                             />
+                                                         </View>
+                                                     ) : categoria === 'Fuerza' ? (
+                                                         <View style={styles.perfRow}>
+                                                             <Text style={styles.perfLabel}>Peso:</Text>
+                                                             <TextInput 
+                                                                 style={styles.perfInput}
+                                                                 placeholder="kg"
+                                                                 keyboardType="numeric"
+                                                                 value={perfData[nombre]?.peso ?? (ejercicio.peso > 0 ? String(ejercicio.peso) : "")}
+                                                                 onChangeText={(text) => actualizarPesoRutinaPropia(nombre, text)}
+                                                             />
+                                                         </View>
+                                                     ) : null}
+                                                 </View>
+                                             )}
 
-                                            {!editando && !estaCompletado && (
-                                                <View style={styles.performanceSection}>
-                                                    {categoria === 'Cardio' ? (
-                                                        <View style={styles.perfRow}>
-                                                            <Text style={styles.perfLabel}>Ritmo:</Text>
-                                                            <TextInput
-                                                                style={styles.perfInput}
-                                                                placeholder="min/km"
-                                                                keyboardType="numeric"
-                                                                value={perfData[nombre]?.ritmo || ""}
-                                                                onChangeText={(text) => setPerfData(prev => ({...prev, [nombre]: {...(prev[nombre] || {}), ritmo: text}}))}
-                                                            />
-                                                        </View>
-                                                    ) : categoria === 'Fuerza' ? (
-                                                        <View style={styles.perfRow}>
-                                                            <Text style={styles.perfLabel}>Peso:</Text>
-                                                            <TextInput
-                                                                style={styles.perfInput}
-                                                                placeholder="kg"
-                                                                keyboardType="numeric"
-                                                                value={perfData[nombre]?.peso ?? (ejercicio.peso > 0 ? String(ejercicio.peso) : "")}
-                                                                onChangeText={(text) => actualizarPesoRutinaPropia(nombre, text)}
-                                                            />
-                                                        </View>
-                                                    ) : null}
-                                                </View>
-                                            )}
-
-                                            {editando && (
-                                                <View style={{ gap: 5, marginTop: 10, width: '100%' }}>
-                                                    <TextInput
-                                                        style={{ backgroundColor: '#f9f9f9', width: '100%', minHeight: 35, textAlign: 'left', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, fontSize: 12, borderWidth: 1, borderColor: '#eee', color: '#555' }}
-                                                        placeholder="Añadir notas/observaciones (opcional)"
-                                                        placeholderTextColor="#aaa"
-                                                        value={ejercicio.notas || ""}
-                                                        onChangeText={(text) => actualizarEjercicio(i, 'notas', text)}
-                                                    />
-                                                    <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={[styles.btnDelete, { alignSelf: 'flex-end', marginTop: 5, padding: 5 }]}><Text style={[styles.deleteIcon, { fontSize: 12 }]}>✕ Eliminar</Text></TouchableOpacity>
-                                                </View>
-                                            )}
-                                            {!editando && ejercicio.notas ? (
-                                                <Text style={{ color: '#bdc3c7', fontSize: 12, marginTop: 10, fontStyle: 'italic', width: '100%' }}>Notas: {ejercicio.notas}</Text>
-                                            ) : null}
-                                        </View>
-                                    </View>
-                                );
+                                             {editando && (
+                                                 <View style={{ gap: 5, marginTop: 10, width: '100%' }}>
+                                                     <TextInput
+                                                         style={{ backgroundColor: '#f9f9f9', width: '100%', minHeight: 35, textAlign: 'left', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, fontSize: 12, borderWidth: 1, borderColor: '#eee', color: '#555' }}
+                                                         placeholder="Añadir notas/observaciones (opcional)"
+                                                         placeholderTextColor="#aaa"
+                                                         value={ejercicio.notas || ""}
+                                                         onChangeText={(text) => actualizarEjercicio(i, 'notas', text)}
+                                                     />
+                                                     <TouchableOpacity onPress={() => eliminarEjercicio(i)} style={[styles.btnDelete, { alignSelf: 'flex-end', marginTop: 5, padding: 5 }]}><Text style={[styles.deleteIcon, { fontSize: 12 }]}>✕ Eliminar</Text></TouchableOpacity>
+                                                 </View>
+                                             )}
+                                             {!editando && ejercicio.notas ? (
+                                                 <Text style={{ color: '#bdc3c7', fontSize: 12, marginTop: 10, fontStyle: 'italic', width: '100%' }}>Notas: {ejercicio.notas}</Text>
+                                             ) : null}
+                                         </View>
+                                     </View>
+                                 );
                             })}
                             {editando && (
                                 <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
@@ -1776,14 +1776,14 @@ const styles = StyleSheet.create({
     progressFill: { height: '100%', backgroundColor: '#ff7a00', borderRadius: 4 },
     dashboardSub: { color: '#666', fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
     noDataText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'center', marginTop: 30, lineHeight: 18 },
-
+    
     macrosRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
     macroCol: { flex: 1, backgroundColor: 'white', borderRadius: 15, padding: 15, marginHorizontal: 4, elevation: 2 },
     macroLabel: { fontSize: 11, fontWeight: 'bold', color: '#666', marginBottom: 5, textAlign: 'center' },
     macroBg: { height: 6, backgroundColor: '#eee', borderRadius: 3, marginBottom: 5 },
     macroFill: { height: '100%', borderRadius: 3 },
     macroValue: { fontSize: 12, fontWeight: 'bold', color: '#333', textAlign: 'center' },
-
+    
     laserCardShell: {
         position: 'relative',
         borderRadius: 24,
