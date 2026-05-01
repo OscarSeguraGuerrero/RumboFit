@@ -410,9 +410,12 @@ export default function Rutina() {
 
     };
 
-    const parsearEjercicio = (texto) => {
-        const match = texto.match(/^(.*?)(\s+\d+x[\d\-]+\w*)?$/);
-        const nombre = match ? match[1].trim() : texto;
+    const parsearEjercicio = (ej) => {
+        if (typeof ej === 'object' && ej !== null) {
+            return { nombre: ej.nombre || '', series: '' };
+        }
+        const match = ej.match(/^(.*?)(\s+\d+x[\d\-]+\w*)?$/);
+        const nombre = match ? match[1].trim() : ej;
         const series = match && match[2] ? match[2].trim() : '';
         return { nombre, series };
     };
@@ -624,6 +627,13 @@ export default function Rutina() {
 
                     Object.keys(parsed.rutina).forEach(dia => {
                         rutinaConvertida[dia] = parsed.rutina[dia].map(ej => {
+                            if (typeof ej === 'object' && ej !== null) {
+                                return {
+                                    nombre: ej.nombre || '',
+                                    series: ej.series ?? 3,
+                                    reps: ej.reps ?? 12
+                                };
+                            }
                             const parsedEj = parsearEjercicio(ej);
                             return {
                                 nombre: parsedEj.nombre,
@@ -821,7 +831,6 @@ export default function Rutina() {
                 setNombreRutinaActual(nuevoNombreRutina);
                 await persistirRutinaPropiaLocal(rutinaPropia, completados, nuevoIdRutina, nuevoNombreRutina);
                 await cargarRutinasGuardadas();
-                setVistaActiva('rutinas_menu');
                 Alert.alert("Éxito", "Rutina guardada correctamente");
             }
         } catch (e) { Alert.alert("Error", "No se pudo guardar"); }
@@ -875,12 +884,11 @@ export default function Rutina() {
     };
 
     const añadirEjercicio = (ej) => {
-        if (indiceSustituir !== null && vistaActiva === 'automatica') {
+        if (vistaActiva === 'automatica') {
             const nueva = { ...rutinaEditable };
             if (!nueva[diaActual]) nueva[diaActual] = [];
-            nueva[diaActual][indiceSustituir].nombre = ej.nombre;
+            nueva[diaActual].push({ nombre: ej.nombre, series: 3, reps: 12 });
             setRutinaEditable(nueva);
-            setIndiceSustituir(null);
             setModalEjercicios(false);
             return;
         }
@@ -959,6 +967,12 @@ export default function Rutina() {
         setRutinaPropia(nueva);
         persistirRutinaPropiaLocal(nueva);
     };
+    const eliminarEjAuto = (index) => {
+        const nueva = { ...rutinaEditable };
+        nueva[diaActual] = nueva[diaActual].filter((_, i) => i !== index);
+        setRutinaEditable(nueva);
+    };
+
     const actualizarEjAuto = (index, campo, valor) => {
         const nueva = { ...rutinaEditable };
 
@@ -970,7 +984,7 @@ export default function Rutina() {
     const actualizarEjercicio = (index, campo, valor) => {
         const nueva = { ...rutinaPropia };
 
-        nueva[diaPropioActivo][index][campo] = Number(valor);
+        nueva[diaPropioActivo][index][campo] = campo === 'notas' ? valor : Number(valor);
 
         setRutinaPropia(nueva);
 
@@ -1204,13 +1218,11 @@ export default function Rutina() {
                                  const categoria = infoCat?.categoria || 'Fuerza';
 
                                  return (
-                                     <Pressable
+                                     <View
                                          key={i}
-                                         onPress={() => {}}
-                                         style={({ pressed, hovered }) => [
+                                         style={[
                                              styles.exerciseCard,
-                                             estaCompletado && styles.exerciseCardCompleted,
-                                             (pressed || hovered) && styles.exerciseCardActive
+                                             estaCompletado && styles.exerciseCardCompleted
                                          ]}
                                      >
                                          <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
@@ -1271,37 +1283,39 @@ export default function Rutina() {
                                                      ) : null}
                                                  </View>
                                              )}
+                                             {editando && (
+                                                 <TouchableOpacity onPress={() => eliminarEjAuto(i)} style={[styles.btnDelete, { alignSelf: 'flex-end', marginTop: 5, padding: 5 }]}>
+                                                     <Text style={[styles.deleteIcon, { fontSize: 12 }]}>✕ Eliminar</Text>
+                                                 </TouchableOpacity>
                                              )}
                                          </View>
-                                         {editando && (
-                                             <TouchableOpacity 
-                                                 onPress={() => { setIndiceSustituir(i); setModalEjercicios(true); }} 
-                                                 style={[styles.btnDelete, { backgroundColor: '#3498db' }]}
-                                             >
-                                                 <Text style={[styles.deleteIcon, { fontSize: 12 }]}>Sustituir</Text>
-                                             </TouchableOpacity>
-                                         )}
-                                     </Pressable>
+                                     </View>
                                  );
                             })}
+                            {editando && (
+                                <TouchableOpacity style={[styles.btnAdd, { marginTop: 10 }]} onPress={() => setModalEjercicios(true)}>
+                                    <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
+                                </TouchableOpacity>
+                            )}
                         </ScrollView>
-                        <View style={styles.routineFooterActions}>
-                        <TouchableOpacity
-                            onPress={abrirModalCompletarEntrenamiento}
-                            style={[
-                                styles.checkEntreno,
-                                entrenamientoCompletado && styles.checkEntrenoActivo
-                            ]}
-                        >
-                            <Text style={styles.checkEntrenoText}>
-                                {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
-                            <Text style={styles.btnSimularText}>🏁 FINALIZAR Y REGISTRAR SESIÓN</Text>
-                        </TouchableOpacity>
-                        </View>
+                        {!editando && (
+                            <View style={styles.routineFooterActions}>
+                                <TouchableOpacity
+                                    onPress={abrirModalCompletarEntrenamiento}
+                                    style={[
+                                        styles.checkEntreno,
+                                        entrenamientoCompletado && styles.checkEntrenoActivo
+                                    ]}
+                                >
+                                    <Text style={styles.checkEntrenoText}>
+                                        {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
+                                    <Text style={styles.btnSimularText}>🏁 FINALIZAR Y REGISTRAR SESIÓN</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </>
                 )}
 
@@ -1352,13 +1366,11 @@ export default function Rutina() {
                                  const categoria = infoCat?.categoria || 'Fuerza';
 
                                  return (
-                                     <Pressable
+                                     <View
                                          key={i}
-                                         onPress={() => {}}
-                                         style={({ pressed, hovered }) => [
+                                         style={[
                                              styles.exerciseCard,
-                                             estaCompletado && styles.exerciseCardCompleted,
-                                             (pressed || hovered) && styles.exerciseCardActive
+                                             estaCompletado && styles.exerciseCardCompleted
                                          ]}
                                      >
                                          <Image source={obtenerFotoEjercicio(nombre)} style={styles.exercisePhoto} />
@@ -1436,27 +1448,33 @@ export default function Rutina() {
                                                  <Text style={{ color: '#bdc3c7', fontSize: 12, marginTop: 10, fontStyle: 'italic', width: '100%' }}>Notas: {ejercicio.notas}</Text>
                                              ) : null}
                                          </View>
-                                     </Pressable>
+                                     </View>
                                  );
                             })}
-                            <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
-                                <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
-                            </TouchableOpacity>
+                            {editando && (
+                                <TouchableOpacity style={styles.btnAdd} onPress={() => setModalEjercicios(true)}>
+                                    <Text style={styles.btnAddText}>+ AÑADIR EJERCICIO</Text>
+                                </TouchableOpacity>
+                            )}
                         </ScrollView>
-                        <TouchableOpacity
-                            onPress={abrirModalCompletarEntrenamiento}
-                            style={[
-                                styles.checkEntreno,
-                                entrenamientoCompletado && styles.checkEntrenoActivo
-                            ]}
-                        >
-                            <Text style={styles.checkEntrenoText}>
-                                {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
-                            <Text style={styles.btnSimularText}>FINALIZAR Y REGISTRAR SESIÓN</Text>
-                        </TouchableOpacity>
+                        {!editando && (
+                            <>
+                                <TouchableOpacity
+                                    onPress={abrirModalCompletarEntrenamiento}
+                                    style={[
+                                        styles.checkEntreno,
+                                        entrenamientoCompletado && styles.checkEntrenoActivo
+                                    ]}
+                                >
+                                    <Text style={styles.checkEntrenoText}>
+                                        {entrenamientoCompletado ? "✔ ENTRENAMIENTO COMPLETADO" : "MARCAR COMO COMPLETADO"}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.btnSimular} onPress={() => simulateTrainingLog()}>
+                                    <Text style={styles.btnSimularText}>FINALIZAR Y REGISTRAR SESIÓN</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </>
                 )}
 

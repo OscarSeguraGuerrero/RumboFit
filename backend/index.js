@@ -1016,6 +1016,28 @@ app.put('/api/dieta/alimento/:id', async (req, res) => {
     }
 });
 
+// Añadir alimento individual a una comida existente
+app.post('/api/dieta/comida/:id/alimento', async (req, res) => {
+    try {
+        const comidaId = parseInt(req.params.id);
+        const { alimentoId, cantidad, userId } = req.body;
+        if (!alimentoId || !userId) return res.status(400).json({ error: "Faltan parámetros" });
+        const nuevo = await prisma.registro_Comidas.create({
+            data: {
+                comida_id: comidaId,
+                alimento_id: parseInt(alimentoId),
+                cantidad_gramos: Number(cantidad) || 100,
+                usuario_id: parseInt(userId)
+            },
+            include: { alimento: true }
+        });
+        res.json({ success: true, item: nuevo });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al añadir alimento a la comida" });
+    }
+});
+
 // Obtener publicaciones propias del usuario
 app.get('/api/publicaciones/usuario/:id', async (req, res) => {
     try {

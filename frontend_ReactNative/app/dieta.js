@@ -119,6 +119,12 @@ export default function Dieta() {
     const [editandoComida, setEditandoComida] = useState(null); // id de la comida en edición
     const [editandoCantidades, setEditandoCantidades] = useState({}); // { [itemId]: gramos }
 
+    // Estado para vista detalle de comida
+    const [comidaDetalleId, setComidaDetalleId] = useState(null);
+    const [busquedaEdicion, setBusquedaEdicion] = useState('');
+    const [modalAlimentosEdicion, setModalAlimentosEdicion] = useState(false);
+    const [contextoCrearAlimento, setContextoCrearAlimento] = useState('registro');
+
     useEffect(() => {
         const cargarData = async () => {
             try {
@@ -197,10 +203,16 @@ export default function Dieta() {
             });
             const data = await res.json();
             if (data.success) {
-                setAlimentosCatalogo([...alimentosCatalogo, data.alimento]);
+                setAlimentosCatalogo(prev => [...prev, data.alimento]);
                 setModalAlimentoVisible(false);
-                añadirAlimento(data.alimento);
                 setNuevoAlim({ nombre: '', kcal: '', prot: '', carb: '', gras: '' });
+                if (contextoCrearAlimento === 'edicion') {
+                    await añadirAlimentoAComida(comidaDetalleId, data.alimento);
+                    setBusquedaEdicion('');
+                } else {
+                    añadirAlimento(data.alimento);
+                }
+                setContextoCrearAlimento('registro');
                 Alert.alert("¡Éxito!", "Alimento añadido al catálogo general.");
             } else {
                 Alert.alert("Error", data.error || "Error al crear el alimento.");
@@ -291,6 +303,7 @@ export default function Dieta() {
                 const nuevasComidas = comidasHoy.filter(c => c.id !== id);
                 setComidasHoy(nuevasComidas);
                 setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+                setComidaDetalleId(null);
             } else {
                 Alert.alert("Error", "No se pudo eliminar la comida.");
             }
@@ -340,19 +353,19 @@ export default function Dieta() {
             title: "Eliminar alimento",
             message: "¿Estás seguro de que quieres eliminar este alimento?",
             onConfirm: () => {
-                setConfirmModal({ ...confirmModal, visible: false });
+                setConfirmModal(prev => ({ ...prev, visible: false }));
                 ejecutarEliminarAlimento(comidaId, alimentoId);
             }
         });
     };
 
-    const handleEliminarComida = async (id) => {
+    const handleEliminarComida = (id) => {
         setConfirmModal({
             visible: true,
             title: "Eliminar comida",
             message: "¿Estás seguro de que quieres eliminar esta comida?",
             onConfirm: () => {
-                setConfirmModal({ ...confirmModal, visible: false });
+                setConfirmModal(prev => ({ ...prev, visible: false }));
                 ejecutarEliminar(id);
             }
         });
@@ -362,6 +375,42 @@ export default function Dieta() {
         setMenuVisible(false);
         await AsyncStorage.clear();
         router.replace('/');
+    };
+
+    const añadirAlimentoAComida = async (comidaId, alimento) => {
+        try {
+            const userId = await AsyncStorage.getItem("userId");
+            const res = await fetch(`${API_URL}/dieta/comida/${comidaId}/alimento`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alimentoId: alimento.id, cantidad: 100, userId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const nuevasComidas = comidasHoy.map(c => {
+                    if (c.id !== comidaId) return c;
+                    const nuevosItems = [...(c.items || []), data.item];
+                    let macros = { kcal: 0, prot: 0, carb: 0, gras: 0 };
+                    nuevosItems.forEach(it => {
+                        const factor = Number(it.cantidad_gramos) / 100;
+                        macros.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
+                        macros.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
+                        macros.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
+                        macros.gras += Number(it.alimento?.grasas_100g || 0) * factor;
+                    });
+                    return { ...c, items: nuevosItems, macros };
+                });
+                setComidasHoy(nuevasComidas);
+                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+                setEditandoCantidades(prev => ({ ...prev, [data.item.id]: '100' }));
+                setBusquedaEdicion('');
+            } else {
+                Alert.alert("Error", data.error || "No se pudo añadir el alimento.");
+            }
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Error", "No se pudo conectar con el servidor.");
+        }
     };
 
     const iniciarEdicionComida = (comida) => {
@@ -410,6 +459,7 @@ export default function Dieta() {
         } finally {
             setEditandoComida(null);
             setEditandoCantidades({});
+            setBusquedaEdicion('');
         }
     };
 
@@ -463,122 +513,160 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
             </Modal>
 
             <View style={styles.mainCard}>
-                <View style={styles.header}>
-                    <View style={styles.headerRow}>
-                        <View>
-                            <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
-                            <Text style={styles.title}>Registro de Comidas</Text>
-                        </View>
-                        <TouchableOpacity style={styles.btnAddPill} onPress={() => setModalVisible(true)}>
-                            <Text style={styles.btnAddPillText}>+ Registrar dieta</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                {(() => {
+                    const comidaDetalle = comidaDetalleId ? comidasHoy.find(c => c.id === comidaDetalleId) : null;
+                    const enEdicion = editandoComida === comidaDetalleId;
 
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-                    <View style={styles.dashboardCard}>
-                        <Text style={styles.dashboardTitle}>Calorías Consumidas</Text>
-                        <View style={styles.progressBg}>
-                            <View style={[styles.progressFill, { width: `${pctKcal}%`, backgroundColor: '#ff7a00' }]} />
-                        </View>
-                        <Text style={styles.dashboardSub}>{Math.round(macrosHoy.kcal)} / {objMacros.kcal} Kcal</Text>
-                    </View>
-
-                    <View style={styles.macrosRow}>
-                        <View style={styles.macroCol}>
-                            <Text style={styles.macroLabel}>Proteínas</Text>
-                            <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctProt}%`, backgroundColor: '#3498db' }]} /></View>
-                            <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot}g</Text>
-                        </View>
-                        <View style={styles.macroCol}>
-                            <Text style={styles.macroLabel}>Carbos</Text>
-                            <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctCarb}%`, backgroundColor: '#2ecc71' }]} /></View>
-                            <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb}g</Text>
-                        </View>
-                        <View style={styles.macroCol}>
-                            <Text style={styles.macroLabel}>Grasas</Text>
-                            <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctGras}%`, backgroundColor: '#f1c40f' }]} /></View>
-                            <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras}g</Text>
-                        </View>
-                    </View>
-
-                    {/* LISTA DE COMIDAS REGISTRADAS */}
-                    {comidasHoy.length > 0 ? (
-                        <View style={styles.comidasList}>
-                            <Text style={styles.sectionTitle}>Comidas de hoy</Text>
-                            {comidasHoy.map((comida, index) => {
-                                const enEdicion = editandoComida === comida.id;
-                                return (
-                                    <View key={comida.id || index} style={[styles.comidaCard, { position: 'relative' }]}>
-                                        {/* X eliminar comida — solo visible cuando no se está editando */}
-                                        {!enEdicion && (
-                                            <TouchableOpacity
-                                                style={styles.deleteComidaX}
-                                                onPress={() => handleEliminarComida(comida.id)}
-                                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                            >
-                                                <Text style={styles.deleteComidaXText}>✕</Text>
-                                            </TouchableOpacity>
-                                        )}
-
-                                        {/* Header con título y botón EDITAR/GUARDAR */}
-                                        <View style={styles.comidaHeader}>
-                                            <View>
-                                                <Text style={styles.comidaTitle}>{comida.titulo || comida.franja_horaria}</Text>
-                                                <Text style={styles.comidaTime}>{comida.hora}</Text>
-                                            </View>
+                    if (comidaDetalle) {
+                        // --- VISTA DETALLE ---
+                        return (
+                            <>
+                                <View style={styles.header}>
+                                    <TouchableOpacity onPress={() => { setComidaDetalleId(null); setEditandoComida(null); }}>
+                                        <Text style={styles.backToMenuText}>← Volver</Text>
+                                    </TouchableOpacity>
+                                    <View style={[styles.headerRow, { marginTop: 8 }]}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.methodLabel}>DETALLE DE COMIDA</Text>
+                                            <Text style={styles.title}>{comidaDetalle.titulo || comidaDetalle.franja_horaria}</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                                             <TouchableOpacity
                                                 style={[styles.comidaEditBtn, enEdicion && styles.comidaEditBtnActive]}
-                                                onPress={() => enEdicion ? handleGuardarEdicionComida(comida) : iniciarEdicionComida(comida)}
+                                                onPress={() => enEdicion ? handleGuardarEdicionComida(comidaDetalle) : iniciarEdicionComida(comidaDetalle)}
                                             >
                                                 <Text style={[styles.comidaEditBtnText, enEdicion && styles.comidaEditBtnTextActive]}>
                                                     {enEdicion ? 'GUARDAR' : 'EDITAR'}
                                                 </Text>
                                             </TouchableOpacity>
                                         </View>
-
-                                        <View style={styles.comidaMacros}>
-                                            <Text style={styles.comidaKcal}>{Math.round(comida.macros?.kcal || 0)} Kcal</Text>
-                                            <Text style={styles.comidaMacroItem}>P: {Math.round(comida.macros?.prot || 0)}g</Text>
-                                            <Text style={styles.comidaMacroItem}>C: {Math.round(comida.macros?.carb || 0)}g</Text>
-                                            <Text style={styles.comidaMacroItem}>G: {Math.round(comida.macros?.gras || 0)}g</Text>
-                                        </View>
-
-                                        <View style={styles.comidaItems}>
-                                            {comida.items && comida.items.map((it, i) => (
-                                                <View key={it.id || i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                                                    <Text style={styles.comidaItemText}>
-                                                        • {it.alimento?.nombre}
-                                                    </Text>
-                                                    {enEdicion ? (
-                                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                            <TextInput
-                                                                style={styles.comidaGramInput}
-                                                                keyboardType="numeric"
-                                                                value={editandoCantidades[it.id] ?? String(it.cantidad_gramos || it.cantidad || '')}
-                                                                onChangeText={(t) => setEditandoCantidades(prev => ({ ...prev, [it.id]: t }))}
-                                                            />
-                                                            <Text style={{ color: '#888', fontSize: 12, fontWeight: '600' }}>g</Text>
-                                                        </View>
-                                                    ) : (
-                                                        <Text style={{ color: '#999', fontSize: 12 }}>({it.cantidad_gramos || it.cantidad}g)</Text>
-                                                    )}
-                                                    {!enEdicion && (
-                                                        <TouchableOpacity onPress={() => handleEliminarAlimento(comida.id, it.id)}>
-                                                            <Text style={{ color: '#e74c3c', fontSize: 15, fontWeight: 'bold', paddingLeft: 6 }}>✕</Text>
-                                                        </TouchableOpacity>
-                                                    )}
-                                                </View>
-                                            ))}
-                                        </View>
                                     </View>
-                                );
-                            })}
-                        </View>
-                    ) : (
-                        <Text style={styles.noDataText}>No has registrado ninguna comida hoy.</Text>
-                    )}
-                </ScrollView>
+                                    <View style={[styles.comidaMacros, { marginTop: 10 }]}>
+                                        <Text style={styles.comidaKcal}>{Math.round(comidaDetalle.macros?.kcal || 0)} Kcal</Text>
+                                        <Text style={styles.comidaMacroItem}>P: {Math.round(comidaDetalle.macros?.prot || 0)}g</Text>
+                                        <Text style={styles.comidaMacroItem}>C: {Math.round(comidaDetalle.macros?.carb || 0)}g</Text>
+                                        <Text style={styles.comidaMacroItem}>G: {Math.round(comidaDetalle.macros?.gras || 0)}g</Text>
+                                    </View>
+                                </View>
+                                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+                                    {comidaDetalle.items && comidaDetalle.items.map((it, i) => (
+                                        <View key={it.id || i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, backgroundColor: 'white', borderRadius: 14, padding: 14 }}>
+                                            <Text style={[styles.comidaItemText, { flex: 1 }]}>• {it.alimento?.nombre}</Text>
+                                            {enEdicion ? (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                    <TextInput
+                                                        style={styles.comidaGramInput}
+                                                        keyboardType="numeric"
+                                                        value={editandoCantidades[it.id] ?? String(it.cantidad_gramos || it.cantidad || '')}
+                                                        onChangeText={(t) => setEditandoCantidades(prev => ({ ...prev, [it.id]: t }))}
+                                                    />
+                                                    <Text style={{ color: '#888', fontSize: 12, fontWeight: '600' }}>g</Text>
+                                                    <TouchableOpacity onPress={() => handleEliminarAlimento(comidaDetalle.id, it.id)}>
+                                                        <Text style={{ color: '#e74c3c', fontSize: 15, fontWeight: 'bold', paddingLeft: 6 }}>✕</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ) : (
+                                                <Text style={{ color: '#999', fontSize: 12 }}>({it.cantidad_gramos || it.cantidad}g)</Text>
+                                            )}
+                                        </View>
+                                    ))}
+
+                                    {enEdicion && (
+                                        <TouchableOpacity
+                                            style={[styles.btnAdd, { marginTop: 10 }]}
+                                            onPress={() => setModalAlimentosEdicion(true)}
+                                        >
+                                            <Text style={styles.btnAddText}>+ AÑADIR ALIMENTO</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </ScrollView>
+                            </>
+                        );
+                    }
+
+                    // --- VISTA LISTA ---
+                    return (
+                        <>
+                            <View style={styles.header}>
+                                <View style={styles.headerRow}>
+                                    <View>
+                                        <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
+                                        <Text style={styles.title}>Registro de Comidas</Text>
+                                    </View>
+                                    <TouchableOpacity style={styles.btnAddPill} onPress={() => setModalVisible(true)}>
+                                        <Text style={styles.btnAddPillText}>+ Registrar dieta</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+                                <View style={styles.dashboardCard}>
+                                    <Text style={styles.dashboardTitle}>Calorías Consumidas</Text>
+                                    <View style={styles.progressBg}>
+                                        <View style={[styles.progressFill, { width: `${pctKcal}%`, backgroundColor: '#ff7a00' }]} />
+                                    </View>
+                                    <Text style={styles.dashboardSub}>{Math.round(macrosHoy.kcal)} / {objMacros.kcal} Kcal</Text>
+                                </View>
+
+                                <View style={styles.macrosRow}>
+                                    <View style={styles.macroCol}>
+                                        <Text style={styles.macroLabel}>Proteínas</Text>
+                                        <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctProt}%`, backgroundColor: '#3498db' }]} /></View>
+                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot}g</Text>
+                                    </View>
+                                    <View style={styles.macroCol}>
+                                        <Text style={styles.macroLabel}>Carbos</Text>
+                                        <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctCarb}%`, backgroundColor: '#2ecc71' }]} /></View>
+                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb}g</Text>
+                                    </View>
+                                    <View style={styles.macroCol}>
+                                        <Text style={styles.macroLabel}>Grasas</Text>
+                                        <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctGras}%`, backgroundColor: '#f1c40f' }]} /></View>
+                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras}g</Text>
+                                    </View>
+                                </View>
+
+                                {comidasHoy.length > 0 ? (
+                                    <View style={styles.comidasList}>
+                                        <Text style={styles.sectionTitle}>Comidas de hoy</Text>
+                                        {comidasHoy.map((comida, index) => (
+                                            <View key={comida.id || index} style={{ position: 'relative', marginBottom: 15 }}>
+                                                <TouchableOpacity
+                                                    activeOpacity={0.85}
+                                                    onPress={() => setComidaDetalleId(comida.id)}
+                                                >
+                                                    <View style={[styles.comidaCard, { marginBottom: 0 }]}>
+                                                        <View style={[styles.comidaHeader, { paddingRight: 35 }]}>
+                                                            <View>
+                                                                <Text style={styles.comidaTitle}>{comida.titulo || comida.franja_horaria}</Text>
+                                                                <Text style={styles.comidaTime}>{comida.hora}</Text>
+                                                            </View>
+                                                        </View>
+                                                        <View style={styles.comidaMacros}>
+                                                            <Text style={styles.comidaKcal}>{Math.round(comida.macros?.kcal || 0)} Kcal</Text>
+                                                            <Text style={styles.comidaMacroItem}>P: {Math.round(comida.macros?.prot || 0)}g</Text>
+                                                            <Text style={styles.comidaMacroItem}>C: {Math.round(comida.macros?.carb || 0)}g</Text>
+                                                            <Text style={styles.comidaMacroItem}>G: {Math.round(comida.macros?.gras || 0)}g</Text>
+                                                        </View>
+                                                    </View>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={styles.deleteComidaX}
+                                                    onPress={() => handleEliminarComida(comida.id)}
+                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                >
+                                                    <Text style={styles.deleteComidaXText}>✕</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))}
+                                    </View>
+                                ) : (
+                                    <Text style={styles.noDataText}>No has registrado ninguna comida hoy.</Text>
+                                )}
+                            </ScrollView>
+                        </>
+                    );
+                })()}
             </View>
 
             {/* MODAL DE REGISTRO DE COMIDA */}
@@ -591,7 +679,7 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView contentContainerStyle={{ padding: 20 }}>
+                    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 10 }}>
                         <Text style={styles.inputLabel}>Franja Horaria</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.franjasContainer}>
                             {franjasDisponibles.map((franja, idx) => (
@@ -645,6 +733,22 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                             onChangeText={setBusqueda}
                         />
 
+                        {/* BOTÓN CREAR ALIMENTO PERSONALIZADO - arriba del todo */}
+                        <View style={styles.customExerciseActions}>
+                            <TouchableOpacity
+                                style={styles.customExerciseButton}
+                                onPress={() => {
+                                    setNuevoAlim({ nombre: busqueda, kcal: '', prot: '', carb: '', gras: '' });
+                                    setContextoCrearAlimento('registro');
+                                    setModalAlimentoVisible(true);
+                                }}
+                            >
+                                <Text style={styles.customExerciseButtonText}>
+                                    {busqueda.length > 0 ? `¿No encuentras "${busqueda}"? Añádelo aquí +` : '+ Crear alimento personalizado'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
                         {/* RESULTADOS DE BÚSQUEDA */}
                         <View style={styles.resultsContainer}>
                             {alimentosCatalogo
@@ -659,24 +763,11 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                         <Text style={styles.plusIcon}>+</Text>
                                     </TouchableOpacity>
                                 ))}
-                            
-                            {/* BOTÓN PARA AÑADIR ALIMENTO PERSONALIZADO */}
-                            {busqueda.length > 0 && (
-                                <TouchableOpacity 
-                                    style={styles.btnAñadirCustom} 
-                                    onPress={() => {
-                                        setNuevoAlim({ ...nuevoAlim, nombre: busqueda });
-                                        setModalAlimentoVisible(true);
-                                    }}
-                                >
-                                    <Text style={styles.btnAñadirCustomText}>
-                                        ¿No encuentras "{busqueda}"? Añádelo aquí +
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
                         </View>
 
-                        {/* BOTÓN GUARDAR */}
+                    </ScrollView>
+                    {/* BOTÓN GUARDAR - fijo en la parte inferior */}
+                    <View style={{ padding: 20, paddingBottom: 30, backgroundColor: '#f8f9fa', borderTopWidth: 1, borderTopColor: '#eee' }}>
                         <TouchableOpacity
                             style={[styles.btnConfirm, guardando && { opacity: 0.7 }]}
                             onPress={handleGuardarComida}
@@ -688,7 +779,7 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                 <Text style={styles.btnConfirmText}>GUARDAR COMIDA</Text>
                             )}
                         </TouchableOpacity>
-                    </ScrollView>
+                    </View>
                 </View>
             </Modal>
 
@@ -731,6 +822,60 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                             <Text style={{ color: 'red', textAlign: 'center', fontWeight: 'bold' }}>Cancelar</Text>
                         </TouchableOpacity>
                     </View>
+                </View>
+            </Modal>
+
+            {/* MODAL AÑADIR ALIMENTO EN EDICIÓN */}
+            <Modal visible={modalAlimentosEdicion} animationType="slide">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Añadir alimento</Text>
+                        <TouchableOpacity onPress={() => { setModalAlimentosEdicion(false); setBusquedaEdicion(''); }}>
+                            <Text style={styles.closeModalText}>Cerrar</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <TextInput
+                        placeholder="Buscar..."
+                        style={styles.searchInput}
+                        value={busquedaEdicion}
+                        onChangeText={setBusquedaEdicion}
+                        placeholderTextColor="#999"
+                    />
+                    <View style={styles.customExerciseActions}>
+                        <TouchableOpacity
+                            style={styles.customExerciseButton}
+                            onPress={() => {
+                                setNuevoAlim({ nombre: busquedaEdicion, kcal: '', prot: '', carb: '', gras: '' });
+                                setContextoCrearAlimento('edicion');
+                                setModalAlimentosEdicion(false);
+                                setModalAlimentoVisible(true);
+                            }}
+                        >
+                            <Text style={styles.customExerciseButtonText}>+ Crear alimento personalizado</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <ScrollView contentContainerStyle={{ padding: 20 }}>
+                        {alimentosCatalogo
+                            .filter(a => busquedaEdicion.length === 0 || a.nombre.toLowerCase().includes(busquedaEdicion.toLowerCase()))
+                            .map((alim, i) => (
+                                <TouchableOpacity
+                                    key={i}
+                                    style={styles.foodItem}
+                                    onPress={() => {
+                                        añadirAlimentoAComida(comidaDetalleId, alim);
+                                        setModalAlimentosEdicion(false);
+                                        setBusquedaEdicion('');
+                                    }}
+                                >
+                                    <View>
+                                        <Text style={styles.foodName}>{alim.nombre}</Text>
+                                        <Text style={styles.foodSub}>{Math.round(alim.calorias_100g)} Kcal (P: {Math.round(alim.proteinas_100g)} C: {Math.round(alim.carbohidratos_100g)} G: {Math.round(alim.grasas_100g)})</Text>
+                                    </View>
+                                    <Text style={styles.plusIcon}>+</Text>
+                                </TouchableOpacity>
+                            ))
+                        }
+                    </ScrollView>
                 </View>
             </Modal>
 
@@ -815,9 +960,9 @@ const styles = StyleSheet.create({
     comidaTime: { fontSize: 12, color: '#999', fontWeight: 'bold' },
     deleteComidaX: { position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,68,68,0.15)', justifyContent: 'center', alignItems: 'center' },
     deleteComidaXText: { color: '#ff4444', fontSize: 14, fontWeight: '900', lineHeight: 18 },
-    comidaEditBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(255,122,0,0.12)', borderWidth: 1, borderColor: '#ff7a00' },
+    comidaEditBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)' },
     comidaEditBtnActive: { backgroundColor: '#2ecc71', borderColor: '#2ecc71' },
-    comidaEditBtnText: { color: '#ff7a00', fontSize: 11, fontWeight: '900' },
+    comidaEditBtnText: { color: 'white', fontSize: 11, fontWeight: '900' },
     comidaEditBtnTextActive: { color: 'white' },
     comidaGramInput: { backgroundColor: '#f0f0f0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, width: 50, textAlign: 'center', fontSize: 12, fontWeight: 'bold', color: '#333' },
     comidaMacros: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff7ef', padding: 10, borderRadius: 10, marginBottom: 10 },
@@ -852,6 +997,11 @@ const styles = StyleSheet.create({
     plusIcon: { fontSize: 24, color: '#ff7a00', fontWeight: 'bold', paddingRight: 5 },
     btnAñadirCustom: { padding: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: '#ff7a00', borderRadius: 12, alignItems: 'center', marginTop: 10, backgroundColor: '#fff7ef' },
     btnAñadirCustomText: { color: '#ff7a00', fontWeight: 'bold', fontSize: 13 },
+    btnAdd: { backgroundColor: 'white', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 10, borderStyle: 'dashed', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
+    btnAddText: { color: '#ff7a00', fontWeight: '900' },
+    customExerciseActions: { paddingHorizontal: 15, paddingBottom: 5 },
+    customExerciseButton: { backgroundColor: '#ff7a00', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center' },
+    customExerciseButtonText: { color: 'white', fontWeight: '900', fontSize: 12 },
     
     // MODAL PEQUEÑO
     fullOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
