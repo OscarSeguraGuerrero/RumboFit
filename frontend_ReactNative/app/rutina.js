@@ -83,6 +83,9 @@ const calcularMacrosConsumidos = (comidas) => {
 const necesitaDiagnostico = (usuario) => {
     if (!usuario) return true;
 
+    // Si ya tiene una rutina asignada (sugerida o guardada), no necesita diagnóstico
+    if (usuario.rutina_sugerida || (usuario._count && usuario._count.rutinas > 0)) return false;
+
     return !(
         usuario.peso &&
         usuario.altura &&
