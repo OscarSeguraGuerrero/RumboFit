@@ -1040,5 +1040,4 @@ const styles = StyleSheet.create({
     tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     tabBarText: { fontSize: 13, fontWeight: '900', color: '#bbb', letterSpacing: 1 },
     tabBarTextActive: { color: '#ff7a00' },
-    loading: { flex: 1, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
 });

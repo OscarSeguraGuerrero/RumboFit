@@ -80,6 +80,20 @@ const calcularMacrosConsumidos = (comidas) => {
     return totales;
 };
 
+const necesitaDiagnostico = (usuario) => {
+    if (!usuario) return true;
+
+    return !(
+        usuario.peso &&
+        usuario.altura &&
+        usuario.edad &&
+        usuario.sexo &&
+        usuario.objetivo &&
+        usuario.frecuencia_semanal &&
+        usuario.nivel
+    );
+};
+
 function LaserRoutineCard({ children, style, contentStyle, onPress }) {
     const laserAnim = useRef(new Animated.Value(0)).current;
     const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
@@ -600,13 +614,24 @@ export default function Rutina() {
                 const userName = await AsyncStorage.getItem("userName");
 
                 if (userName) setUsuario({ nombre: userName });
+                if (!userId) {
+                    router.replace('/');
+                    return;
+                }
 
                 if (userId) {
                     // Cargar perfil del usuario
                     try {
                         const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
                         const userData = await userRes.json();
-                        if (userData.success) setUsuarioCompleto(userData.usuario);
+                        if (userData.success) {
+                            setUsuarioCompleto(userData.usuario);
+
+                            if (necesitaDiagnostico(userData.usuario)) {
+                                router.replace('/formulario');
+                                return;
+                            }
+                        }
                     } catch (e) { console.warn('No se pudo cargar perfil', e); }
 
                     // Cargar historial (no crítico, no bloquea si falla)
