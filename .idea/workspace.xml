@@ -5,8 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Ultimos cambios.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +73,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;prueba__daniela&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/samuel/WebstormProjects/RumboFit/frontend_ReactNative/assets/images&quot;,

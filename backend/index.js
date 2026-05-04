@@ -335,7 +335,8 @@ app.get('/api/usuarios/:id', async (req, res) => {
                     select: {
                         seguidores: true,
                         seguidos: true,
-                        publicaciones: true
+                        publicaciones: true,
+                        rutinas: true
                     }
                 }
             }

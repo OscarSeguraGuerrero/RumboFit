@@ -4,6 +4,23 @@ import { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { API_URL } from '../config';
 
+const necesitaDiagnostico = (usuario) => {
+    if (!usuario) return true;
+
+    // Si ya tiene una rutina asignada (sugerida o guardada), no necesita diagnóstico
+    if (usuario.rutina_sugerida || (usuario._count && usuario._count.rutinas > 0)) return false;
+
+    return !(
+        usuario.peso &&
+        usuario.altura &&
+        usuario.edad &&
+        usuario.sexo &&
+        usuario.objetivo &&
+        usuario.frecuencia_semanal &&
+        usuario.nivel
+    );
+};
+
 export default function Auth() {
     const router = useRouter();
     const [esRegistro, setEsRegistro] = useState(true);
@@ -76,7 +93,14 @@ export default function Auth() {
                     await AsyncStorage.setItem("userName", data.user.nombre);
                     // Limpiamos la rutina cacheada para evitar cargar datos de otro usuario
                     await AsyncStorage.removeItem("rutina");
-                    router.replace('/rutina');
+                    const profileResponse = await fetch(`${API_URL}/usuarios/${data.user.id}`);
+                    const profileData = await profileResponse.json();
+
+                    if (profileData.success && !necesitaDiagnostico(profileData.usuario)) {
+                        router.replace('/rutina');
+                    } else {
+                        router.replace('/formulario');
+                    }
                 } else {
                     setError(data.error || "Credenciales incorrectas");
                 }
