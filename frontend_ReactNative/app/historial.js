@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { API_URL } from '../config';
-import { getUnidad } from '../utils';
+import { getUnidad, convertirCantidadAGramos, convertirGramosACantidad } from '../utils';
 
 const { width } = Dimensions.get('window');
 
@@ -102,7 +102,7 @@ export default function Historial() {
                 totales.gras += Number(c.macros.gras || 0);
             } else if (c.items) {
                 c.items.forEach(it => {
-                    const factor = Number(it.cantidad_gramos) / 100;
+                    const factor = convertirCantidadAGramos(it.alimento?.nombre, Number(it.cantidad_gramos)) / 100;
                     totales.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
                     totales.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
                     totales.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
@@ -282,7 +282,7 @@ export default function Historial() {
                                         {ev.datos.items && ev.datos.items.length > 0 ? (
                                             ev.datos.items.map((it, idx) => (
                                                 <Text key={idx} style={styles.foodLine}>
-                                                    • {it.alimento?.nombre || '?'} ({Number(it.cantidad_gramos || 0).toFixed(0)} {getUnidad(it.alimento?.nombre)})
+                                                    • {it.alimento?.nombre || '?'} ({Number(convertirGramosACantidad(it.alimento?.nombre, it.cantidad_gramos || 0)).toFixed(getUnidad(it.alimento?.nombre) === 'ud' ? 1 : 0)} {getUnidad(it.alimento?.nombre)})
                                                 </Text>
                                             ))
                                         ) : (

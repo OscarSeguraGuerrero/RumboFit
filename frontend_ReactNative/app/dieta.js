@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import React from 'react';
 import { API_URL } from '../config';
-import { getUnidad } from '../utils';
+import { getUnidad, getCantidadInicial, convertirCantidadAGramos, convertirGramosACantidad, calcularMacrosAlimento } from '../utils';
 import {
     Image,
     ScrollView,
@@ -71,7 +71,7 @@ const calcularMacrosConsumidos = (comidas) => {
         // Soporte para items anidados si no viene con macros precalculados
         else if (c.items) {
             c.items.forEach(it => {
-                const factor = Number(it.cantidad_gramos || it.cantidad) / 100;
+                const factor = convertirCantidadAGramos(it.alimento?.nombre || it.nombre, Number(it.cantidad_gramos || it.cantidad)) / 100;
                 totales.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
                 totales.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
                 totales.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
@@ -80,7 +80,7 @@ const calcularMacrosConsumidos = (comidas) => {
         }
         // Soporte para esquema viejo (flat list)
         else {
-            const factor = Number(c.cantidad_gramos) / 100;
+            const factor = convertirCantidadAGramos(c.alimento?.nombre, Number(c.cantidad_gramos)) / 100;
             const itemAlimento = c.alimento || c;
             totales.kcal += Number(itemAlimento.calorias_100g || 0) * factor;
             totales.prot += Number(itemAlimento.proteinas_100g || 0) * factor;
@@ -173,7 +173,7 @@ export default function Dieta() {
             setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
             return;
         }
-        setItemsReceta([...itemsReceta, { ...alim, cantidad: 100 }]);
+        setItemsReceta([...itemsReceta, { ...alim, cantidad: getCantidadInicial(alim.nombre) }]);
         setBusqueda(''); // Limpiar búsqueda al añadir
     };
 
@@ -267,7 +267,7 @@ export default function Dieta() {
                 titulo: tituloComida.trim(),
                 items: itemsReceta.map(it => ({
                     alimentoId: it.id,
-                    cantidad: it.cantidad
+                    cantidad: convertirCantidadAGramos(it.nombre, it.cantidad)
                 })),
                 franja: tituloComida.trim() // Usamos el título como franja temporalmente
             };
@@ -365,7 +365,7 @@ export default function Dieta() {
             const res = await fetch(`${API_URL}/dieta/comida/${comidaId}/alimento`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ alimentoId: alimento.id, cantidad: 100, userId })
+                body: JSON.stringify({ alimentoId: alimento.id, cantidad: convertirCantidadAGramos(alimento.nombre, getCantidadInicial(alimento.nombre)), userId })
             });
             const data = await res.json();
             if (data.success) {
@@ -381,7 +381,7 @@ export default function Dieta() {
     const iniciarEdicionComida = (comida) => {
         const cantidades = {};
         (comida.items || []).forEach(it => {
-            cantidades[it.id] = String(it.cantidad_gramos || it.cantidad || '');
+            cantidades[it.id] = String(convertirGramosACantidad(it.alimento?.nombre, it.cantidad_gramos || it.cantidad || 0));
         });
         setEditandoCantidades(cantidades);
         setEditandoComida(comida.id);
@@ -392,11 +392,11 @@ export default function Dieta() {
             await Promise.all(
                 (comida.items || []).map(it => {
                     const nuevaCantidad = editandoCantidades[it.id];
-                    if (!nuevaCantidad || Number(nuevaCantidad) === (it.cantidad_gramos || it.cantidad)) return Promise.resolve();
+                    if (!nuevaCantidad || Number(nuevaCantidad) === convertirGramosACantidad(it.alimento?.nombre, it.cantidad_gramos || it.cantidad)) return Promise.resolve();
                     return fetch(`${API_URL}/dieta/alimento/${it.id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ cantidad_gramos: Number(nuevaCantidad) })
+                        body: JSON.stringify({ cantidad_gramos: convertirCantidadAGramos(it.alimento?.nombre, Number(nuevaCantidad)) })
                     });
                 })
             );
@@ -506,7 +506,7 @@ export default function Dieta() {
                                                     <TextInput
                                                         style={styles.comidaGramInput}
                                                         keyboardType="numeric"
-                                                        value={editandoCantidades[it.id] ?? String(it.cantidad_gramos || it.cantidad || '')}
+                                                        value={editandoCantidades[it.id] ?? String(convertirGramosACantidad(it.alimento?.nombre, it.cantidad_gramos || it.cantidad || 0))}
                                                         onChangeText={(t) => setEditandoCantidades(prev => ({ ...prev, [it.id]: t }))}
                                                     />
                                                     <Text style={{ color: '#888', fontSize: 12, fontWeight: '600' }}> {getUnidad(it.alimento?.nombre)}</Text>
@@ -515,7 +515,7 @@ export default function Dieta() {
                                                     </TouchableOpacity>
                                                 </View>
                                             ) : (
-                                                <Text style={{ color: '#999', fontSize: 12 }}>({it.cantidad_gramos || it.cantidad} {getUnidad(it.alimento?.nombre)})</Text>
+                                                <Text style={{ color: '#999', fontSize: 12 }}>({Number(convertirGramosACantidad(it.alimento?.nombre, it.cantidad_gramos || it.cantidad || 0)).toFixed(getUnidad(it.alimento?.nombre) === 'ud' ? 1 : 0)} {getUnidad(it.alimento?.nombre)})</Text>
                                             )}
                                         </View>
                                     ))}
@@ -661,7 +661,10 @@ export default function Dieta() {
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.selectedItemName}>{it.nombre}</Text>
                                             <Text style={styles.selectedItemMacros}>
-                                                {Math.round((Number(it.calorias_100g) * it.cantidad) / 100)} Kcal (P: {Math.round((Number(it.proteinas_100g) * it.cantidad) / 100)} C: {Math.round((Number(it.carbohidratos_100g) * it.cantidad) / 100)} G: {Math.round((Number(it.grasas_100g) * it.cantidad) / 100)})
+                                                {(() => {
+                                                    const macros = calcularMacrosAlimento(it.nombre, it, it.cantidad);
+                                                    return `${Math.round(macros.kcal)} Kcal (P: ${Math.round(macros.prot)} C: ${Math.round(macros.carb)} G: ${Math.round(macros.gras)})`;
+                                                })()}
                                             </Text>
                                         </View>
                                         <View style={styles.qtyContainer}>
