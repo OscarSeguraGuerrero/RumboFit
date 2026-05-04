@@ -30,6 +30,8 @@ export default function Perfil() {
     const [nuevoNivel, setNuevoNivel] = useState('');
     const [nuevaFrecuencia, setNuevaFrecuencia] = useState('');
     const [nuevaFoto, setNuevaFoto] = useState('');
+    const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
+    const [confirmModal, setConfirmModal] = useState({ visible: false, postId: null });
 
     const [publicaciones, setPublicaciones] = useState([]);
     const [siguiendo, setSiguiendo] = useState(false);
@@ -117,41 +119,42 @@ export default function Perfil() {
                     }
                 }));
             }
-        } catch (e) { Alert.alert("Error", "No se pudo procesar la acción."); }
+        } catch (e) { 
+            setMsgGeneral({ text: "No se pudo procesar la acción.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
+        }
     };
 
     const eliminarPublicacion = async (postId) => {
-        Alert.alert(
-            "Confirmar eliminación",
-            "¿Estás seguro de que quieres borrar esta publicación?",
-            [
-                { text: "Cancelar", style: "cancel" },
-                { 
-                    text: "Eliminar", 
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const resp = await fetch(`${API_URL}/publicaciones/${postId}`, {
-                                method: 'DELETE',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ userId: propioId })
-                            });
-                            const data = await resp.json();
-                            if (data.success) {
-                                setPublicaciones(prev => prev.filter(p => p.id !== postId));
-                                Alert.alert("Éxito", "Publicación eliminada.");
-                            }
-                        } catch (e) { Alert.alert("Error", "No se pudo eliminar."); }
-                    }
-                }
-            ]
-        );
+        setConfirmModal({ visible: true, postId });
+    };
+
+    const handleConfirmEliminar = async () => {
+        const postId = confirmModal.postId;
+        setConfirmModal({ visible: false, postId: null });
+        try {
+            const resp = await fetch(`${API_URL}/publicaciones/${postId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: propioId })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                setPublicaciones(prev => prev.filter(p => p.id !== postId));
+                setMsgGeneral({ text: "Publicación eliminada.", type: 'success' });
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
+            }
+        } catch (e) {
+            setMsgGeneral({ text: "No se pudo eliminar.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
+        }
     };
 
     const seleccionarImagen = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert("Permiso denegado", "Necesitamos acceso a tu galería para cambiar la foto.");
+            setMsgGeneral({ text: "Necesitamos acceso a tu galería para cambiar la foto.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
             return;
         }
 
@@ -229,22 +232,24 @@ export default function Perfil() {
                     const resultRutina = await respRutina.json();
                     if (resultRutina.success) {
                         await AsyncStorage.setItem("rutina", JSON.stringify(resultRutina));
-                        Alert.alert("Éxito", "Perfil actualizado y rutina recalculada.");
+                        setMsgGeneral({ text: "Perfil actualizado y rutina recalculada.", type: 'success' });
                     } else {
-                        Alert.alert("Aviso", "Perfil actualizado, pero no se pudo recalcular la rutina.");
+                        setMsgGeneral({ text: "Perfil actualizado, pero no se pudo recalcular la rutina.", type: 'error' });
                     }
                 } else {
-                    Alert.alert("Éxito", "Perfil actualizado.");
+                    setMsgGeneral({ text: "Perfil actualizado.", type: 'success' });
                 }
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
 
                 setUsuario(result.usuario);
                 setEditando(false);
             } else {
-                Alert.alert("Error", result.error || "Fallo en el servidor");
+                setMsgGeneral({ text: result.error || "Fallo en el servidor", type: 'error' });
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
             }
         } catch (error) {
-            console.error("Error en Guardar:", error);
-            Alert.alert("Error", "No se pudo conectar con el servidor.");
+            setMsgGeneral({ text: "No se pudo conectar con el servidor.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
         }
     };
 
@@ -285,6 +290,11 @@ export default function Perfil() {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContent}
                 >
+                    {msgGeneral.text ? (
+                        <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess]}>
+                            <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                        </View>
+                    ) : null}
                     <View style={styles.topHeader}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                             <Text style={styles.backText}>← Volver</Text>
@@ -545,6 +555,30 @@ export default function Perfil() {
 
                     <View style={{height: 100}} />
                 </ScrollView>
+
+                {/* MODAL CONFIRMACIÓN ELIMINAR POST */}
+                {confirmModal.visible && (
+                    <View style={styles.confirmOverlay}>
+                        <View style={styles.confirmCard}>
+                            <Text style={styles.confirmTitle}>Eliminar publicación</Text>
+                            <Text style={styles.confirmMsg}>¿Estás seguro de que quieres borrar esta publicación?</Text>
+                            <View style={styles.confirmActions}>
+                                <TouchableOpacity 
+                                    style={styles.confirmBtnCancel} 
+                                    onPress={() => setConfirmModal({ visible: false, postId: null })}
+                                >
+                                    <Text style={styles.confirmBtnCancelText}>Cancelar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={styles.confirmBtnDelete} 
+                                    onPress={handleConfirmEliminar}
+                                >
+                                    <Text style={styles.confirmBtnDeleteText}>Eliminar</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                )}
             </View>
         </ImageBackground>
     );
@@ -627,5 +661,20 @@ const styles = StyleSheet.create({
     postImg: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10 },
     postDate: { color: '#999', fontSize: 10, textAlign: 'right' },
     cancelarBtn: { marginTop: 20, padding: 10, alignSelf: 'center' },
-    loadingContainer: { flex: 1, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' }
+    loadingContainer: { flex: 1, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+
+    msgBanner: { width: '100%', padding: 12, borderRadius: 12, marginBottom: 15, alignItems: 'center' },
+    msgError: { backgroundColor: 'rgba(231, 76, 60, 0.2)', borderWidth: 1, borderColor: '#e74c3c' },
+    msgSuccess: { backgroundColor: 'rgba(46, 204, 113, 0.2)', borderWidth: 1, borderColor: '#2ecc71' },
+    msgText: { color: 'white', fontWeight: 'bold', fontSize: 13, textAlign: 'center' },
+
+    confirmOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', zIndex: 999 },
+    confirmCard: { backgroundColor: 'white', width: '80%', padding: 20, borderRadius: 20 },
+    confirmTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 10, textAlign: 'center' },
+    confirmMsg: { fontSize: 14, color: '#666', marginBottom: 20, textAlign: 'center' },
+    confirmActions: { flexDirection: 'row', justifyContent: 'space-between' },
+    confirmBtnCancel: { flex: 1, padding: 12, marginRight: 10, backgroundColor: '#eee', borderRadius: 10, alignItems: 'center' },
+    confirmBtnCancelText: { color: '#666', fontWeight: 'bold' },
+    confirmBtnDelete: { flex: 1, padding: 12, backgroundColor: '#e74c3c', borderRadius: 10, alignItems: 'center' },
+    confirmBtnDeleteText: { color: 'white', fontWeight: 'bold' }
 });

@@ -10,24 +10,26 @@ export default function Formulario() {
     const [objetivo, setObjetivo] = useState(null);
     const [nivel, setNivel] = useState('Principiante');
     const [datos, setDatos] = useState({ peso: '', altura: '', edad: '', dias: '' });
+    const [error, setError] = useState('');
 
     const enviar = async () => {
+        setError('');
         // Validación: Ahora incluimos 'datos.dias' en la comprobación
         if (!datos.peso || !objetivo || !sexo || !datos.dias) {
-            Alert.alert("Campos incompletos", "Por favor, completa todos los campos, incluyendo los días disponibles.");
+            setError("Por favor, completa todos los campos.");
             return;
         }
 
         const numDias = parseInt(datos.dias);
         if (isNaN(numDias) || numDias < 1 || numDias > 7) {
-            Alert.alert("Dato inválido", "Por favor, introduce un número de días entre 1 y 7.");
+            setError("Introduce un número de días entre 1 y 7.");
             return;
         }
 
         try {
             const userId = await AsyncStorage.getItem("userId");
             if (!userId) {
-                Alert.alert("Error de sesión", "No se encontró el ID de usuario. Por favor, re-inicia sesión.");
+                setError("No se encontró la sesión del usuario. Re-inicia sesión.");
                 return;
             }
 
@@ -53,12 +55,11 @@ export default function Formulario() {
                 await AsyncStorage.setItem("rutina", JSON.stringify(result));
                 router.push('/rutina');
             } else {
-                Alert.alert("Error", result.error || "No se pudo generar la rutina.");
+                setError(result.error || "No se pudo generar la rutina.");
             }
 
         } catch (error) {
-            console.error(error);
-            Alert.alert("Error de conexión", "No se pudo conectar con el servidor.");
+            setError("No se pudo conectar con el servidor.");
         }
     };
 
@@ -160,6 +161,8 @@ export default function Formulario() {
                     <Text style={objetivo === 'mantenimiento' && styles.textWhite}>Mantenimiento</Text>
                 </TouchableOpacity>
 
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
                 <TouchableOpacity style={styles.submit} onPress={enviar}>
                     <Text style={styles.submitText}>Generar mi plan personalizado</Text>
                 </TouchableOpacity>
@@ -181,6 +184,7 @@ const styles = StyleSheet.create({
     btnObj: { padding: 15, backgroundColor: '#ddd', borderRadius: 10, marginBottom: 10 },
     active: { backgroundColor: '#ff7a00' },
     textWhite: { color: 'white', fontWeight: 'bold' },
-    submit: { backgroundColor: 'red', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-    submitText: { color: 'white', fontWeight: 'bold', fontSize: 16 }
+    submit: { backgroundColor: '#ff7a00', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
+    submitText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+    errorText: { color: 'red', fontSize: 12, marginBottom: 10, textAlign: 'center', fontWeight: 'bold' }
 });

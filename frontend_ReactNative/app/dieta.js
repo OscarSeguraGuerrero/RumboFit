@@ -123,50 +123,54 @@ export default function Dieta() {
     // Estado para vista detalle de comida
     const [comidaDetalleId, setComidaDetalleId] = useState(null);
     const [busquedaEdicion, setBusquedaEdicion] = useState('');
-    const [modalAlimentosEdicion, setModalAlimentosEdicion] = useState(false);
+    const [errorAlimento, setErrorAlimento] = useState('');
+    const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' }); // { text: '', type: 'error' | 'success' }
     const [contextoCrearAlimento, setContextoCrearAlimento] = useState('registro');
+    const [modalAlimentosVisible, setModalAlimentosVisible] = useState(false);
+    const [modalAlimentosEdicion, setModalAlimentosEdicion] = useState(false);
+
+    const cargarDatos = async () => {
+        try {
+            const userId = await AsyncStorage.getItem("userId");
+            if (userId) {
+                const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
+                const userData = await userRes.json();
+                if (userData.success) setUsuarioCompleto(userData.usuario);
+
+                const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial`);
+                const histData = await histRes.json();
+                if (histData.success && histData.historial) {
+                    const hoyStr = new Date().toISOString().split('T')[0];
+                    const dataHoy = histData.historial[hoyStr];
+                    if (dataHoy && dataHoy.comidas) {
+                        setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
+                        setComidasHoy(dataHoy.comidas);
+                    }
+                }
+
+                const alimRes = await fetch(`${API_URL}/alimentos`);
+                const alimData = await alimRes.json();
+                setAlimentosCatalogo(alimData);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const cargarData = async () => {
-            try {
-                const userId = await AsyncStorage.getItem("userId");
-                if (userId) {
-                    // Cargar perfil
-                    const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
-                    const userData = await userRes.json();
-                    if (userData.success) setUsuarioCompleto(userData.usuario);
-
-                    // Cargar historial para macros
-                    const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial`);
-                    const histData = await histRes.json();
-                    if (histData.success && histData.historial) {
-                        const hoyStr = new Date().toISOString().split('T')[0];
-                        const dataHoy = histData.historial[hoyStr];
-                        if (dataHoy && dataHoy.comidas) {
-                            setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
-                            setComidasHoy(dataHoy.comidas);
-                        }
-                    }
-
-                    // Cargar catálogo de alimentos
-                    const alimRes = await fetch(`${API_URL}/alimentos`);
-                    const alimData = await alimRes.json();
-                    setAlimentosCatalogo(alimData);
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        cargarData();
+        cargarDatos();
     }, []);
 
     // --- FUNCIONES CRUD FRONTEND ---
     const añadirAlimento = (alim) => {
-        // Evitar duplicados simples (opcional, pero mejora la UX)
-        if (itemsReceta.find(it => it.id === alim.id)) {
-            Alert.alert("Aviso", "Este alimento ya está en la lista.");
+        const yaExiste = itemsReceta.find(it => it.id === alim.id);
+        if (yaExiste) {
+            console.log("ALIMENTO DUPLICADO DETECTADO:", alim.nombre);
+            setModalAlimentosVisible(false);
+            setMsgGeneral({ text: "Este alimento ya estaba en tu lista.", type: 'success' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
             return;
         }
         setItemsReceta([...itemsReceta, { ...alim, cantidad: 100 }]);
@@ -185,10 +189,11 @@ export default function Dieta() {
 
     const handleCrearAlimentoCustom = async () => {
         if (!nuevoAlim.nombre || !nuevoAlim.kcal) {
-            Alert.alert("Aviso", "El nombre y las calorías son obligatorios.");
+            setErrorAlimento("El nombre y las calorías son obligatorios.");
             return;
         }
         setCreandoAlimento(true);
+        setErrorAlimento('');
         try {
             const payload = {
                 nombre: nuevoAlim.nombre,
@@ -203,6 +208,8 @@ export default function Dieta() {
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
+            console.log("Respuesta servidor (crear alimento):", data);
+
             if (data.success) {
                 setAlimentosCatalogo(prev => [...prev, data.alimento]);
                 setModalAlimentoVisible(false);
@@ -214,24 +221,39 @@ export default function Dieta() {
                     añadirAlimento(data.alimento);
                 }
                 setContextoCrearAlimento('registro');
-                Alert.alert("¡Éxito!", "Alimento añadido al catálogo general.");
+            } else if (data.error === "duplicado" && data.alimento) {
+                // UX MEJORADA: Si existe, lo añadimos directamente
+                setModalAlimentoVisible(false);
+                setNuevoAlim({ nombre: '', kcal: '', prot: '', carb: '', gras: '' });
+                if (contextoCrearAlimento === 'edicion') {
+                    await añadirAlimentoAComida(comidaDetalleId, data.alimento);
+                    setBusquedaEdicion('');
+                } else {
+                    añadirAlimento(data.alimento);
+                }
+                setContextoCrearAlimento('registro');
+                console.log("ALIMENTO DUPLICADO DETECTADO:", data.alimento.nombre);
+                setMsgGeneral({ text: `"${data.alimento.nombre}" ya existe en el catálogo. ¡Lo hemos añadido por ti!`, type: 'success' });
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 8000);
             } else {
-                Alert.alert("Error", data.error || "Error al crear el alimento.");
+                setErrorAlimento(data.error || "Error al crear el alimento.");
             }
         } catch (error) {
-            Alert.alert("Error", "Problema de conexión con el servidor.");
+            console.error("Error de conexión:", error);
+            setErrorAlimento("Problema de conexión con el servidor.");
         } finally {
             setCreandoAlimento(false);
         }
     };
 
     const handleGuardarComida = async () => {
+        setMsgGeneral({ text: '', type: '' });
         if (!tituloComida) {
-            Alert.alert("Aviso", "Por favor, selecciona una franja horaria.");
+            setMsgGeneral({ text: "Por favor, selecciona una franja horaria.", type: 'error' });
             return;
         }
         if (itemsReceta.length === 0) {
-            Alert.alert("Aviso", "Añade al menos un alimento a la comida.");
+            setMsgGeneral({ text: "Añade al menos un alimento a la comida.", type: 'error' });
             return;
         }
 
@@ -258,37 +280,17 @@ export default function Dieta() {
 
             const data = await res.json();
             if (data.success) {
-                // Calculamos los macros para que estén listos (si no vienen del backend)
-                let macrosComida = data.comida.macros;
-                if (!macrosComida) {
-                    macrosComida = { kcal: 0, prot: 0, carb: 0, gras: 0 };
-                    data.comida.items.forEach(it => {
-                        const factor = Number(it.cantidad_gramos || it.cantidad) / 100;
-                        macrosComida.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
-                        macrosComida.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
-                        macrosComida.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
-                        macrosComida.gras += Number(it.alimento?.grasas_100g || 0) * factor;
-                    });
-                }
-                const comidaConMacros = { ...data.comida, macros: macrosComida };
-
-                // Actualizar estado local
-                const nuevasComidas = [comidaConMacros, ...comidasHoy];
-                setComidasHoy(nuevasComidas);
-                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
-
-                // Limpiar modal y cerrar
-                setTituloComida(franjasDisponibles[0]);
+                setMsgGeneral({ text: "Comida registrada correctamente.", type: 'success' });
                 setItemsReceta([]);
-                setBusqueda('');
+                setTituloComida(franjasDisponibles[0]);
+                cargarDatos();
                 setModalVisible(false);
-                Alert.alert("¡Éxito!", "Comida registrada correctamente.");
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
             } else {
-                Alert.alert("Error", data.error || "No se pudo guardar la comida.");
+                setMsgGeneral({ text: data.error || "No se pudo guardar la comida.", type: 'error' });
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "No se pudo conectar con el servidor.");
+            setMsgGeneral({ text: "No se pudo conectar con el servidor.", type: 'error' });
         } finally {
             setGuardando(false);
         }
@@ -301,16 +303,12 @@ export default function Dieta() {
             });
             const data = await res.json();
             if (data.success) {
-                const nuevasComidas = comidasHoy.filter(c => c.id !== id);
-                setComidasHoy(nuevasComidas);
-                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
-                setComidaDetalleId(null);
+                cargarDatos();
             } else {
-                Alert.alert("Error", "No se pudo eliminar la comida.");
+                setMsgGeneral({ text: "No se pudo eliminar la comida.", type: 'error' });
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "No se pudo conectar con el servidor.");
+            setMsgGeneral({ text: "No se pudo conectar con el servidor.", type: 'error' });
         }
     };
 
@@ -321,30 +319,13 @@ export default function Dieta() {
             });
             const data = await res.json();
             if (data.success) {
-                const nuevasComidas = comidasHoy.map(c => {
-                    if (c.id === comidaId) {
-                        const nuevosItems = c.items.filter(it => it.id !== alimentoId);
-                        let macrosComida = { kcal: 0, prot: 0, carb: 0, gras: 0 };
-                        nuevosItems.forEach(it => {
-                            const factor = Number(it.cantidad_gramos || it.cantidad || 0) / 100;
-                            macrosComida.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
-                            macrosComida.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
-                            macrosComida.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
-                            macrosComida.gras += Number(it.alimento?.grasas_100g || 0) * factor;
-                        });
-                        return { ...c, items: nuevosItems, macros: macrosComida };
-                    }
-                    return c;
-                }).filter(c => c.items && c.items.length > 0);
-
-                setComidasHoy(nuevasComidas);
-                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+                if (data.comidaEliminada) setComidaDetalleId(null);
+                else cargarDatos();
             } else {
-                Alert.alert("Error", "No se pudo eliminar el alimento.");
+                setMsgGeneral({ text: "No se pudo eliminar el alimento.", type: 'error' });
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "No se pudo conectar con el servidor.");
+            setMsgGeneral({ text: "No se pudo conectar con el servidor.", type: 'error' });
         }
     };
 
@@ -388,29 +369,12 @@ export default function Dieta() {
             });
             const data = await res.json();
             if (data.success) {
-                const nuevasComidas = comidasHoy.map(c => {
-                    if (c.id !== comidaId) return c;
-                    const nuevosItems = [...(c.items || []), data.item];
-                    let macros = { kcal: 0, prot: 0, carb: 0, gras: 0 };
-                    nuevosItems.forEach(it => {
-                        const factor = Number(it.cantidad_gramos) / 100;
-                        macros.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
-                        macros.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
-                        macros.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
-                        macros.gras += Number(it.alimento?.grasas_100g || 0) * factor;
-                    });
-                    return { ...c, items: nuevosItems, macros };
-                });
-                setComidasHoy(nuevasComidas);
-                setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
-                setEditandoCantidades(prev => ({ ...prev, [data.item.id]: '100' }));
-                setBusquedaEdicion('');
+                cargarDatos();
             } else {
-                Alert.alert("Error", data.error || "No se pudo añadir el alimento.");
+                setMsgGeneral({ text: data.error || "No se pudo añadir el alimento.", type: 'error' });
             }
         } catch (e) {
-            console.error(e);
-            Alert.alert("Error", "No se pudo conectar con el servidor.");
+            setMsgGeneral({ text: "No se pudo conectar con el servidor.", type: 'error' });
         }
     };
 
@@ -436,27 +400,9 @@ export default function Dieta() {
                     });
                 })
             );
-            // Actualizar estado local con los nuevos gramos
-            const nuevasComidas = comidasHoy.map(c => {
-                if (c.id !== comida.id) return c;
-                const nuevosItems = (c.items || []).map(it => ({
-                    ...it,
-                    cantidad_gramos: Number(editandoCantidades[it.id]) || (it.cantidad_gramos || it.cantidad)
-                }));
-                let macros = { kcal: 0, prot: 0, carb: 0, gras: 0 };
-                nuevosItems.forEach(it => {
-                    const factor = Number(it.cantidad_gramos) / 100;
-                    macros.kcal += Number(it.alimento?.calorias_100g || 0) * factor;
-                    macros.prot += Number(it.alimento?.proteinas_100g || 0) * factor;
-                    macros.carb += Number(it.alimento?.carbohidratos_100g || 0) * factor;
-                    macros.gras += Number(it.alimento?.grasas_100g || 0) * factor;
-                });
-                return { ...c, items: nuevosItems, macros };
-            });
-            setComidasHoy(nuevasComidas);
-            setMacrosHoy(calcularMacrosConsumidos(nuevasComidas));
+            cargarDatos();
         } catch (e) {
-            console.error(e);
+            setMsgGeneral({ text: "Error al actualizar.", type: 'error' });
         } finally {
             setEditandoComida(null);
             setEditandoCantidades({});
@@ -469,7 +415,7 @@ export default function Dieta() {
     const pctProt = Math.min(100, (macrosHoy.prot / objMacros.prot) * 100) || 0;
     const pctCarb = Math.min(100, (macrosHoy.carb / objMacros.carb) * 100) || 0;
     const pctGras = Math.min(100, (macrosHoy.gras / objMacros.gras) * 100) || 0;
-if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }}>Cargando...</Text></View>;
+    if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }}>Cargando...</Text></View>;
 
     return (
         <View style={styles.container}>
@@ -512,6 +458,8 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                     </View>
                 </TouchableWithoutFeedback>
             </Modal>
+
+
 
             <View style={styles.mainCard}>
                 {(() => {
@@ -572,12 +520,13 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                         </View>
                                     ))}
 
+                                    {/* BOTÓN PARA AÑADIR ALIMENTO EN MODO EDICIÓN */}
                                     {enEdicion && (
-                                        <TouchableOpacity
-                                            style={[styles.btnAdd, { marginTop: 10 }]}
+                                        <TouchableOpacity 
+                                            style={styles.btnAddFoodEdit} 
                                             onPress={() => setModalAlimentosEdicion(true)}
                                         >
-                                            <Text style={styles.btnAddText}>+ AÑADIR ALIMENTO</Text>
+                                            <Text style={styles.btnAddFoodEditText}>+ Añadir alimento</Text>
                                         </TouchableOpacity>
                                     )}
                                 </ScrollView>
@@ -594,11 +543,13 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                         <Text style={styles.methodLabel}>MI NUTRICIÓN DIARIA</Text>
                                         <Text style={styles.title}>Registro de Comidas</Text>
                                     </View>
-                                    <TouchableOpacity style={styles.btnAddPill} onPress={() => setModalVisible(true)}>
-                                        <Text style={styles.btnAddPillText}>+ Registrar dieta</Text>
+                                    <TouchableOpacity style={styles.btnAdd} onPress={() => setModalVisible(true)}>
+                                        <Text style={styles.btnAddLabel}>+ Registrar dieta</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
+
+
 
                             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
                                 <View style={styles.dashboardCard}>
@@ -673,6 +624,11 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
             {/* MODAL DE REGISTRO DE COMIDA */}
             <Modal visible={modalVisible} animationType="slide">
                 <View style={styles.modalContainer}>
+                    {msgGeneral.text ? (
+                        <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess, { marginHorizontal: 20, marginTop: 10, zIndex: 9999 }]}>
+                            <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                        </View>
+                    ) : null}
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Registrar Comida</Text>
                         <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -815,11 +771,17 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                             </View>
                         </View>
 
+                        {errorAlimento ? (
+                            <Text style={{ color: '#ff4444', fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginTop: 10 }}>
+                                {errorAlimento}
+                            </Text>
+                        ) : null}
+
                         <TouchableOpacity style={[styles.btnConfirm, creandoAlimento && {opacity: 0.7}]} onPress={handleCrearAlimentoCustom} disabled={creandoAlimento}>
                             <Text style={styles.btnConfirmText}>{creandoAlimento ? 'Guardando...' : 'GUARDAR ALIMENTO'}</Text>
                         </TouchableOpacity>
                         
-                        <TouchableOpacity onPress={() => setModalAlimentoVisible(false)} style={{ marginTop: 15 }}>
+                        <TouchableOpacity onPress={() => { setModalAlimentoVisible(false); setErrorAlimento(''); }} style={{ marginTop: 15 }}>
                             <Text style={{ color: 'red', textAlign: 'center', fontWeight: 'bold' }}>Cancelar</Text>
                         </TouchableOpacity>
                     </View>
@@ -829,6 +791,11 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
             {/* MODAL AÑADIR ALIMENTO EN EDICIÓN */}
             <Modal visible={modalAlimentosEdicion} animationType="slide">
                 <View style={styles.modalContainer}>
+                    {msgGeneral.text ? (
+                        <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess, { marginHorizontal: 20, marginTop: 10, zIndex: 9999 }]}>
+                            <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                        </View>
+                    ) : null}
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Añadir alimento</Text>
                         <TouchableOpacity onPress={() => { setModalAlimentosEdicion(false); setBusquedaEdicion(''); }}>
@@ -909,6 +876,12 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {msgGeneral.text ? (
+                <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess]}>
+                    <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                </View>
+            ) : null}
         </View>
     );
 }
@@ -999,8 +972,17 @@ const styles = StyleSheet.create({
     plusIcon: { fontSize: 24, color: '#ff7a00', fontWeight: 'bold', paddingRight: 5 },
     btnAñadirCustom: { padding: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: '#ff7a00', borderRadius: 12, alignItems: 'center', marginTop: 10, backgroundColor: '#fff7ef' },
     btnAñadirCustomText: { color: '#ff7a00', fontWeight: 'bold', fontSize: 13 },
-    btnAdd: { backgroundColor: 'white', padding: 15, borderRadius: 15, alignItems: 'center', marginTop: 10, borderStyle: 'dashed', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
-    btnAddText: { color: '#ff7a00', fontWeight: '900' },
+    btnAdd: { 
+        backgroundColor: 'rgba(255,255,255,0.15)', 
+        paddingHorizontal: 15, 
+        paddingVertical: 8, 
+        borderRadius: 20, 
+        borderWidth: 1, 
+        borderColor: 'white', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+    },
+    btnAddLabel: { color: 'white', fontWeight: 'bold', fontSize: 13 },
     customExerciseActions: { paddingHorizontal: 15, paddingBottom: 5 },
     customExerciseButton: { backgroundColor: '#ff7a00', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center' },
     customExerciseButtonText: { color: 'white', fontWeight: '900', fontSize: 12 },
@@ -1024,6 +1006,8 @@ const styles = StyleSheet.create({
     removeIcon: { color: '#ff4444', fontSize: 16, fontWeight: 'bold' },
     btnConfirm: { backgroundColor: '#ff7a00', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
     btnConfirmText: { color: 'white', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
+    btnAddFoodEdit: { backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 10, borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
+    btnAddFoodEditText: { color: 'white', fontWeight: '900', fontSize: 13 },
 
     // ESTILOS MODAL CONFIRMACIÓN
     confirmModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
@@ -1041,4 +1025,9 @@ const styles = StyleSheet.create({
     tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     tabBarText: { fontSize: 13, fontWeight: '900', color: '#bbb', letterSpacing: 1 },
     tabBarTextActive: { color: '#ff7a00' },
+
+    msgBanner: { position: 'absolute', top: 60, left: 20, right: 20, padding: 15, borderRadius: 12, alignItems: 'center', elevation: 100, zIndex: 9999, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 6 },
+    msgError: { backgroundColor: '#e74c3c', borderWidth: 1, borderColor: '#c0392b' },
+    msgSuccess: { backgroundColor: '#2ecc71', borderWidth: 1, borderColor: '#27ae60' },
+    msgText: { color: 'white', fontWeight: 'bold', fontSize: 14, textAlign: 'center' }
 });
