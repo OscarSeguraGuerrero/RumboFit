@@ -11,9 +11,11 @@ export default function RecuperarPassword() {
     const [codigo, setCodigo] = useState('');
     const [nuevaPassword, setNuevaPassword] = useState('');
     const [error, setError] = useState('');
+    const [exito, setExito] = useState('');
 
     const solicitarCodigo = async () => {
         setError('');
+        setExito('');
         if (!email) {
             setError("Introduce tu correo electrónico");
             return;
@@ -29,7 +31,7 @@ export default function RecuperarPassword() {
             const data = await response.json();
 
             if (data.success) {
-                Alert.alert("Éxito", "Si el correo está registrado, se habrá generado el código.");
+                setExito("Código generado. Revisa tu correo.");
                 setPaso(2);
             } else {
                 setError(data.error || "Ocurrió un error");
@@ -41,6 +43,7 @@ export default function RecuperarPassword() {
 
     const cambiarPassword = async () => {
         setError('');
+        setExito('');
         if (!codigo || !nuevaPassword) {
             setError("Completa todos los campos");
             return;
@@ -56,8 +59,8 @@ export default function RecuperarPassword() {
             const data = await response.json();
 
             if (data.success) {
-                Alert.alert("¡Hecho!", "Contraseña actualizada correctamente.");
-                router.replace('/');
+                setExito("Contraseña actualizada correctamente.");
+                setTimeout(() => router.replace('/'), 2000);
             } else {
                 setError(data.error || "Error al resetear contraseña");
             }
@@ -98,6 +101,8 @@ export default function RecuperarPassword() {
 
                                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+                                {exito ? <Text style={styles.successText}>{exito}</Text> : null}
+
                                 <TouchableOpacity style={styles.button} onPress={solicitarCodigo}>
                                     <Text style={styles.buttonText}>Enviar Código</Text>
                                 </TouchableOpacity>
@@ -128,6 +133,8 @@ export default function RecuperarPassword() {
 
                                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+                                {exito ? <Text style={styles.successText}>{exito}</Text> : null}
+
                                 <TouchableOpacity style={styles.button} onPress={cambiarPassword}>
                                     <Text style={styles.buttonText}>Actualizar Contraseña</Text>
                                 </TouchableOpacity>
@@ -154,5 +161,6 @@ const styles = StyleSheet.create({
     button: { backgroundColor: '#ff7a00', width: '100%', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 5 },
     buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     switchText: { marginTop: 15, color: '#666', fontSize: 13 },
-    errorText: { color: 'red', fontSize: 12, marginBottom: 10, textAlign: 'center' }
+    errorText: { color: 'red', fontSize: 12, marginBottom: 10, textAlign: 'center', fontWeight: 'bold' },
+    successText: { color: '#2ecc71', fontSize: 12, marginBottom: 10, textAlign: 'center', fontWeight: 'bold' }
 });

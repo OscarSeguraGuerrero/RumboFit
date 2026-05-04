@@ -4,12 +4,14 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'rumbofit_secret_key_2024';
 
 // Configuración de Email (Nodemailer)
 const transporter = nodemailer.createTransport({
@@ -49,13 +51,20 @@ app.post('/api/register', async (req, res) => {
             },
         });
 
+        const token = jwt.sign(
+            { id: nuevoUsuario.id, email: nuevoUsuario.email },
+            JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
         res.status(201).json({
             success: true,
+            token: token,
             user: {
                 id: nuevoUsuario.id,
                 nombre: nuevoUsuario.nombre,
                 email: nuevoUsuario.email,
-                sexo: nuevoUsuario.sexo // Opcional: devolverlo en la respuesta
+                sexo: nuevoUsuario.sexo
             }
         });
     } catch (error) {
@@ -77,8 +86,15 @@ app.post('/api/login', async (req, res) => {
         const validPassword = await bcrypt.compare(password, usuario.password_hash);
         if (!validPassword) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
+        const token = jwt.sign(
+            { id: usuario.id, email: usuario.email },
+            JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+
         res.json({
             success: true,
+            token: token,
             user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
         });
     } catch (error) {
@@ -808,8 +824,12 @@ app.post('/api/alimentos', async (req, res) => {
         });
         res.json({ success: true, alimento: nuevoAlimento });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al crear el alimento. Es posible que el nombre ya exista." });
+        console.error("Error al crear alimento:", error);
+        if (error.code === 'P2002') {
+            const existente = await prisma.alimento.findFirst({ where: { nombre: nombre.trim() } });
+            return res.status(400).json({ success: false, error: "duplicado", alimento: existente });
+        }
+        res.status(500).json({ success: false, error: "Error al crear el alimento. Revisa los datos e inténtalo de nuevo." });
     }
 });
 

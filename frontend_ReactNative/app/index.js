@@ -26,9 +26,11 @@ export default function Auth() {
     const [esRegistro, setEsRegistro] = useState(true);
     const [form, setForm] = useState({ nombre: '', email: '', password: '', telefono: '' });
     const [error, setError] = useState('');
+    const [exito, setExito] = useState('');
 
     const handleAuth = async () => {
         setError(''); // Limpiar errores previos
+        setExito('');
 
         try {
             if (esRegistro) {
@@ -71,7 +73,7 @@ export default function Auth() {
                 const data = await response.json();
 
                 if (data.success) {
-                    Alert.alert("¡Éxito!", "Usuario guardado en la base de datos");
+                    setExito("¡Usuario registrado con éxito! Ya puedes iniciar sesión.");
                     setEsRegistro(false); // Mandar a Login
                 } else {
                     setError(data.error || "Error al registrar");
@@ -171,6 +173,7 @@ export default function Auth() {
                         )}
 
                         {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                        {exito ? <Text style={styles.successText}>{exito}</Text> : null}
 
                         <TouchableOpacity style={styles.button} onPress={handleAuth}>
                             <Text style={styles.buttonText}>{esRegistro ? "Registrarse" : "Iniciar Sesión"}</Text>
@@ -198,5 +201,6 @@ const styles = StyleSheet.create({
     button: { backgroundColor: '#ff7a00', width: '100%', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 5 },
     buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     switchText: { marginTop: 15, color: '#ff7a00', fontWeight: '500' },
-    errorText: { color: 'red', fontSize: 12, marginBottom: 10, textAlign: 'center' }
+    errorText: { color: 'red', fontSize: 12, marginBottom: 10, textAlign: 'center' },
+    successText: { color: '#2ecc71', fontSize: 12, marginBottom: 10, textAlign: 'center', fontWeight: 'bold' }
 });

@@ -13,6 +13,7 @@ export default function Historial() {
     const [loading, setLoading] = useState(true);
     const [historialData, setHistorialData] = useState({});
     const [esPremium, setEsPremium] = useState(false);
+    const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
 
     const [fechaReferencia, setFechaReferencia] = useState(new Date());
     const [diaSeleccionado, setDiaSeleccionado] = useState(new Date().toISOString().split('T')[0]);
@@ -39,7 +40,8 @@ export default function Historial() {
             }
         } catch (error) {
             console.error("Error cargando historial:", error);
-            Alert.alert("Error", "No se pudo conectar con el servidor.");
+            setMsgGeneral({ text: "No se pudo conectar con el servidor.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
         } finally {
             setLoading(false);
         }
@@ -73,11 +75,14 @@ export default function Historial() {
 
         if (nueva.getFullYear() > hoy.getFullYear() || (nueva.getFullYear() === hoy.getFullYear() && nueva.getMonth() > hoy.getMonth())) return;
 
-        if (nueva.getFullYear() < limiteAtras.getFullYear() || (nueva.getFullYear() === limiteAtras.getFullYear() && nueva.getMonth() < limiteAtras.getMonth())) {
-            if (!esPremium) {
-                Alert.alert("Plan Premium requerido", "Las cuentas gratuitas solo ven los últimos 3 meses.");
-                return;
-            }
+        const diffTime = Math.abs(hoy - nueva);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        const distanciaMeses = Math.floor(diffDays / 30);
+
+        if (distanciaMeses > 3 && !esPremium) {
+            setMsgGeneral({ text: "Plan Premium requerido: Las cuentas gratuitas solo ven los últimos 3 meses.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 5000);
+            return;
         }
         setFechaReferencia(nueva);
     };
@@ -159,6 +164,12 @@ export default function Historial() {
                 <View style={{width: 40}} />
             </View>
 
+            {msgGeneral.text ? (
+                <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess]}>
+                    <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                </View>
+            ) : null}
+
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 40}}>
                 <View style={styles.calendarContainer}>
                     <View style={styles.calHeader}>
@@ -190,7 +201,8 @@ export default function Historial() {
                                     style={[styles.dayCell, esSeleccionado && styles.daySelected, estaBloqueado && { opacity: 0.3 }]}
                                     onPress={() => {
                                         if (estaBloqueado) {
-                                            Alert.alert("Plan Premium requerido", "Actualiza a Premium para ver registros de hace más de 3 meses.");
+                                            setMsgGeneral({ text: "Actualiza a Premium para ver registros de hace más de 3 meses.", type: 'error' });
+                                            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
                                         } else {
                                             setDiaSeleccionado(item.fechaStr);
                                         }

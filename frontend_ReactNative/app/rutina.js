@@ -213,8 +213,17 @@ export default function Rutina() {
         reps: '12'
     });
 
+    const esCardio = (nombre) => {
+        if (!nombre) return false;
+        const cardioKeywords = ['caminar', 'correr', 'bici', 'bicicleta', 'nadar', 'natacion', 'cinta', 'cardio', 'eliptica', 'spinning', 'trote', 'andalo', 'andar'];
+        return cardioKeywords.some(kw => nombre.toLowerCase().includes(kw));
+    };
+
     // --- ESTADO DE COMPLETADO ---
     const [completados, setCompletados] = useState({}); // { "Nombre Ejercicio": true/false }
+
+    // Estado para ajustes temporales en el buscador
+    const [ajustesCatalog, setAjustesCatalog] = useState({}); // { [ejNombre]: { series: 3, reps: 12 } }
 
     // --- ESTADOS PARA GUARDAR Y CARGAR ---
     const [modalGuardar, setModalGuardar] = useState(false);
@@ -227,6 +236,8 @@ export default function Rutina() {
     const [idRutinaActual, setIdRutinaActual] = useState(null);
     const [nombreRutinaActual, setNombreRutinaActual] = useState('');
     const [confirmModal, setConfirmModal] = useState({ visible: false, title: '', message: '', onConfirm: null });
+    const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
+    const [errorModal, setErrorModal] = useState('');
 
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -533,7 +544,8 @@ export default function Rutina() {
 
     const iniciarNuevaRutina = async () => {
         if (!usuarioCompleto?.es_premium && listaRutinas.length >= 3) {
-            Alert.alert("Límite alcanzado", "Las cuentas gratuitas solo pueden tener hasta 3 rutinas propias. Elimina una existente para crear una nueva.");
+            setMsgGeneral({ text: "Límite alcanzado: Las cuentas gratuitas solo pueden tener hasta 3 rutinas. Elimina una para crear más.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 5000);
             return;
         }
 
@@ -551,21 +563,22 @@ export default function Rutina() {
     };
 
     const registrarEntrenamientoCompletado = async () => {
+        setErrorModal('');
         const nombreLimpio = nombreEntrenamiento.trim();
         if (!nombreLimpio) {
-            Alert.alert("Error", "Ponle un nombre al entrenamiento");
+            setErrorModal("Ponle un nombre al entrenamiento");
             return;
         }
 
         const ejercicios = obtenerEjerciciosEntrenamientoActual();
         if (ejercicios.length === 0) {
-            Alert.alert("Error", "No hay ejercicios para registrar hoy");
+            setErrorModal("No hay ejercicios para registrar hoy");
             return;
         }
 
         const userId = await AsyncStorage.getItem("userId");
         if (!userId) {
-            Alert.alert("Error", "No se encontró la sesión del usuario");
+            setErrorModal("No se encontró la sesión del usuario");
             return;
         }
 
@@ -586,16 +599,17 @@ export default function Rutina() {
 
             const result = await res.json();
             if (!res.ok || !result.success) {
-                Alert.alert("Error", result.error || "No se pudo registrar el entrenamiento");
+                setErrorModal(result.error || "No se pudo registrar el entrenamiento");
                 return;
             }
 
             setEntrenamientoCompletado(true);
             setModalCompletarEntreno(false);
             setNombreEntrenamiento('');
-            Alert.alert("Entrenamiento guardado", `"${nombreLimpio}" se registró correctamente.`);
+            setMsgGeneral({ text: `"${nombreLimpio}" se registró correctamente.`, type: 'success' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
         } catch (e) {
-            Alert.alert("Error", "No se pudo conectar con el servidor");
+            setErrorModal("No se pudo conectar con el servidor");
         } finally {
             setGuardandoEntrenamiento(false);
         }
@@ -821,7 +835,6 @@ export default function Rutina() {
         try {
             let response;
             if (vistaActiva === 'automatica') {
-                // Persistir cambios en la rutina sugerida propia del usuario en el backend
                 response = await fetch(`${API_URL}/usuarios/${userId}/rutina-sugerida`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -836,10 +849,10 @@ export default function Rutina() {
                 const resData = await response.json();
                 if (resData.success) {
                     setEditando(false);
-                    // Actualizamos el objeto data local para reflejar los cambios
                     setData(prev => ({ ...prev, rutina: rutinaEditable }));
                     await AsyncStorage.setItem("rutina", JSON.stringify({ ...data, rutina: rutinaEditable }));
-                    Alert.alert("Éxito", "Cambios guardados en tu rutina sugerida");
+                    setMsgGeneral({ text: "Cambios guardados en tu rutina sugerida", type: 'success' });
+                    setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
                     return;
                 }
             }
@@ -847,7 +860,6 @@ export default function Rutina() {
             const nombreParaGuardar = (idRutinaActual ? nombreRutinaActual : nombreNuevaRutina).trim() || 'Mi Rutina';
 
             if (idRutinaActual && vistaActiva === 'propia') {
-                // Actualizar existente
                 response = await fetch(`${API_URL}/rutinas/${idRutinaActual}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -857,7 +869,6 @@ export default function Rutina() {
                     })
                 });
             } else {
-                // Crear nueva
                 if (!nombreNuevaRutina.trim() && vistaActiva !== 'automatica') {
                     setModalGuardar(true);
                     return;
@@ -875,19 +886,17 @@ export default function Rutina() {
 
             const resData = await response.json();
             if (resData.success) {
+                setMsgGeneral({ text: "Rutina guardada correctamente", type: 'success' });
+                setIdRutinaActual(resData.rutina?.id || idRutinaActual);
+                setNombreRutinaActual(resData.rutina?.nombre || nombreParaGuardar);
                 setModalGuardar(false);
                 setEditando(false);
-                const rutinaGuardada = resData.rutina;
-                const nuevoIdRutina = rutinaGuardada?.id || idRutinaActual || null;
-                const nuevoNombreRutina = rutinaGuardada?.nombre || nombreParaGuardar;
                 setNombreNuevaRutina('');
-                setIdRutinaActual(nuevoIdRutina);
-                setNombreRutinaActual(nuevoNombreRutina);
-                await persistirRutinaPropiaLocal(rutinaPropia, completados, nuevoIdRutina, nuevoNombreRutina);
+                await persistirRutinaPropiaLocal(rutinaPropia, completados, resData.rutina?.id || idRutinaActual, resData.rutina?.nombre || nombreParaGuardar);
                 await cargarRutinasGuardadas();
-                Alert.alert("Éxito", "Rutina guardada correctamente");
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
             }
-        } catch (e) { Alert.alert("Error", "No se pudo guardar"); }
+        } catch (e) { setMsgGeneral({ text: "No se pudo guardar", type: 'error' }); }
     };
 
     const abrirElegirRutina = async () => {
@@ -905,7 +914,8 @@ export default function Rutina() {
         setNombreRutinaActual(rutina.nombre);
         persistirRutinaPropiaLocal(ejercicios, esquema.completados || {}, rutina.id, rutina.nombre);
         setModalElegir(false);
-        Alert.alert("Cargada", `Rutina: ${rutina.nombre}`);
+        setMsgGeneral({ text: `Cargando rutina: ${rutina.nombre}...`, type: 'success' });
+        setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
     };
 
     const abrirRutinaGuardada = (rutina) => {
@@ -939,40 +949,41 @@ export default function Rutina() {
     };
 
     const añadirEjercicio = (ej) => {
+        const isCardio = esCardio(ej.nombre);
+        const ajustes = ajustesCatalog[ej.nombre] || (isCardio ? { series: '1', reps: '20' } : { series: '3', reps: '12' });
+        const objEj = {
+            nombre: ej.nombre,
+            series: parseInt(ajustes.series) || (isCardio ? 1 : 3),
+            reps: parseInt(ajustes.reps) || (isCardio ? 20 : 12),
+            peso: 0,
+            notas: ''
+        };
+
         if (vistaActiva === 'automatica') {
             const nueva = { ...rutinaEditable };
             if (!nueva[diaActual]) nueva[diaActual] = [];
-            nueva[diaActual].push({ nombre: ej.nombre, series: 3, reps: 12 });
+            nueva[diaActual].push(objEj);
             setRutinaEditable(nueva);
             setModalEjercicios(false);
             return;
         }
 
-        let totalEjercicios = 0;
-        Object.values(rutinaPropia).forEach(dia => {
-            if (Array.isArray(dia)) totalEjercicios += dia.length;
-        });
-
-        if (totalEjercicios >= 20) {
-            Alert.alert("Límite alcanzado", "Una rutina no puede tener más de 20 ejercicios en total.");
+        const dia = diaPropioActivo;
+        const listaActual = rutinaPropia[dia] || [];
+        if (listaActual.length >= 20) {
+            setErrorModal("Límite alcanzado: Una rutina no puede tener más de 20 ejercicios.");
             return;
         }
 
         const nueva = { ...rutinaPropia };
         if (!nueva[diaPropioActivo]) nueva[diaPropioActivo] = [];
-        nueva[diaPropioActivo] = [
-            ...nueva[diaPropioActivo],
-            {
-                nombre: ej.nombre,
-                series: 3,
-                reps: 12,
-                peso: 0,
-                notas: ''
-            }
-        ];
+        nueva[diaPropioActivo].push(objEj);
         setRutinaPropia(nueva);
         persistirRutinaPropiaLocal(nueva);
         setModalEjercicios(false);
+
+        setMsgGeneral({ text: `"${ej.nombre}" añadido a ${diaPropioActivo}.`, type: 'success' });
+        setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
     };
 
     const cerrarModalEjercicioPersonalizado = () => {
@@ -984,36 +995,57 @@ export default function Rutina() {
         });
     };
 
-    const guardarEjercicioPersonalizado = () => {
+    const handleAñadirEjercicioPersonalizado = () => {
+        setErrorModal('');
         const nombre = ejercicioPersonalizado.nombre.trim();
         const series = parseInt(ejercicioPersonalizado.series, 10) || 0;
         const reps = parseInt(ejercicioPersonalizado.reps, 10) || 0;
 
         if (!nombre) {
-            Alert.alert("Error", "Introduce un nombre para el ejercicio.");
+            setErrorModal("Introduce un nombre para el ejercicio.");
             return;
         }
 
-        if (series <= 0 || reps <= 0) {
-            Alert.alert("Error", "Las series y repeticiones deben ser mayores que 0.");
+        if (series <= 0 || (reps <= 0 && !esCardio(nombre))) {
+            setErrorModal("Las series y repeticiones deben ser mayores que 0.");
             return;
         }
+
+        // 1. ELIMINAMOS EL BLOQUEO POR DUPLICADO EN EL DÍA
+        // 2. COMPROBAMOS SI EXISTE EN EL CATÁLOGO
+        const existeEnCatalogo = ejerciciosCatalogo.find(
+            (e) => e.nombre.toLowerCase() === nombre.toLowerCase()
+        );
+
+        const nuevoEj = {
+            nombre: existeEnCatalogo ? existeEnCatalogo.nombre : nombre,
+            series,
+            reps,
+            peso: 0
+        };
 
         const nueva = { ...rutinaPropia };
-        nueva[diaPropioActivo] = [
-            ...(nueva[diaPropioActivo] || []),
-            {
-                nombre,
-                series,
-                reps,
-                peso: 0
-            }
-        ];
+        if (!nueva[diaPropioActivo]) nueva[diaPropioActivo] = [];
+        nueva[diaPropioActivo].push(nuevoEj);
 
         setRutinaPropia(nueva);
         persistirRutinaPropiaLocal(nueva);
         cerrarModalEjercicioPersonalizado();
         setModalEjercicios(false);
+
+        // Retraso para que el mensaje aparezca cuando los modales se hayan cerrado
+        setTimeout(() => {
+            if (existeEnCatalogo) {
+                setMsgGeneral({ 
+                    text: `"${existeEnCatalogo.nombre}" ya existe en el catálogo. ¡Lo hemos añadido por ti!`, 
+                    type: 'success' 
+                });
+            } else {
+                setMsgGeneral({ text: `"${nombre}" añadido a tu rutina.`, type: 'success' });
+            }
+        }, 150);
+        
+        setTimeout(() => setMsgGeneral({ text: '', type: '' }), 6000);
     };
 
     const eliminarEjercicio = (index) => {
@@ -1087,16 +1119,24 @@ export default function Rutina() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (res.ok) Alert.alert("¡Comida Guardada!", "Se ha añadido al registro de hoy.");
-            else Alert.alert("Error", "Asegúrate de tener alimentos en la base de datos.");
-        } catch (e) { Alert.alert("Error", "No se pudo conectar"); }
+            if (res.ok) {
+                setMsgGeneral({ text: "¡Comida Guardada! Se ha añadido al registro de hoy.", type: 'success' });
+            } else {
+                setMsgGeneral({ text: "Asegúrate de tener alimentos en la base de datos.", type: 'error' });
+            }
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+        } catch (e) { 
+            setMsgGeneral({ text: "No se pudo conectar", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+        }
     };
 
 
     if (cargando || !data) return <View style={styles.loading}><Text style={{color:'white'}}>Cargando...</Text></View>;
 
     return (
-        <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+        <View style={{ flex: 1 }}>
+            <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
 
             {/* --- TOP BAR --- */}
             <View style={styles.topBar}>
@@ -1152,20 +1192,26 @@ export default function Rutina() {
                 </View>
             </Modal>
 
+
+
             {/* --- CARD PRINCIPAL --- */}
             <View style={styles.mainCard}>
                 {vistaActiva === 'rutinas_menu' && (
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
                         <View style={styles.header}>
-                            <Text style={styles.methodLabel}>GESTIÓN DE ENTRENAMIENTO</Text>
-                            <Text style={styles.title}>Mis Rutinas</Text>
-                            <TouchableOpacity
-                                style={styles.createRoutineButton}
-                                onPress={iniciarNuevaRutina}
-                                activeOpacity={0.85}
-                            >
-                                <Text style={styles.createRoutineButtonText}>+ Crear rutina</Text>
-                            </TouchableOpacity>
+                            <View style={styles.headerRow}>
+                                <View>
+                                    <Text style={styles.methodLabel}>GESTIÓN DE ENTRENAMIENTO</Text>
+                                    <Text style={styles.title}>Mis Rutinas</Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.createRoutineButton}
+                                    onPress={iniciarNuevaRutina}
+                                    activeOpacity={0.85}
+                                >
+                                    <Text style={styles.createRoutineButtonText}>+ Crear rutina</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                         <LaserRoutineCard contentStyle={styles.menuCard} onPress={() => {
                             if (Platform.OS === 'web' && document.activeElement) document.activeElement.blur();
@@ -1272,6 +1318,7 @@ export default function Rutina() {
                             {rutinaEditable[diaActual]?.map((ej, i) => {
                                 const nombre = ej.nombre;
                                 const estaCompletado = completados[nombre];
+                                const isCardio = esCardio(nombre);
                                 const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
                                 const categoria = infoCat?.categoria || 'Fuerza';
 
@@ -1292,29 +1339,31 @@ export default function Rutina() {
                                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
                                                 {editando ? (
                                                     <>
-                                                        <TextInput
-                                                            style={styles.inputSeriesSmall}
-                                                            keyboardType="numeric"
-                                                            value={String(ej.series)}
-                                                            onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
-                                                        />
-                                                        <Text style={styles.labelSmall}>series</Text>
+                                                        {!isCardio && (
+                                                            <TextInput
+                                                                style={styles.inputSeriesSmall}
+                                                                keyboardType="numeric"
+                                                                value={String(ej.series)}
+                                                                onChangeText={(text) => actualizarEjAuto(i, 'series', text)}
+                                                            />
+                                                        )}
+                                                        {!isCardio && <Text style={styles.labelSmall}>series</Text>}
                                                         <TextInput
                                                             style={styles.inputSeriesSmall}
                                                             keyboardType="numeric"
                                                             value={String(ej.reps)}
                                                             onChangeText={(text) => actualizarEjAuto(i, 'reps', text)}
                                                         />
-                                                        <Text style={styles.labelSmall}>reps</Text>
+                                                        <Text style={styles.labelSmall}>{isCardio ? 'minutos' : 'reps'}</Text>
                                                     </>
                                                 ) : (
                                                     <Text style={styles.seriesTextStatic}>
-                                                        {ej.series} series x {ej.reps} repeticiones
+                                                        {isCardio ? `${ej.reps} minutos` : `${ej.series} series x ${ej.reps} repeticiones`}
                                                     </Text>
                                                 )}
                                             </View>
 
-                                            {!editando && !estaCompletado && (
+                                            {!editando && !estaCompletado && !isCardio && (
                                                 <View style={styles.performanceSection}>
                                                     {categoria === 'Cardio' ? (
                                                         <View style={styles.perfRow}>
@@ -1417,6 +1466,7 @@ export default function Rutina() {
 
                                 const nombre = ejercicio.nombre;
                                 const estaCompletado = completados[nombre];
+                                const isCardio = esCardio(nombre);
                                 const infoCat = ejerciciosCatalogo.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
                                 const categoria = infoCat?.categoria || 'Fuerza';
 
@@ -1437,29 +1487,33 @@ export default function Rutina() {
                                             <View style={{ flexDirection: 'row', gap: 10, marginTop: 5, alignItems: 'center' }}>
                                                 {editando ? (
                                                     <>
-                                                        <TextInput
-                                                            style={styles.inputSeriesSmall}
-                                                            keyboardType="numeric"
-                                                            value={String(ejercicio.series)}
-                                                            onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
-                                                        />
-                                                        <Text style={styles.labelSmall}>series</Text>
+                                                        {!isCardio && (
+                                                            <TextInput
+                                                                style={styles.inputSeriesSmall}
+                                                                keyboardType="numeric"
+                                                                value={String(ejercicio.series)}
+                                                                onChangeText={(text) => actualizarEjercicio(i, 'series', text)}
+                                                            />
+                                                        )}
+                                                        {!isCardio && <Text style={styles.labelSmall}>series</Text>}
                                                         <TextInput
                                                             style={styles.inputSeriesSmall}
                                                             keyboardType="numeric"
                                                             value={String(ejercicio.reps)}
                                                             onChangeText={(text) => actualizarEjercicio(i, 'reps', text)}
                                                         />
-                                                        <Text style={styles.labelSmall}>reps</Text>
+                                                        <Text style={styles.labelSmall}>{isCardio ? 'minutos' : 'reps'}</Text>
                                                     </>
                                                 ) : (
                                                     <Text style={styles.seriesTextStatic}>
-                                                        {ejercicio.series} series x {ejercicio.reps} repeticiones{ejercicio.peso > 0 ? ` • ${ejercicio.peso} kg` : ''}
+                                                        {isCardio 
+                                                            ? `${ejercicio.reps} minutos`
+                                                            : `${ejercicio.series} series x ${ejercicio.reps} repeticiones${ejercicio.peso > 0 ? ` • ${ejercicio.peso} kg` : ''}`}
                                                     </Text>
                                                 )}
                                             </View>
 
-                                            {!editando && !estaCompletado && (
+                                            {!editando && !estaCompletado && !isCardio && (
                                                 <View style={styles.performanceSection}>
                                                     {categoria === 'Cardio' ? (
                                                         <View style={styles.perfRow}>
@@ -1545,6 +1599,11 @@ export default function Rutina() {
                             onChangeText={setNombreEntrenamiento}
                             editable={!guardandoEntrenamiento}
                         />
+                        {errorModal ? (
+                            <Text style={{ color: '#ff4444', fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 }}>
+                                {errorModal}
+                            </Text>
+                        ) : null}
                         <TouchableOpacity
                             style={styles.btnConfirm}
                             onPress={registrarEntrenamientoCompletado}
@@ -1566,6 +1625,11 @@ export default function Rutina() {
                     <View style={styles.modalSmall}>
                         <Text style={styles.modalSub}>Guardar Rutina Como:</Text>
                         <TextInput style={styles.modalInput} placeholder="Nombre (ej: Fuerza 2024)" value={nombreNuevaRutina} onChangeText={setNombreNuevaRutina} />
+                        {errorModal ? (
+                            <Text style={{ color: '#ff4444', fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 }}>
+                                {errorModal}
+                            </Text>
+                        ) : null}
                         <TouchableOpacity style={styles.btnConfirm} onPress={handleGuardarEnDB}><Text style={styles.btnConfirmText}>CONFIRMAR</Text></TouchableOpacity>
                         <TouchableOpacity onPress={() => setModalGuardar(false)}><Text style={styles.btnCancelText}>Cancelar</Text></TouchableOpacity>
                     </View>
@@ -1591,6 +1655,11 @@ export default function Rutina() {
 
             <Modal visible={modalEjercicios} animationType="slide">
                 <View style={styles.modalContainer}>
+                    {msgGeneral.text ? (
+                        <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess, { marginHorizontal: 20, marginTop: 10, zIndex: 9999 }]}>
+                            <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                        </View>
+                    ) : null}
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Añadir a {diaPropioActivo}</Text>
                         <TouchableOpacity onPress={() => setModalEjercicios(false)}><Text style={styles.closeModal}>Cerrar</Text></TouchableOpacity>
@@ -1608,13 +1677,61 @@ export default function Rutina() {
                         </TouchableOpacity>
                     </View>
                     <ScrollView contentContainerStyle={{padding: 20}}>
-                        {ejerciciosCatalogo.filter(e => e.nombre.toLowerCase().includes(busqueda.toLowerCase())).map((ej, i) => (
-                            <TouchableOpacity key={i} style={styles.catItem} onPress={() => añadirEjercicio(ej)}>
-                                <Image source={obtenerFotoEjercicio(ej.nombre)} style={styles.catImage} />
-                                <View><Text style={styles.catName}>{ej.nombre}</Text><Text style={styles.catSub}>{ej.grupo_muscular}</Text></View>
-                                <Text style={styles.plusIcon}>+</Text>
-                            </TouchableOpacity>
-                        ))}
+                        {ejerciciosCatalogo.filter(e => e.nombre.toLowerCase().includes(busqueda.toLowerCase())).map((ej, i) => {
+                            const isCardio = esCardio(ej.nombre);
+                            const ajustes = ajustesCatalog[ej.nombre] || (isCardio ? { series: 1, reps: 20 } : { series: 3, reps: 12 });
+
+                            return (
+                                <View key={i} style={[styles.catItem, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                            <Image source={obtenerFotoEjercicio(ej.nombre)} style={styles.catImage} />
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.catName}>{ej.nombre}</Text>
+                                                <Text style={styles.catSub}>{ej.grupo_muscular}</Text>
+                                            </View>
+                                        </View>
+                                        <TouchableOpacity 
+                                            style={{ padding: 10 }}
+                                            onPress={() => añadirEjercicio(ej)}
+                                        >
+                                            <Text style={{ color: '#ff7a00', fontSize: 28, fontWeight: 'bold' }}>+</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 65 }}>
+                                        {isCardio ? (
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                                <TextInput
+                                                    style={[styles.inputSeriesSmall, { backgroundColor: '#f0f0f0', width: 60 }]}
+                                                    keyboardType="numeric"
+                                                    value={String(ajustes.reps)}
+                                                    onChangeText={(t) => setAjustesCatalog(prev => ({ ...prev, [ej.nombre]: { ...ajustes, reps: t } }))}
+                                                />
+                                                <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#ff7a00' }}>minutos (cardio)</Text>
+                                            </View>
+                                        ) : (
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                                <TextInput
+                                                    style={[styles.inputSeriesSmall, { backgroundColor: '#f0f0f0' }]}
+                                                    keyboardType="numeric"
+                                                    value={String(ajustes.series)}
+                                                    onChangeText={(t) => setAjustesCatalog(prev => ({ ...prev, [ej.nombre]: { ...ajustes, series: t } }))}
+                                                />
+                                                <Text style={{ fontSize: 11, color: '#999' }}>ser.</Text>
+                                                <TextInput
+                                                    style={[styles.inputSeriesSmall, { backgroundColor: '#f0f0f0' }]}
+                                                    keyboardType="numeric"
+                                                    value={String(ajustes.reps)}
+                                                    onChangeText={(t) => setAjustesCatalog(prev => ({ ...prev, [ej.nombre]: { ...ajustes, reps: t } }))}
+                                                />
+                                                <Text style={{ fontSize: 11, color: '#999' }}>rep.</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            );
+                        })}
                     </ScrollView>
                 </View>
             </Modal>
@@ -1629,23 +1746,59 @@ export default function Rutina() {
                             value={ejercicioPersonalizado.nombre}
                             onChangeText={(text) => setEjercicioPersonalizado((prev) => ({ ...prev, nombre: text }))}
                         />
-                        <View style={styles.customExerciseRow}>
-                            <TextInput
-                                style={[styles.modalInput, styles.customExerciseInput]}
-                                placeholder="Series"
-                                keyboardType="numeric"
-                                value={ejercicioPersonalizado.series}
-                                onChangeText={(text) => setEjercicioPersonalizado((prev) => ({ ...prev, series: text }))}
-                            />
-                            <TextInput
-                                style={[styles.modalInput, styles.customExerciseInput]}
-                                placeholder="Repeticiones"
-                                keyboardType="numeric"
-                                value={ejercicioPersonalizado.reps}
-                                onChangeText={(text) => setEjercicioPersonalizado((prev) => ({ ...prev, reps: text }))}
-                            />
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <View style={{ flex: 1 }}>
+                                {esCardio(ejercicioPersonalizado.nombre) ? (
+                                    <>
+                                        <Text style={styles.smallLabel}>Tiempo (minutos)</Text>
+                                        <TextInput
+                                            style={styles.modalInput}
+                                            placeholder="Ej: 30"
+                                            placeholderTextColor="#999"
+                                            keyboardType="numeric"
+                                            value={ejercicioPersonalizado.reps}
+                                            onChangeText={(t) => setEjercicioPersonalizado({ ...ejercicioPersonalizado, reps: t, series: '1' })}
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <Text style={styles.smallLabel}>Series</Text>
+                                        <TextInput
+                                            style={styles.modalInput}
+                                            placeholder="3"
+                                            placeholderTextColor="#999"
+                                            keyboardType="numeric"
+                                            value={ejercicioPersonalizado.series}
+                                            onChangeText={(t) => setEjercicioPersonalizado({ ...ejercicioPersonalizado, series: t })}
+                                        />
+                                    </>
+                                )}
+                            </View>
+                            {!esCardio(ejercicioPersonalizado.nombre) && (
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.smallLabel}>Repeticiones</Text>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="12"
+                                        placeholderTextColor="#999"
+                                        keyboardType="numeric"
+                                        value={ejercicioPersonalizado.reps}
+                                        onChangeText={(t) => setEjercicioPersonalizado({ ...ejercicioPersonalizado, reps: t })}
+                                    />
+                                </View>
+                            )}
                         </View>
-                        <TouchableOpacity style={styles.btnConfirm} onPress={guardarEjercicioPersonalizado}>
+                        {esCardio(ejercicioPersonalizado.nombre) && (
+                            <Text style={{ fontSize: 11, color: '#ff7a00', fontWeight: 'bold', marginTop: -5, marginBottom: 10 }}>
+                                Se guardará como tiempo en minutos.
+                            </Text>
+                        )}
+                        {errorModal ? (
+                            <Text style={{ color: '#ff4444', fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 }}>
+                                {errorModal}
+                            </Text>
+                        ) : null}
+                        <TouchableOpacity style={styles.btnConfirm} onPress={handleAñadirEjercicioPersonalizado}>
                             <Text style={styles.btnConfirmText}>GUARDAR EJERCICIO</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={cerrarModalEjercicioPersonalizado}>
@@ -1666,7 +1819,15 @@ export default function Rutina() {
                     </TouchableOpacity>
                 </View>
             </View>
-        </Animated.View>
+
+            </Animated.View>
+
+            {msgGeneral.text ? (
+                <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess]}>
+                    <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                </View>
+            ) : null}
+        </View>
     );
 }
 
@@ -1686,20 +1847,19 @@ const styles = StyleSheet.create({
     dropdownDivider: { height: 1, backgroundColor: '#f0f0f0' },
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
-    header: { marginBottom: 15, position: 'relative', paddingRight: 150 },
+    header: { marginBottom: 15, position: 'relative' },
     headerWithButton: { marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     createRoutineButton: {
-        position: 'absolute',
-        top: 10,
-        right: 0,
-        backgroundColor: 'rgba(255,255,255,0.18)',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.45)',
-        borderRadius: 999,
-        paddingHorizontal: 12,
-        paddingVertical: 8
+        borderColor: 'white',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
-    createRoutineButtonText: { color: '#ffffff', fontSize: 11, fontWeight: '900' },
+    createRoutineButtonText: { color: 'white', fontWeight: 'bold', fontSize: 13 },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
     actionButtons: { flexDirection: 'row', gap: 8 },
     btnSmall: { backgroundColor: 'rgba(255,255,255,0.25)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: 'white' },
@@ -1934,6 +2094,11 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         lineHeight: 18,
     },
+    msgBanner: { position: 'absolute', top: 60, left: 20, right: 20, padding: 15, borderRadius: 12, alignItems: 'center', elevation: 100, zIndex: 9999, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 6 },
+    msgError: { backgroundColor: '#e74c3c', borderWidth: 1, borderColor: '#c0392b' },
+    msgSuccess: { backgroundColor: '#2ecc71', borderWidth: 1, borderColor: '#27ae60' },
+    msgText: { color: 'white', fontWeight: 'bold', fontSize: 14, textAlign: 'center' },
+
     // MODAL CONFIRMACIÓN
     confirmOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
     confirmCard: { backgroundColor: 'white', width: '82%', padding: 25, borderRadius: 20, elevation: 12 },
