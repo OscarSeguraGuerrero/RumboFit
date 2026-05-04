@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { API_URL } from '../config';
+import { getUnidad } from '../utils';
 
 const { width } = Dimensions.get('window');
 
@@ -211,9 +212,9 @@ export default function Historial() {
                             <Text style={styles.cardTitle}>Macros del día</Text>
                             <View style={styles.nutritionSummary}>
                                 <View style={styles.nutItem}><Text style={styles.nutVal}>{macros.kcal.toFixed(0)}</Text><Text style={styles.nutLab}>Kcal</Text></View>
-                                <View style={styles.nutItem}><Text style={[styles.nutVal, {color: '#3498db'}]}>{macros.prot.toFixed(1)}g</Text><Text style={styles.nutLab}>P</Text></View>
-                                <View style={styles.nutItem}><Text style={[styles.nutVal, {color: '#2ecc71'}]}>{macros.carb.toFixed(1)}g</Text><Text style={styles.nutLab}>C</Text></View>
-                                <View style={styles.nutItem}><Text style={[styles.nutVal, {color: '#f1c40f'}]}>{macros.gras.toFixed(1)}g</Text><Text style={styles.nutLab}>G</Text></View>
+                                <View style={styles.nutItem}><Text style={[styles.nutVal, {color: '#3498db'}]}>{macros.prot.toFixed(1)} g</Text><Text style={styles.nutLab}>P</Text></View>
+                                <View style={styles.nutItem}><Text style={[styles.nutVal, {color: '#2ecc71'}]}>{macros.carb.toFixed(1)} g</Text><Text style={styles.nutLab}>C</Text></View>
+                                <View style={styles.nutItem}><Text style={[styles.nutVal, {color: '#f1c40f'}]}>{macros.gras.toFixed(1)} g</Text><Text style={styles.nutLab}>G</Text></View>
                             </View>
                         </View>
                     )}
@@ -269,7 +270,7 @@ export default function Historial() {
                                         {ev.datos.items && ev.datos.items.length > 0 ? (
                                             ev.datos.items.map((it, idx) => (
                                                 <Text key={idx} style={styles.foodLine}>
-                                                    • {it.alimento?.nombre || '?'} ({Number(it.cantidad_gramos || 0).toFixed(0)}g)
+                                                    • {it.alimento?.nombre || '?'} ({Number(it.cantidad_gramos || 0).toFixed(0)} {getUnidad(it.alimento?.nombre)})
                                                 </Text>
                                             ))
                                         ) : (
@@ -278,9 +279,9 @@ export default function Historial() {
                                         {ev.datos.macros && (
                                             <View style={styles.mealMacrosRow}>
                                                 <Text style={styles.mealMacroItem}>{Math.round(ev.datos.macros.kcal)} Kcal</Text>
-                                                <Text style={[styles.mealMacroItem, {color: '#3498db'}]}>P: {Math.round(ev.datos.macros.prot)}g</Text>
-                                                <Text style={[styles.mealMacroItem, {color: '#2ecc71'}]}>C: {Math.round(ev.datos.macros.carb)}g</Text>
-                                                <Text style={[styles.mealMacroItem, {color: '#f1c40f'}]}>G: {Math.round(ev.datos.macros.gras)}g</Text>
+                                                <Text style={[styles.mealMacroItem, {color: '#3498db'}]}>P: {Math.round(ev.datos.macros.prot)} g</Text>
+                                                <Text style={[styles.mealMacroItem, {color: '#2ecc71'}]}>C: {Math.round(ev.datos.macros.carb)} g</Text>
+                                                <Text style={[styles.mealMacroItem, {color: '#f1c40f'}]}>G: {Math.round(ev.datos.macros.gras)} g</Text>
                                             </View>
                                         )}
                                     </View>

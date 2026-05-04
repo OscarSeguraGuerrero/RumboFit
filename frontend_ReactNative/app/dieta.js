@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import React from 'react';
 import { API_URL } from '../config';
+import { getUnidad } from '../utils';
 import {
     Image,
     ScrollView,
@@ -560,13 +561,13 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                                         value={editandoCantidades[it.id] ?? String(it.cantidad_gramos || it.cantidad || '')}
                                                         onChangeText={(t) => setEditandoCantidades(prev => ({ ...prev, [it.id]: t }))}
                                                     />
-                                                    <Text style={{ color: '#888', fontSize: 12, fontWeight: '600' }}>g</Text>
+                                                    <Text style={{ color: '#888', fontSize: 12, fontWeight: '600' }}> {getUnidad(it.alimento?.nombre)}</Text>
                                                     <TouchableOpacity onPress={() => handleEliminarAlimento(comidaDetalle.id, it.id)}>
                                                         <Text style={{ color: '#e74c3c', fontSize: 15, fontWeight: 'bold', paddingLeft: 6 }}>✕</Text>
                                                     </TouchableOpacity>
                                                 </View>
                                             ) : (
-                                                <Text style={{ color: '#999', fontSize: 12 }}>({it.cantidad_gramos || it.cantidad}g)</Text>
+                                                <Text style={{ color: '#999', fontSize: 12 }}>({it.cantidad_gramos || it.cantidad} {getUnidad(it.alimento?.nombre)})</Text>
                                             )}
                                         </View>
                                     ))}
@@ -612,17 +613,17 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                     <View style={styles.macroCol}>
                                         <Text style={styles.macroLabel}>Proteínas</Text>
                                         <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctProt}%`, backgroundColor: '#3498db' }]} /></View>
-                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot}g</Text>
+                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.prot)} / {objMacros.prot} g</Text>
                                     </View>
                                     <View style={styles.macroCol}>
                                         <Text style={styles.macroLabel}>Carbos</Text>
                                         <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctCarb}%`, backgroundColor: '#2ecc71' }]} /></View>
-                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb}g</Text>
+                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.carb)} / {objMacros.carb} g</Text>
                                     </View>
                                     <View style={styles.macroCol}>
                                         <Text style={styles.macroLabel}>Grasas</Text>
                                         <View style={styles.macroBg}><View style={[styles.macroFill, { width: `${pctGras}%`, backgroundColor: '#f1c40f' }]} /></View>
-                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras}g</Text>
+                                        <Text style={styles.macroValue}>{Math.round(macrosHoy.gras)} / {objMacros.gras} g</Text>
                                     </View>
                                 </View>
 
@@ -644,9 +645,9 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                                         </View>
                                                         <View style={styles.comidaMacros}>
                                                             <Text style={styles.comidaKcal}>{Math.round(comida.macros?.kcal || 0)} Kcal</Text>
-                                                            <Text style={styles.comidaMacroItem}>P: {Math.round(comida.macros?.prot || 0)}g</Text>
-                                                            <Text style={styles.comidaMacroItem}>C: {Math.round(comida.macros?.carb || 0)}g</Text>
-                                                            <Text style={styles.comidaMacroItem}>G: {Math.round(comida.macros?.gras || 0)}g</Text>
+                                                            <Text style={styles.comidaMacroItem}>P: {Math.round(comida.macros?.prot || 0)} g</Text>
+                                                            <Text style={styles.comidaMacroItem}>C: {Math.round(comida.macros?.carb || 0)} g</Text>
+                                                            <Text style={styles.comidaMacroItem}>G: {Math.round(comida.macros?.gras || 0)} g</Text>
                                                         </View>
                                                     </View>
                                                 </TouchableOpacity>
@@ -714,7 +715,7 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                                                 value={String(it.cantidad)}
                                                 onChangeText={(text) => actualizarGramos(it.id, text)}
                                             />
-                                            <Text style={styles.gramsLabel}>g</Text>
+                                            <Text style={styles.gramsLabel}>{getUnidad(it.nombre)}</Text>
                                         </View>
                                         <TouchableOpacity onPress={() => quitarAlimento(it.id)} style={styles.btnRemove}>
                                             <Text style={styles.removeIcon}>✕</Text>
@@ -794,7 +795,7 @@ if (loading) return <View style={styles.loading}><Text style={{ color: 'white' }
                         
                         <View style={{ flexDirection: 'row', gap: 10 }}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.smallLabel}>Kcal (100g)</Text>
+                                <Text style={styles.smallLabel}>Kcal (100 g/ml)</Text>
                                 <TextInput style={styles.modalInputSmall} keyboardType="numeric" placeholder="Ej: 250" value={nuevoAlim.kcal} onChangeText={(t) => setNuevoAlim({...nuevoAlim, kcal: t})} />
                             </View>
                             <View style={{ flex: 1 }}>
