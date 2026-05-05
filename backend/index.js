@@ -868,14 +868,26 @@ app.post('/api/dieta/comida', async (req, res) => {
 // Eliminar Comida (HU-11 - Papelera)
 app.delete('/api/dieta/comida/:id', async (req, res) => {
     const { id } = req.params;
+    console.log(`[DEBUG] Petición DELETE para comida ID: ${id}`);
     try {
-        await prisma.comida.delete({
-            where: { id: parseInt(id) }
+        const comidaId = parseInt(id);
+        
+        // 1. Borramos primero todos los ingredientes/alimentos de esa comida
+        const resItems = await prisma.registro_Comidas.deleteMany({
+            where: { comida_id: comidaId }
         });
+        console.log(`[DEBUG] Alimentos borrados: ${resItems.count}`);
+
+        // 2. Ahora que está vacía, borramos la comida (usamos deleteMany por seguridad)
+        const resComida = await prisma.comida.deleteMany({
+            where: { id: comidaId }
+        });
+        console.log(`[DEBUG] Registro de Comida borrado: ${resComida.count}`);
+
         res.json({ success: true, message: "Comida eliminada correctamente" });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al eliminar la comida" });
+        console.error("[DEBUG] Error al eliminar comida completa:", error);
+        res.status(500).json({ success: false, error: "Error al eliminar la comida" });
     }
 });
 
@@ -1020,26 +1032,41 @@ app.get('/api/usuarios/:id/historial', async (req, res) => {
 
 // Eliminar un alimento individual de una comida
 app.delete('/api/dieta/alimento/:id', async (req, res) => {
+    const { id } = req.params;
+    console.log(`[DEBUG] Petición DELETE para alimento ID: ${id}`);
     try {
-        const id = parseInt(req.params.id);
+        const registroId = parseInt(id);
         const registro = await prisma.registro_Comidas.findUnique({
-            where: { id },
+            where: { id: registroId },
             include: { comida: { include: { items: true } } }
         });
 
-        if (!registro) return res.status(404).json({ error: "Registro no encontrado" });
-
-        await prisma.registro_Comidas.delete({ where: { id } });
-
-        // Si la comida se queda sin alimentos, la eliminamos también
-        if (registro.comida.items.length <= 1) {
-            await prisma.comida.delete({ where: { id: registro.comida_id } });
+        if (!registro) {
+            console.log(`[DEBUG] Registro ${registroId} no encontrado en findUnique`);
+            return res.status(404).json({ success: false, error: "Registro no encontrado" });
         }
 
-        res.json({ success: true });
+        const comidaId = registro.comida_id;
+        const totalItems = registro.comida.items.length;
+
+        // 1. Borramos el alimento
+        const resItem = await prisma.registro_Comidas.deleteMany({ where: { id: registroId } });
+        console.log(`[DEBUG] Alimento borrado: ${resItem.count}`);
+
+        let comidaEliminada = false;
+        // 2. Si era el último alimento, borramos la comida entera (con deleteMany por seguridad)
+        if (totalItems <= 1) {
+            const delResult = await prisma.comida.deleteMany({ where: { id: comidaId } });
+            if (delResult.count > 0) {
+                console.log(`[DEBUG] Comida ${comidaId} eliminada por ser el último alimento`);
+                comidaEliminada = true;
+            }
+        }
+
+        res.json({ success: true, comidaEliminada });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al eliminar alimento" });
+        console.error("[DEBUG] Error al eliminar alimento:", error);
+        res.status(500).json({ success: false, error: "Error al eliminar alimento" });
     }
 });
 

@@ -131,29 +131,38 @@ export default function Dieta() {
 
     const cargarDatos = async () => {
         try {
-            const userId = await AsyncStorage.getItem("userId");
-            if (userId) {
-                const userRes = await fetch(`${API_URL}/usuarios/${userId}`);
-                const userData = await userRes.json();
-                if (userData.success) setUsuarioCompleto(userData.usuario);
+            const userId = await AsyncStorage.getItem('userId');
+            if (!userId) return;
 
-                const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial`);
-                const histData = await histRes.json();
-                if (histData.success && histData.historial) {
-                    const hoyStr = new Date().toISOString().split('T')[0];
-                    const dataHoy = histData.historial[hoyStr];
-                    if (dataHoy && dataHoy.comidas) {
-                        setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
-                        setComidasHoy(dataHoy.comidas);
-                    }
+            // 1. Cargar Perfil
+            const userRes = await fetch(`${API_URL}/usuarios/${userId}?t=${Date.now()}`);
+            const userData = await userRes.json();
+            if (userData.success) setUsuarioCompleto(userData.usuario);
+
+            // 2. Cargar Historial
+            const histRes = await fetch(`${API_URL}/usuarios/${userId}/historial?t=${Date.now()}`);
+            const histData = await histRes.json();
+
+            if (histData.success && histData.historial) {
+                const hoyStr = new Date().toISOString().split('T')[0];
+                const dataHoy = histData.historial[hoyStr];
+                
+                if (dataHoy && dataHoy.comidas) {
+                    setMacrosHoy(calcularMacrosConsumidos(dataHoy.comidas));
+                    setComidasHoy(dataHoy.comidas);
+                } else {
+                    setComidasHoy([]);
+                    setMacrosHoy({ kcal: 0, prot: 0, carb: 0, gras: 0 });
                 }
-
-                const alimRes = await fetch(`${API_URL}/alimentos`);
-                const alimData = await alimRes.json();
-                setAlimentosCatalogo(alimData);
             }
-        } catch (e) {
-            console.error(e);
+
+            // 3. Cargar Catálogo de Alimentos
+            const alimRes = await fetch(`${API_URL}/alimentos?t=${Date.now()}`);
+            const alimData = await alimRes.json();
+            setAlimentosCatalogo(alimData);
+
+        } catch (error) {
+            console.error("Error al cargar datos:", error);
         } finally {
             setLoading(false);
         }
