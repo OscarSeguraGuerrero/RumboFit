@@ -1,25 +1,26 @@
-# RumboFit
 
-DOCKER-COMPOSE para ver la aplicación:
+<img width="1139" height="633" alt="image" src="https://github.com/user-attachments/assets/f864e96b-7514-40d6-8db8-06d54f6feb85" />
+
+
+.
+
+## DOCKER-COMPOSE para ver la aplicación:
 
 
 docker-compose up --build
 
-INSTALAR APP DE MÓVIL "EXPO GO" PARA VER LA APLICACIÓN EN MÓVIL ESCANEANDO EL QR QUE DA EL DOCKER POR LA TERMINAL
-O ABRIR http://localhost:8081 PARA VERLO EN PC 
+ABRIR http://localhost:8081 PARA VERLO EN PC
 
-escanear qr 
+.
 
-si falla el tunnel a la primera
+## APLICACIÓN
 
-docker-compose down
-docker-compose up
+<img width="1169" height="514" alt="image" src="https://github.com/user-attachments/assets/4288003d-0535-4b70-bdee-48b2c95bc516" />
 
+<img width="1083" height="409" alt="image" src="https://github.com/user-attachments/assets/633cf084-2fbf-47d4-aa7e-2590967c91ea" />
 
+<img width="1054" height="372" alt="image" src="https://github.com/user-attachments/assets/95043c56-0a12-4907-adbd-3314c0c34847" />
 
-VER BASE DE DATOS CON INTERFAZ GRÁFICA
+<img width="995" height="409" alt="image" src="https://github.com/user-attachments/assets/ca8413c9-4138-49f7-88e1-4bbe1f028712" />
 
-npx prisma studio --url "postgresql://rumbofit:password123@localhost:5432/rumbofit?schema=public"
-
-
-set DATABASE_URL=postgresql://rumbofit:password123@localhost:5432/rumbofit?schema=public && npx prisma studio
+<img width="442" height="383" alt="image" src="https://github.com/user-attachments/assets/f98a7c88-85bb-4755-aab8-68547917a8d5" />
