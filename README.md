@@ -4,6 +4,18 @@
 
 .
 
+Aplicacion de fitness con frontend en React Native + Expo, backend en Node.js/Express y base de datos PostgreSQL con Prisma.
+
+
+## Estructura
+
+```text
+RumboFit/
+|- backend/
+|- frontend_ReactNative/
+|- docker-compose.yml
+`- README.md
+```
 ## DOCKER-COMPOSE para ver la aplicación:
 
 
