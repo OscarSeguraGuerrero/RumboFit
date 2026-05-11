@@ -6,12 +6,15 @@ services:
       dockerfile: Dockerfile
     container_name: rumbofit_container
     ports:
-      - "8081:8081"
+      - "8082:8082"
     stdin_open: true
     tty: true
     init: true
     # AÑADIDO: Forzamos el comando con npx para evitar el error "expo: not found"
-    command: sh -c "npm install && npx expo start --lan"
+    command: >
+      sh -c "npm install &&
+      export REACT_NATIVE_PACKAGER_HOSTNAME=$(node -e \"const fs=require('fs'); const match=fs.readFileSync('config.js','utf8').match(/IP_PC\\s*=\\s*['\\\"]([^'\\\"]+)/); if (!match) process.exit(1); console.log(match[1]);\") &&
+      npx expo start --lan --port 8082"
 
   # BASE DE DATOS: PostgreSQL
   db:
