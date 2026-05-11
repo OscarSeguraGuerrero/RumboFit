@@ -886,6 +886,9 @@ export default function Dieta() {
                     <TouchableOpacity style={styles.tabBarItem}>
                         <Text style={[styles.tabBarText, styles.tabBarTextActive]}>MI DIETA</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={styles.tabBarItem} onPress={() => router.push('/redsocial')}>
+                        <Text style={styles.tabBarText}>COMUNIDAD</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 

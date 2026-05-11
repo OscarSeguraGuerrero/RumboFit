@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
 import React from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { API_URL } from '../config';
 import {
     Image,
@@ -1101,6 +1102,124 @@ export default function Rutina() {
         persistirRutinaPropiaLocal(nueva);
     };
 
+    const cargarComunidad = async () => {
+        setCargandoComunidad(true);
+        try {
+            const res = await fetch(`${API_URL}/publicaciones`);
+            const dataPub = await res.json();
+            if (dataPub.success) {
+                setPublicacionesFeed(Array.isArray(dataPub.publicaciones) ? dataPub.publicaciones : []);
+            }
+        } catch (e) {
+            setMsgGeneral({ text: "No se pudo cargar la comunidad", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+        } finally {
+            setCargandoComunidad(false);
+        }
+    };
+
+    const seleccionarImagenComunidad = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            setMsgGeneral({ text: "Hace falta permiso para acceder a la galer\u00eda", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 4],
+            quality: 0.6,
+            base64: true
+        });
+
+        if (!result.canceled) {
+            setPostForm((prev) => ({
+                ...prev,
+                imagen: `data:image/jpeg;base64,${result.assets[0].base64}`
+            }));
+        }
+    };
+
+    const publicarEnComunidad = async () => {
+        const userId = await AsyncStorage.getItem("userId");
+        if (!userId) {
+            setMsgGeneral({ text: "No se encontró la sesión", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+            return;
+        }
+
+        if (!postForm.nombre.trim()) {
+            setMsgGeneral({ text: "Ponle un nombre a la publicación", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+            return;
+        }
+
+        setPublicandoComunidad(true);
+        try {
+            const res = await fetch(`${API_URL}/publicaciones`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    nombre: postForm.nombre,
+                    descripcion: postForm.descripcion,
+                    imagen: postForm.imagen
+                })
+            });
+            const result = await res.json();
+
+            if (!res.ok || !result.success) {
+                setMsgGeneral({ text: result.error || "No se pudo publicar", type: 'error' });
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+                return;
+            }
+
+            setPostForm({ nombre: '', descripcion: '', imagen: '' });
+            setPublicacionesFeed((prev) => [result.publicacion, ...prev]);
+            setMsgGeneral({ text: "Publicación creada", type: 'success' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+        } catch (e) {
+            setMsgGeneral({ text: "No se pudo conectar con la comunidad", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+        } finally {
+            setPublicandoComunidad(false);
+        }
+    };
+
+    const eliminarPublicacionComunidad = async (postId) => {
+        const userId = await AsyncStorage.getItem("userId");
+        if (!userId) return;
+
+        setConfirmModal({
+            visible: true,
+            title: 'Eliminar publicación',
+            message: 'Esta acción quitará la publicación de la comunidad.',
+            onConfirm: async () => {
+                try {
+                    const resp = await fetch(`${API_URL}/publicaciones/${postId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId })
+                    });
+                    const dataResp = await resp.json();
+                    if (!resp.ok || !dataResp.success) {
+                        setMsgGeneral({ text: dataResp.error || "No se pudo eliminar", type: 'error' });
+                    } else {
+                        setPublicacionesFeed((prev) => prev.filter((post) => Number(post.id) !== Number(postId)));
+                        setMsgGeneral({ text: "Publicación eliminada", type: 'success' });
+                    }
+                } catch (e) {
+                    setMsgGeneral({ text: "No se pudo eliminar la publicación", type: 'error' });
+                } finally {
+                    setConfirmModal((prev) => ({ ...prev, visible: false }));
+                    setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+                }
+            }
+        });
+    };
+
     const simulateTrainingLog = async () => {
         abrirModalCompletarEntrenamiento();
     };
@@ -1584,6 +1703,115 @@ export default function Rutina() {
                     </>
                 )}
 
+                {vistaActiva === 'comunidad' && (
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+                        <View style={styles.headerRow}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.methodLabel}>RED SOCIAL</Text>
+                                <Text style={styles.title}>Comunidad</Text>
+                            </View>
+                            <TouchableOpacity style={styles.createRoutineButton} onPress={cargarComunidad} activeOpacity={0.85}>
+                                <Text style={styles.createRoutineButtonText}>Actualizar</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.communityComposer}>
+                            <Text style={styles.communitySectionTitle}>Crear publicación</Text>
+                            <TextInput
+                                style={styles.communityInput}
+                                placeholder="Nombre de la publicación"
+                                placeholderTextColor="#999"
+                                value={postForm.nombre}
+                                onChangeText={(text) => setPostForm((prev) => ({ ...prev, nombre: text }))}
+                            />
+                            <TextInput
+                                style={[styles.communityInput, styles.communityTextarea]}
+                                placeholder="Descripción"
+                                placeholderTextColor="#999"
+                                multiline
+                                value={postForm.descripcion}
+                                onChangeText={(text) => setPostForm((prev) => ({ ...prev, descripcion: text }))}
+                            />
+                            {postForm.imagen ? (
+                                <Image source={{ uri: postForm.imagen }} style={styles.communityPreviewImage} />
+                            ) : null}
+                            <View style={styles.communityComposerActions}>
+                                <TouchableOpacity style={styles.communityGhostButton} onPress={seleccionarImagenComunidad}>
+                                    <Text style={styles.communityGhostButtonText}>{postForm.imagen ? 'Cambiar imagen' : 'Añadir imagen'}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.communityPrimaryButton, publicandoComunidad && styles.communityPrimaryButtonDisabled]}
+                                    onPress={publicarEnComunidad}
+                                    disabled={publicandoComunidad}
+                                >
+                                    <Text style={styles.communityPrimaryButtonText}>{publicandoComunidad ? 'Publicando...' : 'Publicar'}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={styles.communitySection}>
+                            <Text style={styles.communitySectionTitle}>Tus publicaciones</Text>
+                            {publicacionesFeed.filter((post) => Number(post.usuario_id) === Number(usuarioCompleto?.id)).length === 0 ? (
+                                <Text style={styles.communityEmptyText}>Todavía no has publicado nada.</Text>
+                            ) : (
+                                publicacionesFeed
+                                    .filter((post) => Number(post.usuario_id) === Number(usuarioCompleto?.id))
+                                    .map((post) => (
+                                        <View key={`mine-${post.id}`} style={styles.communityPostCard}>
+                                            <View style={styles.communityPostHeader}>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.communityPostTitle}>{post.titulo}</Text>
+                                                    <Text style={styles.communityPostMeta}>{new Date(post.fecha_publicacion).toLocaleDateString()}</Text>
+                                                </View>
+                                                <TouchableOpacity onPress={() => eliminarPublicacionComunidad(post.id)}>
+                                                    <Text style={styles.communityDeleteText}>Eliminar</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                            {post.descripcion ? <Text style={styles.communityPostDescription}>{post.descripcion}</Text> : null}
+                                            {post.imagenes?.[0]?.url ? (
+                                                <Image source={{ uri: post.imagenes[0].url }} style={styles.communityPostImage} />
+                                            ) : null}
+                                        </View>
+                                    ))
+                            )}
+                        </View>
+
+                        <View style={styles.communitySection}>
+                            <Text style={styles.communitySectionTitle}>Publicaciones de la comunidad</Text>
+                            {cargandoComunidad ? (
+                                <Text style={styles.communityEmptyText}>Cargando publicaciones...</Text>
+                            ) : publicacionesFeed.length === 0 ? (
+                                <Text style={styles.communityEmptyText}>Todavía no hay publicaciones.</Text>
+                            ) : (
+                                publicacionesFeed.map((post) => (
+                                    <View key={`feed-${post.id}`} style={styles.communityPostCard}>
+                                        <View style={styles.communityAuthorRow}>
+                                            {post.autor_foto ? (
+                                                <Image source={{ uri: post.autor_foto }} style={styles.communityAvatar} />
+                                            ) : (
+                                                <View style={styles.communityAvatarFallback}>
+                                                    <Text style={styles.communityAvatarFallbackText}>
+                                                        {(post.autor_nombre || 'U').charAt(0).toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.communityAuthorName}>{post.autor_nombre || 'Usuario'}</Text>
+                                                <Text style={styles.communityPostMeta}>{new Date(post.fecha_publicacion).toLocaleDateString()}</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={styles.communityPostTitle}>{post.titulo}</Text>
+                                        {post.descripcion ? <Text style={styles.communityPostDescription}>{post.descripcion}</Text> : null}
+                                        {post.imagenes?.[0]?.url ? (
+                                            <Image source={{ uri: post.imagenes[0].url }} style={styles.communityPostImage} />
+                                        ) : null}
+                                    </View>
+                                ))
+                            )}
+                        </View>
+                    </ScrollView>
+                )}
+
 
             </View>
 
@@ -1816,6 +2044,9 @@ export default function Rutina() {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.tabBarItem} focusable={false} onFocus={(e) => { if (Platform.OS === 'web') e.target?.blur?.(); }} onPress={() => router.push('/dieta')}>
                         <Text style={styles.tabBarText}>MI DIETA</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.tabBarItem} focusable={false} onFocus={(e) => { if (Platform.OS === 'web') e.target?.blur?.(); }} onPress={() => router.push('/redsocial')}>
+                        <Text style={styles.tabBarText}>COMUNIDAD</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -2120,4 +2351,29 @@ const styles = StyleSheet.create({
     perfRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     perfLabel: { fontSize: 12, fontWeight: '800', color: '#ff7a00' },
     perfInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ff7a00', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, width: 80, fontSize: 12, fontWeight: 'bold', color: '#333' },
+    communityComposer: { backgroundColor: 'white', borderRadius: 18, padding: 16, marginBottom: 18 },
+    communitySection: { marginBottom: 18 },
+    communitySectionTitle: { color: 'white', fontWeight: '900', fontSize: 16, marginBottom: 12 },
+    communityInput: { backgroundColor: '#f4f4f4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: '#222', marginBottom: 10, fontWeight: '600' },
+    communityTextarea: { minHeight: 96, textAlignVertical: 'top' },
+    communityComposerActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+    communityGhostButton: { flex: 1, borderWidth: 1, borderColor: '#ff7a00', borderRadius: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: '#fff' },
+    communityGhostButtonText: { color: '#ff7a00', fontWeight: '800' },
+    communityPrimaryButton: { flex: 1, backgroundColor: '#ff7a00', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+    communityPrimaryButtonDisabled: { opacity: 0.7 },
+    communityPrimaryButtonText: { color: 'white', fontWeight: '900' },
+    communityPreviewImage: { width: '100%', height: 220, borderRadius: 14, marginBottom: 10 },
+    communityEmptyText: { color: 'rgba(255,255,255,0.78)', fontSize: 13, fontWeight: '600' },
+    communityPostCard: { backgroundColor: 'white', borderRadius: 18, padding: 16, marginBottom: 14 },
+    communityPostHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
+    communityAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+    communityAvatar: { width: 42, height: 42, borderRadius: 21 },
+    communityAvatarFallback: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#ff7a00', alignItems: 'center', justifyContent: 'center' },
+    communityAvatarFallbackText: { color: 'white', fontWeight: '900', fontSize: 18 },
+    communityAuthorName: { color: '#222', fontWeight: '900', fontSize: 14 },
+    communityPostTitle: { color: '#222', fontWeight: '900', fontSize: 16, marginBottom: 6 },
+    communityPostMeta: { color: '#999', fontSize: 11, fontWeight: '700' },
+    communityPostDescription: { color: '#555', fontSize: 13, lineHeight: 19, marginBottom: 10 },
+    communityPostImage: { width: '100%', height: 260, borderRadius: 14, backgroundColor: '#eee' },
+    communityDeleteText: { color: '#e74c3c', fontWeight: '800', fontSize: 12 },
 });

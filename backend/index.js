@@ -5,6 +5,12 @@ const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const {
+    listDocuments,
+    getDocument,
+    setDocument,
+    deleteDocument
+} = require('./firestore');
 
 dotenv.config();
 
@@ -27,6 +33,226 @@ const transporter = nodemailer.createTransport({
 // --- CONFIGURACIÓN CRÍTICA (SIEMPRE ARRIBA) ---
 app.use(cors()); // Permite conexiones desde tu IP y localhost
 app.use(express.json()); // Permite leer el cuerpo de los JSON
+
+const SOCIAL_FOLLOWERS_COLLECTION = 'social_followers';
+const SOCIAL_POSTS_COLLECTION = 'social_posts';
+
+const limpiarDocFirebase = ({ _docId, ...data }) => data;
+
+function normalizarPublicacionFirebase(post) {
+    return {
+        id: Number(post.id),
+        usuario_id: Number(post.usuario_id),
+        entrenamiento_id: post.entrenamiento_id ? Number(post.entrenamiento_id) : null,
+        titulo: post.titulo || '',
+        descripcion: post.descripcion || '',
+        fecha_publicacion: post.fecha_publicacion || new Date().toISOString(),
+        imagenes: Array.isArray(post.imagenes) ? post.imagenes : [],
+        autor_nombre: post.autor_nombre || '',
+        autor_foto: post.autor_foto || '',
+        _count: {
+            me_gusta: post?._count?.me_gusta || 0
+        }
+    };
+}
+
+function mapPrismaPostToSocial(post) {
+    return normalizarPublicacionFirebase({
+        ...post,
+        autor_nombre: post.usuario?.nombre || post.autor_nombre || '',
+        autor_foto: post.usuario?.foto_perfil || post.autor_foto || '',
+        imagenes: Array.isArray(post.imagenes)
+            ? post.imagenes.map((img, index) => ({
+                id: img.id || index + 1,
+                url: img.url,
+                orden: img.orden || index
+            }))
+            : []
+    });
+}
+
+async function syncFollowersFromPrisma(userId) {
+    const seguidores = await prisma.seguidor.findMany({
+        where: {
+            OR: [
+                { seguidor_id: userId },
+                { seguido_id: userId }
+            ]
+        }
+    });
+
+    for (const seguimiento of seguidores) {
+        await setDocument(SOCIAL_FOLLOWERS_COLLECTION, `${seguimiento.seguidor_id}_${seguimiento.seguido_id}`, {
+            seguidor_id: seguimiento.seguidor_id,
+            seguido_id: seguimiento.seguido_id,
+            fecha: seguimiento.fecha?.toISOString?.() || new Date().toISOString()
+        });
+    }
+}
+
+async function syncPostsFromPrisma(userId) {
+    const posts = await prisma.publicacion.findMany({
+        where: { usuario_id: userId },
+        include: {
+            imagenes: true,
+            _count: { select: { me_gusta: true } },
+            usuario: {
+                select: {
+                    nombre: true,
+                    foto_perfil: true
+                }
+            }
+        },
+        orderBy: { fecha_publicacion: 'desc' }
+    });
+
+    for (const post of posts) {
+        await setDocument(SOCIAL_POSTS_COLLECTION, String(post.id), normalizarPublicacionFirebase({
+            ...post,
+            autor_nombre: post.usuario?.nombre || '',
+            autor_foto: post.usuario?.foto_perfil || ''
+        }));
+    }
+}
+
+async function syncAllPostsFromPrisma() {
+    const posts = await prisma.publicacion.findMany({
+        include: {
+            imagenes: true,
+            _count: { select: { me_gusta: true } },
+            usuario: {
+                select: {
+                    nombre: true,
+                    foto_perfil: true
+                }
+            }
+        },
+        orderBy: { fecha_publicacion: 'desc' }
+    });
+
+    for (const post of posts) {
+        await setDocument(SOCIAL_POSTS_COLLECTION, String(post.id), normalizarPublicacionFirebase({
+            ...post,
+            autor_nombre: post.usuario?.nombre || '',
+            autor_foto: post.usuario?.foto_perfil || ''
+        }));
+    }
+}
+
+async function getFirebaseFollowersForUser(userId) {
+    await syncFollowersFromPrisma(userId);
+    const allFollowers = await listDocuments(SOCIAL_FOLLOWERS_COLLECTION);
+    return allFollowers
+        .map(limpiarDocFirebase)
+        .filter((item) => Number(item.seguidor_id) === userId || Number(item.seguido_id) === userId);
+}
+
+async function getFirebasePostsForUser(userId) {
+    await syncPostsFromPrisma(userId);
+    const allPosts = await listDocuments(SOCIAL_POSTS_COLLECTION);
+    return allPosts
+        .map((item) => normalizarPublicacionFirebase(limpiarDocFirebase(item)))
+        .filter((post) => Number(post.usuario_id) === userId)
+        .sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
+}
+
+async function getFirebaseFeed() {
+    await syncAllPostsFromPrisma();
+    const allPosts = await listDocuments(SOCIAL_POSTS_COLLECTION);
+    return allPosts
+        .map((item) => normalizarPublicacionFirebase(limpiarDocFirebase(item)))
+        .sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
+}
+
+async function getPrismaPostsForUser(userId) {
+    const posts = await prisma.publicacion.findMany({
+        where: { usuario_id: userId },
+        include: {
+            imagenes: true,
+            _count: { select: { me_gusta: true } },
+            usuario: {
+                select: {
+                    nombre: true,
+                    foto_perfil: true
+                }
+            }
+        },
+        orderBy: { fecha_publicacion: 'desc' }
+    });
+    return posts.map(mapPrismaPostToSocial);
+}
+
+async function getPrismaFeed() {
+    const posts = await prisma.publicacion.findMany({
+        include: {
+            imagenes: true,
+            _count: { select: { me_gusta: true } },
+            usuario: {
+                select: {
+                    nombre: true,
+                    foto_perfil: true
+                }
+            }
+        },
+        orderBy: { fecha_publicacion: 'desc' }
+    });
+    return posts.map(mapPrismaPostToSocial);
+}
+
+async function getSocialPostsForUser(userId) {
+    try {
+        return await getFirebasePostsForUser(userId);
+    } catch (error) {
+        console.error('Firestore user posts failed, fallback Prisma:', error.message);
+        return getPrismaPostsForUser(userId);
+    }
+}
+
+async function getSocialFeed() {
+    try {
+        return await getFirebaseFeed();
+    } catch (error) {
+        console.error('Firestore feed failed, fallback Prisma:', error.message);
+        return getPrismaFeed();
+    }
+}
+
+async function getSocialCounts(userId) {
+    try {
+        return await buildSocialCounts(userId);
+    } catch (error) {
+        console.error('Firestore social counts failed, fallback Prisma:', error.message);
+        const usuario = await prisma.usuario.findUnique({
+            where: { id: userId },
+            include: {
+                _count: {
+                    select: {
+                        seguidores: true,
+                        seguidos: true,
+                        publicaciones: true,
+                        rutinas: true
+                    }
+                }
+            }
+        });
+        return usuario?._count || { seguidores: 0, seguidos: 0, publicaciones: 0, rutinas: 0 };
+    }
+}
+
+async function buildSocialCounts(userId) {
+    const [followers, posts, rutinas] = await Promise.all([
+        getFirebaseFollowersForUser(userId),
+        getFirebasePostsForUser(userId),
+        prisma.rutina.count({ where: { usuario_id: userId } })
+    ]);
+
+    return {
+        seguidores: followers.filter((item) => Number(item.seguido_id) === userId).length,
+        seguidos: followers.filter((item) => Number(item.seguidor_id) === userId).length,
+        publicaciones: posts.length,
+        rutinas
+    };
+}
 
 // --- RUTAS ---
 
@@ -345,20 +571,11 @@ app.get('/api/usuarios/:id', async (req, res) => {
     const userId = parseInt(req.params.id);
     try {
         const usuario = await prisma.usuario.findUnique({
-            where: { id: userId },
-            include: {
-                _count: {
-                    select: {
-                        seguidores: true,
-                        seguidos: true,
-                        publicaciones: true,
-                        rutinas: true
-                    }
-                }
-            }
+            where: { id: userId }
         });
         if (!usuario) return res.status(404).json({ success: false, error: "No encontrado" });
-        res.json({ success: true, usuario });
+        const socialCounts = await getSocialCounts(userId);
+        res.json({ success: true, usuario: { ...usuario, _count: socialCounts } });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -403,14 +620,21 @@ app.put('/api/usuarios/:id', async (req, res) => {
 app.post('/api/usuarios/follow', async (req, res) => {
     const { seguidorId, seguidoId } = req.body;
     try {
-        await prisma.seguidor.create({
-            data: {
-                seguidor_id: parseInt(seguidorId),
-                seguido_id: parseInt(seguidoId)
-            }
+        const followerId = parseInt(seguidorId);
+        const followedId = parseInt(seguidoId);
+
+        if (!followerId || !followedId || followerId === followedId) {
+            return res.status(400).json({ error: "Seguimiento no válido" });
+        }
+
+        await setDocument(SOCIAL_FOLLOWERS_COLLECTION, `${followerId}_${followedId}`, {
+            seguidor_id: followerId,
+            seguido_id: followedId,
+            fecha: new Date().toISOString()
         });
         res.json({ success: true, message: "Ahora sigues a este usuario" });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Error al seguir usuario" });
     }
 });
@@ -419,16 +643,15 @@ app.post('/api/usuarios/follow', async (req, res) => {
 app.post('/api/usuarios/unfollow', async (req, res) => {
     const { seguidorId, seguidoId } = req.body;
     try {
-        await prisma.seguidor.delete({
-            where: {
-                seguidor_id_seguido_id: {
-                    seguidor_id: parseInt(seguidorId),
-                    seguido_id: parseInt(seguidoId)
-                }
-            }
-        });
+        await syncFollowersFromPrisma(parseInt(seguidorId));
+        await syncFollowersFromPrisma(parseInt(seguidoId));
+        await deleteDocument(
+            SOCIAL_FOLLOWERS_COLLECTION,
+            `${parseInt(seguidorId)}_${parseInt(seguidoId)}`
+        );
         res.json({ success: true, message: "Has dejado de seguir a este usuario" });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Error al dejar de seguir" });
     }
 });
@@ -436,16 +659,19 @@ app.post('/api/usuarios/unfollow', async (req, res) => {
 // Verificar si un usuario sigue a otro
 app.get('/api/usuarios/:seguidorId/sigue/:seguidoId', async (req, res) => {
     try {
-        const seguimiento = await prisma.seguidor.findUnique({
-            where: {
-                seguidor_id_seguido_id: {
-                    seguidor_id: parseInt(req.params.seguidorId),
-                    seguido_id: parseInt(req.params.seguidoId)
-                }
-            }
-        });
+        const followerId = parseInt(req.params.seguidorId);
+        const followedId = parseInt(req.params.seguidoId);
+
+        await syncFollowersFromPrisma(followerId);
+        await syncFollowersFromPrisma(followedId);
+
+        const seguimiento = await getDocument(
+            SOCIAL_FOLLOWERS_COLLECTION,
+            `${followerId}_${followedId}`
+        );
         res.json({ siguiendo: !!seguimiento });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Error al verificar seguimiento" });
     }
 });
@@ -456,31 +682,104 @@ app.get('/api/usuarios/:seguidorId/sigue/:seguidoId', async (req, res) => {
 app.get('/api/usuarios/:id/publicaciones', async (req, res) => {
     const userId = parseInt(req.params.id);
     try {
-        const posts = await prisma.publicacion.findMany({
-            where: { usuario_id: userId },
-            include: {
-                imagenes: true,
-                _count: { select: { me_gusta: true } }
-            },
-            orderBy: { fecha_publicacion: 'desc' }
-        });
+        const posts = await getSocialPostsForUser(userId);
         res.json({ success: true, publicaciones: posts });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Error al obtener publicaciones" });
     }
 });
 
 // Eliminar una publicación
+app.get('/api/publicaciones', async (req, res) => {
+    try {
+        const publicaciones = await getSocialFeed();
+        res.json({ success: true, publicaciones });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al obtener el feed" });
+    }
+});
+
+app.post('/api/publicaciones', async (req, res) => {
+    try {
+        const { userId, titulo, nombre, descripcion, imagen } = req.body;
+        const usuarioId = parseInt(userId);
+        const tituloFinal = (titulo || nombre || '').trim();
+        const descripcionFinal = (descripcion || '').trim();
+
+        if (!usuarioId) {
+            return res.status(400).json({ error: "Falta el usuario" });
+        }
+
+        if (!tituloFinal) {
+            return res.status(400).json({ error: "El nombre de la publicación es obligatorio" });
+        }
+
+        const usuario = await prisma.usuario.findUnique({
+            where: { id: usuarioId },
+            select: { nombre: true, foto_perfil: true }
+        });
+
+        if (!usuario) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        const postId = Date.now();
+        const publicacion = normalizarPublicacionFirebase({
+            id: postId,
+            usuario_id: usuarioId,
+            titulo: tituloFinal,
+            descripcion: descripcionFinal,
+            fecha_publicacion: new Date().toISOString(),
+            imagenes: imagen ? [{ id: 1, url: imagen, orden: 0 }] : [],
+            autor_nombre: usuario.nombre,
+            autor_foto: usuario.foto_perfil || '',
+            _count: { me_gusta: 0 }
+        });
+
+        try {
+            await setDocument(SOCIAL_POSTS_COLLECTION, String(postId), publicacion);
+            res.status(201).json({ success: true, publicacion });
+        } catch (firebaseError) {
+            console.error('Firestore create post failed, fallback Prisma:', firebaseError.message);
+            const created = await prisma.publicacion.create({
+                data: {
+                    usuario_id: usuarioId,
+                    titulo: tituloFinal,
+                    descripcion: descripcionFinal,
+                    imagenes: imagen ? { create: [{ url: imagen, orden: 0 }] } : undefined
+                },
+                include: {
+                    imagenes: true,
+                    _count: { select: { me_gusta: true } },
+                    usuario: {
+                        select: {
+                            nombre: true,
+                            foto_perfil: true
+                        }
+                    }
+                }
+            });
+            res.status(201).json({ success: true, publicacion: mapPrismaPostToSocial(created) });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al crear la publicación" });
+    }
+});
+
 app.delete('/api/publicaciones/:id', async (req, res) => {
     const postId = parseInt(req.params.id);
     const { userId } = req.body; // Para verificar propiedad
 
     try {
-        const post = await prisma.publicacion.findUnique({ where: { id: postId } });
+        await syncPostsFromPrisma(parseInt(userId));
+        const post = await getDocument(SOCIAL_POSTS_COLLECTION, String(postId));
         if (!post) return res.status(404).json({ error: "No encontrado" });
-        if (post.usuario_id !== parseInt(userId)) return res.status(403).json({ error: "No autorizado" });
+        if (Number(post.usuario_id) !== parseInt(userId)) return res.status(403).json({ error: "No autorizado" });
 
-        await prisma.publicacion.delete({ where: { id: postId } });
+        await deleteDocument(SOCIAL_POSTS_COLLECTION, String(postId));
         res.json({ success: true, message: "Publicación eliminada" });
     } catch (error) {
         res.status(500).json({ error: "Error al eliminar publicación" });
@@ -1116,10 +1415,7 @@ app.post('/api/dieta/comida/:id/alimento', async (req, res) => {
 app.get('/api/publicaciones/usuario/:id', async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
-        const publicaciones = await prisma.publicacion.findMany({
-            where: { usuario_id: userId },
-            orderBy: { fecha_publicacion: 'desc' }
-        });
+        const publicaciones = await getFirebasePostsForUser(userId);
         res.json({ success: true, publicaciones });
     } catch (error) {
         console.error(error);
@@ -1131,7 +1427,15 @@ app.get('/api/publicaciones/usuario/:id', async (req, res) => {
 app.delete('/api/publicaciones/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        await prisma.publicacion.delete({ where: { id } });
+        const userId = req.body?.userId ? parseInt(req.body.userId) : null;
+        if (userId) {
+            await syncPostsFromPrisma(userId);
+        }
+        const post = await getDocument(SOCIAL_POSTS_COLLECTION, String(id));
+        if (!post) {
+            return res.status(404).json({ error: "No encontrado" });
+        }
+        await deleteDocument(SOCIAL_POSTS_COLLECTION, String(id));
         res.json({ success: true });
     } catch (error) {
         console.error(error);
