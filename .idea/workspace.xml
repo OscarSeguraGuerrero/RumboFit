@@ -4,13 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="Correción de error en el  formulario">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="red social v1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.env.example" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/dieta.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/dieta.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -161,7 +161,7 @@
       <workItem from="1777584931716" duration="1235000" />
       <workItem from="1777638298241" duration="7019000" />
       <workItem from="1778329339594" duration="547000" />
-      <workItem from="1778515508016" duration="3234000" />
+      <workItem from="1778515508016" duration="6234000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -451,7 +451,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777912710952</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="red social v1">
+      <option name="closed" value="true" />
+      <created>1778518958015</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1778518958015</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -469,7 +477,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Implementación en React Native para aplicaciones móbiles" />
     <MESSAGE value="Implementación del docker compose para ver la app con el qr por el móvil" />
     <MESSAGE value="Implementación del docker compose" />
     <MESSAGE value="Implementación del frontend de la página para ver la rutina y el perfil" />
@@ -494,6 +501,7 @@
     <MESSAGE value="Cambios en la edición de las rutinas." />
     <MESSAGE value="Ultimos cambios." />
     <MESSAGE value="error en utils.js" />
-    <option name="LAST_COMMIT_MESSAGE" value="error en utils.js" />
+    <MESSAGE value="red social v1" />
+    <option name="LAST_COMMIT_MESSAGE" value="red social v1" />
   </component>
 </project>

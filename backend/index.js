@@ -36,6 +36,8 @@ app.use(express.json()); // Permite leer el cuerpo de los JSON
 
 const SOCIAL_FOLLOWERS_COLLECTION = 'social_followers';
 const SOCIAL_POSTS_COLLECTION = 'social_posts';
+const SOCIAL_LIKES_COLLECTION = 'social_likes';
+const SOCIAL_NOTIFICATIONS_COLLECTION = 'social_notifications';
 
 const limpiarDocFirebase = ({ _docId, ...data }) => data;
 
@@ -69,6 +71,20 @@ function mapPrismaPostToSocial(post) {
             }))
             : []
     });
+}
+
+function mapPrismaNotification(notification) {
+    return {
+        id: Number(notification.id),
+        usuario_id: Number(notification.usuario_id),
+        tipo_notificacion: notification.tipo_notificacion,
+        leida: Boolean(notification.leida),
+        fecha: notification.fecha?.toISOString?.() || new Date().toISOString(),
+        origen_usuario_id: notification.origen_usuario_id ? Number(notification.origen_usuario_id) : null,
+        publicacion_id: notification.publicacion_id ? Number(notification.publicacion_id) : null,
+        origen_nombre: notification.origen_usuario?.nombre || '',
+        origen_foto: notification.origen_usuario?.foto_perfil || '',
+    };
 }
 
 async function syncFollowersFromPrisma(userId) {
@@ -215,6 +231,185 @@ async function getSocialFeed() {
         console.error('Firestore feed failed, fallback Prisma:', error.message);
         return getPrismaFeed();
     }
+}
+
+async function getSocialFollowersAndFollowing(userId) {
+    try {
+        return await getFirebaseFollowersForUser(userId);
+    } catch (error) {
+        console.error('Firestore followers failed, fallback Prisma:', error.message);
+        return prisma.seguidor.findMany({
+            where: {
+                OR: [
+                    { seguidor_id: userId },
+                    { seguido_id: userId }
+                ]
+            }
+        });
+    }
+}
+
+async function getFollowedUserIds(userId) {
+    const followers = await getSocialFollowersAndFollowing(userId);
+    return followers
+        .filter((item) => Number(item.seguidor_id) === userId)
+        .map((item) => Number(item.seguido_id));
+}
+
+async function getSocialFeedForUser(userId) {
+    const followedIds = await getFollowedUserIds(userId);
+    if (followedIds.length === 0) return [];
+    const feed = await getSocialFeed();
+    return feed.filter((post) => followedIds.includes(Number(post.usuario_id)));
+}
+
+async function getSocialPostById(postId) {
+    try {
+        const post = await getDocument(SOCIAL_POSTS_COLLECTION, String(postId));
+        if (post) return normalizarPublicacionFirebase(post);
+    } catch (error) {
+        console.error('Firestore get post failed, fallback Prisma:', error.message);
+    }
+
+    const post = await prisma.publicacion.findUnique({
+        where: { id: postId },
+        include: {
+            imagenes: true,
+            _count: { select: { me_gusta: true } },
+            usuario: {
+                select: {
+                    nombre: true,
+                    foto_perfil: true
+                }
+            }
+        }
+    });
+
+    return post ? mapPrismaPostToSocial(post) : null;
+}
+
+async function decoratePostWithLike(post, userId) {
+    if (!post) return null;
+    if (!userId) {
+        return {
+            ...post,
+            likedByMe: false
+        };
+    }
+
+    return {
+        ...post,
+        likedByMe: await userHasLikedPost(userId, Number(post.id))
+    };
+}
+
+async function decoratePostsWithLike(posts, userId) {
+    if (!Array.isArray(posts) || posts.length === 0) return [];
+    if (!userId) {
+        return posts.map((post) => ({ ...post, likedByMe: false }));
+    }
+
+    return Promise.all(posts.map((post) => decoratePostWithLike(post, userId)));
+}
+
+async function getSocialLikesForPost(postId) {
+    try {
+        const allLikes = await listDocuments(SOCIAL_LIKES_COLLECTION);
+        return allLikes.filter((item) => Number(item.publicacion_id) === postId);
+    } catch (error) {
+        console.error('Firestore likes failed, fallback Prisma:', error.message);
+        return prisma.me_Gusta.findMany({ where: { publicacion_id: postId } });
+    }
+}
+
+async function userHasLikedPost(userId, postId) {
+    const likes = await getSocialLikesForPost(postId);
+    return likes.some((like) => Number(like.usuario_id) === userId);
+}
+
+async function createNotification({ usuarioId, tipo, origenUsuarioId = null, publicacionId = null }) {
+    if (!usuarioId || (origenUsuarioId && Number(usuarioId) === Number(origenUsuarioId))) return;
+
+    const payload = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        usuario_id: Number(usuarioId),
+        tipo_notificacion: tipo,
+        leida: false,
+        fecha: new Date().toISOString(),
+        origen_usuario_id: origenUsuarioId ? Number(origenUsuarioId) : null,
+        publicacion_id: publicacionId ? Number(publicacionId) : null
+    };
+
+    try {
+        await setDocument(SOCIAL_NOTIFICATIONS_COLLECTION, String(payload.id), payload);
+    } catch (error) {
+        console.error('Firestore notification failed, fallback Prisma:', error.message);
+        await prisma.notificacion.create({
+            data: {
+                usuario_id: payload.usuario_id,
+                tipo_notificacion: payload.tipo_notificacion,
+                leida: false,
+                origen_usuario_id: payload.origen_usuario_id,
+                publicacion_id: payload.publicacion_id
+            }
+        });
+    }
+}
+
+async function getNotificationsForUser(userId) {
+    try {
+        const [notifications, users] = await Promise.all([
+            listDocuments(SOCIAL_NOTIFICATIONS_COLLECTION),
+            prisma.usuario.findMany({
+                select: { id: true, nombre: true, foto_perfil: true }
+            })
+        ]);
+        const userMap = Object.fromEntries(users.map((user) => [String(user.id), user]));
+        return notifications
+            .filter((item) => Number(item.usuario_id) === userId)
+            .map((item) => ({
+                ...item,
+                origen_nombre: userMap[String(item.origen_usuario_id)]?.nombre || '',
+                origen_foto: userMap[String(item.origen_usuario_id)]?.foto_perfil || ''
+            }))
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    } catch (error) {
+        console.error('Firestore notifications failed, fallback Prisma:', error.message);
+        const notifications = await prisma.notificacion.findMany({
+            where: { usuario_id: userId },
+            include: {
+                origen_usuario: {
+                    select: { nombre: true, foto_perfil: true }
+                }
+            },
+            orderBy: { fecha: 'desc' }
+        });
+        return notifications.map(mapPrismaNotification);
+    }
+}
+
+async function markNotificationsRead(userId) {
+    try {
+        const notifications = await listDocuments(SOCIAL_NOTIFICATIONS_COLLECTION);
+        const mine = notifications.filter((item) => Number(item.usuario_id) === userId && !item.leida);
+        for (const notification of mine) {
+            await setDocument(SOCIAL_NOTIFICATIONS_COLLECTION, String(notification.id), {
+                ...notification,
+                leida: true
+            });
+        }
+    } catch (error) {
+        console.error('Firestore mark notifications failed, fallback Prisma:', error.message);
+        await prisma.notificacion.updateMany({
+            where: { usuario_id: userId, leida: false },
+            data: { leida: true }
+        });
+    }
+}
+
+async function getUnreadNotificationsCount(userId) {
+    const notifications = await getNotificationsForUser(userId);
+    return notifications.filter((notification) => !notification.leida).length;
 }
 
 async function getSocialCounts(userId) {
@@ -632,10 +827,31 @@ app.post('/api/usuarios/follow', async (req, res) => {
             seguido_id: followedId,
             fecha: new Date().toISOString()
         });
+        await createNotification({
+            usuarioId: followedId,
+            tipo: 'follow',
+            origenUsuarioId: followerId
+        });
         res.json({ success: true, message: "Ahora sigues a este usuario" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Error al seguir usuario" });
+        try {
+            await prisma.seguidor.create({
+                data: {
+                    seguidor_id: parseInt(seguidorId),
+                    seguido_id: parseInt(seguidoId)
+                }
+            });
+            await createNotification({
+                usuarioId: parseInt(seguidoId),
+                tipo: 'follow',
+                origenUsuarioId: parseInt(seguidorId)
+            });
+            res.json({ success: true, message: "Ahora sigues a este usuario" });
+        } catch (fallbackError) {
+            console.error(fallbackError);
+            res.status(500).json({ error: "Error al seguir usuario" });
+        }
     }
 });
 
@@ -682,7 +898,8 @@ app.get('/api/usuarios/:seguidorId/sigue/:seguidoId', async (req, res) => {
 app.get('/api/usuarios/:id/publicaciones', async (req, res) => {
     const userId = parseInt(req.params.id);
     try {
-        const posts = await getSocialPostsForUser(userId);
+        const viewerId = parseInt(req.query.viewerId || 0);
+        const posts = await decoratePostsWithLike(await getSocialPostsForUser(userId), viewerId);
         res.json({ success: true, publicaciones: posts });
     } catch (error) {
         console.error(error);
@@ -693,7 +910,8 @@ app.get('/api/usuarios/:id/publicaciones', async (req, res) => {
 // Eliminar una publicación
 app.get('/api/publicaciones', async (req, res) => {
     try {
-        const publicaciones = await getSocialFeed();
+        const userId = parseInt(req.query.userId || 0);
+        const publicaciones = await decoratePostsWithLike(await getSocialFeed(), userId);
         res.json({ success: true, publicaciones });
     } catch (error) {
         console.error(error);
@@ -701,19 +919,168 @@ app.get('/api/publicaciones', async (req, res) => {
     }
 });
 
+app.get('/api/publicaciones/feed/:userId', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.userId);
+        const publicaciones = await decoratePostsWithLike(await getSocialFeedForUser(userId), userId);
+        res.json({ success: true, publicaciones });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al obtener el tablón" });
+    }
+});
+
+app.get('/api/publicaciones/:id', async (req, res) => {
+    try {
+        const userId = parseInt(req.query.userId || 0);
+        const publicacion = await decoratePostWithLike(await getSocialPostById(parseInt(req.params.id)), userId);
+        if (!publicacion) {
+            return res.status(404).json({ error: "Publicación no encontrada" });
+        }
+        res.json({ success: true, publicacion });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al obtener la publicación" });
+    }
+});
+
+app.post('/api/publicaciones/:id/like', async (req, res) => {
+    try {
+        const postId = parseInt(req.params.id);
+        const userId = parseInt(req.body.userId);
+        if (!postId || !userId) {
+            return res.status(400).json({ error: "Faltan parámetros" });
+        }
+
+        const post = await getSocialPostById(postId);
+        if (!post) {
+            return res.status(404).json({ error: "Publicación no encontrada" });
+        }
+
+        const liked = await userHasLikedPost(userId, postId);
+        let likesCount = 0;
+
+        if (liked) {
+            try {
+                await deleteDocument(SOCIAL_LIKES_COLLECTION, `${userId}_${postId}`);
+            } catch (error) {
+                await prisma.me_Gusta.delete({
+                    where: {
+                        usuario_id_publicacion_id: {
+                            usuario_id: userId,
+                            publicacion_id: postId
+                        }
+                    }
+                });
+            }
+        } else {
+            try {
+                await setDocument(SOCIAL_LIKES_COLLECTION, `${userId}_${postId}`, {
+                    usuario_id: userId,
+                    publicacion_id: postId,
+                    fecha: new Date().toISOString()
+                });
+            } catch (error) {
+                await prisma.me_Gusta.create({
+                    data: {
+                        usuario_id: userId,
+                        publicacion_id: postId
+                    }
+                });
+            }
+            await createNotification({
+                usuarioId: post.usuario_id,
+                tipo: 'like',
+                origenUsuarioId: userId,
+                publicacionId: postId
+            });
+        }
+
+        likesCount = (await getSocialLikesForPost(postId)).length;
+        res.json({ success: true, liked: !liked, likesCount });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al actualizar el like" });
+    }
+});
+
+app.get('/api/usuarios/buscar/:query', async (req, res) => {
+    try {
+        const query = (req.params.query || '').trim();
+        const currentUserId = parseInt(req.query.userId || 0);
+        if (!query) return res.json({ success: true, usuarios: [] });
+
+        const usuarios = await prisma.usuario.findMany({
+            where: {
+                nombre: {
+                    contains: query,
+                    mode: 'insensitive'
+                },
+                ...(currentUserId ? { id: { not: currentUserId } } : {})
+            },
+            select: {
+                id: true,
+                nombre: true,
+                foto_perfil: true
+            },
+            take: 20
+        });
+
+        res.json({ success: true, usuarios });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al buscar usuarios" });
+    }
+});
+
+app.get('/api/notificaciones/:userId', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.userId);
+        const notificaciones = await getNotificationsForUser(userId);
+        await markNotificationsRead(userId);
+        res.json({ success: true, notificaciones });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al obtener notificaciones" });
+    }
+});
+
+app.post('/api/notificaciones/:userId/read', async (req, res) => {
+    try {
+        await markNotificationsRead(parseInt(req.params.userId));
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al marcar notificaciones como leídas" });
+    }
+});
+
+app.get('/api/notificaciones/:userId/unread-count', async (req, res) => {
+    try {
+        const count = await getUnreadNotificationsCount(parseInt(req.params.userId));
+        res.json({ success: true, count });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error al obtener contador de notificaciones" });
+    }
+});
+
 app.post('/api/publicaciones', async (req, res) => {
     try {
-        const { userId, titulo, nombre, descripcion, imagen } = req.body;
+        const { userId, titulo, nombre, descripcion, imagen, imagenes } = req.body;
         const usuarioId = parseInt(userId);
         const tituloFinal = (titulo || nombre || '').trim();
         const descripcionFinal = (descripcion || '').trim();
+        const imagenesFinal = Array.isArray(imagenes)
+            ? imagenes.filter(Boolean).slice(0, 5)
+            : (imagen ? [imagen] : []);
 
         if (!usuarioId) {
             return res.status(400).json({ error: "Falta el usuario" });
         }
 
-        if (!tituloFinal) {
-            return res.status(400).json({ error: "El nombre de la publicación es obligatorio" });
+        if (!tituloFinal || !descripcionFinal) {
+            return res.status(400).json({ error: "El título y la descripción son obligatorios" });
         }
 
         const usuario = await prisma.usuario.findUnique({
@@ -732,7 +1099,7 @@ app.post('/api/publicaciones', async (req, res) => {
             titulo: tituloFinal,
             descripcion: descripcionFinal,
             fecha_publicacion: new Date().toISOString(),
-            imagenes: imagen ? [{ id: 1, url: imagen, orden: 0 }] : [],
+            imagenes: imagenesFinal.map((url, index) => ({ id: index + 1, url, orden: index })),
             autor_nombre: usuario.nombre,
             autor_foto: usuario.foto_perfil || '',
             _count: { me_gusta: 0 }
@@ -748,7 +1115,9 @@ app.post('/api/publicaciones', async (req, res) => {
                     usuario_id: usuarioId,
                     titulo: tituloFinal,
                     descripcion: descripcionFinal,
-                    imagenes: imagen ? { create: [{ url: imagen, orden: 0 }] } : undefined
+                    imagenes: imagenesFinal.length > 0
+                        ? { create: imagenesFinal.map((url, index) => ({ url, orden: index })) }
+                        : undefined
                 },
                 include: {
                     imagenes: true,
@@ -774,14 +1143,22 @@ app.delete('/api/publicaciones/:id', async (req, res) => {
     const { userId } = req.body; // Para verificar propiedad
 
     try {
-        await syncPostsFromPrisma(parseInt(userId));
-        const post = await getDocument(SOCIAL_POSTS_COLLECTION, String(postId));
-        if (!post) return res.status(404).json({ error: "No encontrado" });
-        if (Number(post.usuario_id) !== parseInt(userId)) return res.status(403).json({ error: "No autorizado" });
-
-        await deleteDocument(SOCIAL_POSTS_COLLECTION, String(postId));
+        try {
+            await syncPostsFromPrisma(parseInt(userId));
+            const post = await getDocument(SOCIAL_POSTS_COLLECTION, String(postId));
+            if (!post) return res.status(404).json({ error: "No encontrado" });
+            if (Number(post.usuario_id) !== parseInt(userId)) return res.status(403).json({ error: "No autorizado" });
+            await deleteDocument(SOCIAL_POSTS_COLLECTION, String(postId));
+        } catch (firebaseError) {
+            console.error('Firestore delete post failed, fallback Prisma:', firebaseError.message);
+            const post = await prisma.publicacion.findUnique({ where: { id: postId } });
+            if (!post) return res.status(404).json({ error: "No encontrado" });
+            if (Number(post.usuario_id) !== parseInt(userId)) return res.status(403).json({ error: "No autorizado" });
+            await prisma.publicacion.delete({ where: { id: postId } });
+        }
         res.json({ success: true, message: "Publicación eliminada" });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Error al eliminar publicación" });
     }
 });
@@ -1415,7 +1792,8 @@ app.post('/api/dieta/comida/:id/alimento', async (req, res) => {
 app.get('/api/publicaciones/usuario/:id', async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
-        const publicaciones = await getFirebasePostsForUser(userId);
+        const viewerId = parseInt(req.query.viewerId || 0);
+        const publicaciones = await decoratePostsWithLike(await getFirebasePostsForUser(userId), viewerId);
         res.json({ success: true, publicaciones });
     } catch (error) {
         console.error(error);

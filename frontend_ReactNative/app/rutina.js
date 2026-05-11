@@ -761,6 +761,9 @@ export default function Rutina() {
 
     const cerrarSesion = async () => {
         await AsyncStorage.clear();
+        if (typeof router.dismissAll === 'function') {
+            router.dismissAll();
+        }
         router.replace('/');
     };
 

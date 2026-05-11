@@ -365,6 +365,9 @@ export default function Dieta() {
     const cerrarSesion = async () => {
         setMenuVisible(false);
         await AsyncStorage.clear();
+        if (typeof router.dismissAll === 'function') {
+            router.dismissAll();
+        }
         router.replace('/');
     };
 

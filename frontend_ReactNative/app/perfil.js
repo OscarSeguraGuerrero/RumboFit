@@ -1,14 +1,169 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ImageBackground, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ImageBackground, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { API_URL } from '../config';
-import Svg, { Path, G, Circle } from 'react-native-svg';
+import Svg, { Path, G, Circle, Polyline, Line } from 'react-native-svg';
 import { Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 // Eliminamos el uso de height fijo para el fondo para que pueda crecer
 const { width } = Dimensions.get('window');
+
+const COMPOUND_EXERCISES = ['sentadilla', 'press banca', 'peso muerto', 'press militar', 'remo', 'dominadas'];
+
+const calcularTDEE = (user) => {
+    if (!user || !user.peso || !user.altura || !user.edad) return 2000;
+    const sexo = user.sexo?.toLowerCase() || '';
+    const constSexo = (sexo === 'femenino' || sexo === 'mujer' || sexo === 'f') ? -161 : 5;
+    let tmb = (10 * Number(user.peso)) + (6.25 * Number(user.altura)) - (5 * Number(user.edad)) + constSexo;
+    let multiplicador = 1.2;
+    if (user.frecuencia_semanal >= 1 && user.frecuencia_semanal <= 2) multiplicador = 1.375;
+    else if (user.frecuencia_semanal >= 3 && user.frecuencia_semanal <= 5) multiplicador = 1.55;
+    else if (user.frecuencia_semanal > 5) multiplicador = 1.725;
+    let tdee = tmb * multiplicador;
+    if (user.objetivo) {
+        const obj = user.objetivo.toLowerCase();
+        if (obj.includes('perder') || obj.includes('bajar')) tdee -= 500;
+        else if (obj.includes('masa') || obj.includes('ganar') || obj.includes('hipertrofia')) tdee += 500;
+    }
+    return Math.round(tdee);
+};
+
+const calcularMacrosObjetivo = (tdee, user) => {
+    const peso = user?.peso || 70;
+    const prot = peso * 2;
+    const gras = peso * 1;
+    const caloriasProt = prot * 4;
+    const caloriasGras = gras * 9;
+    const caloriasCarb = Math.max(0, tdee - caloriasProt - caloriasGras);
+    return {
+        kcal: tdee,
+        prot: Math.round(prot),
+        gras: Math.round(gras),
+        carb: Math.round(caloriasCarb / 4)
+    };
+};
+
+const calcularMacrosConsumidos = (comidas) => {
+    return (comidas || []).reduce((totales, comida) => {
+        const macros = comida.macros || {};
+        return {
+            kcal: totales.kcal + Number(macros.kcal || 0),
+            prot: totales.prot + Number(macros.prot || 0),
+            carb: totales.carb + Number(macros.carb || 0),
+            gras: totales.gras + Number(macros.gras || 0),
+        };
+    }, { kcal: 0, prot: 0, carb: 0, gras: 0 });
+};
+
+const getWeekKey = (dateString) => {
+    const date = new Date(dateString);
+    const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = utc.getUTCDay() || 7;
+    utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((utc - yearStart) / 86400000) + 1) / 7);
+    return `${utc.getUTCFullYear()}-S${String(weekNo).padStart(2, '0')}`;
+};
+
+const formatShortDate = (dateString) => {
+    const date = new Date(dateString);
+    return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+function buildProgressAnalysis(historial, user) {
+    const fechas = Object.keys(historial || {}).sort((a, b) => new Date(a) - new Date(b));
+    const fechasConDatos = fechas.filter((fecha) => {
+        const item = historial[fecha];
+        return (item?.entrenamientos?.length || 0) + (item?.comidas?.length || 0) > 0;
+    });
+
+    if (fechasConDatos.length < 3) {
+        return {
+            locked: true,
+            recordCount: fechasConDatos.length
+        };
+    }
+
+    const fuerzaPorEjercicio = {};
+    const weeklyTraining = {};
+    const calorieSeries = [];
+    const tdee = calcularTDEE(user);
+    const macrosGoal = calcularMacrosObjetivo(tdee, user);
+    let macroDays = 0;
+    let macroTotals = { kcal: 0, prot: 0, carb: 0, gras: 0 };
+
+    fechasConDatos.forEach((fecha) => {
+        const item = historial[fecha] || { entrenamientos: [], comidas: [] };
+
+        (item.entrenamientos || []).forEach((entreno) => {
+            weeklyTraining[getWeekKey(fecha)] = (weeklyTraining[getWeekKey(fecha)] || 0) + 1;
+
+            (entreno.series || []).forEach((serie) => {
+                const nombre = (serie.ejercicio?.nombre || '').toLowerCase();
+                const peso = Number(serie.peso_kg || 0);
+                if (!peso || !COMPOUND_EXERCISES.some((key) => nombre.includes(key))) return;
+                const series = fuerzaPorEjercicio[nombre] || [];
+                const lastPoint = series[series.length - 1];
+                if (lastPoint?.label === formatShortDate(fecha)) {
+                    lastPoint.value = Math.max(lastPoint.value, peso);
+                } else {
+                    series.push({ label: formatShortDate(fecha), value: peso });
+                }
+                fuerzaPorEjercicio[nombre] = series;
+            });
+        });
+
+        const macrosDia = calcularMacrosConsumidos(item.comidas || []);
+        if (macrosDia.kcal > 0) {
+            macroDays += 1;
+            macroTotals = {
+                kcal: macroTotals.kcal + macrosDia.kcal,
+                prot: macroTotals.prot + macrosDia.prot,
+                carb: macroTotals.carb + macrosDia.carb,
+                gras: macroTotals.gras + macrosDia.gras
+            };
+            calorieSeries.push({
+                label: formatShortDate(fecha),
+                consumed: Math.round(macrosDia.kcal),
+                target: tdee
+            });
+        }
+    });
+
+    const fuerzaSeries = Object.entries(fuerzaPorEjercicio)
+        .slice(0, 4)
+        .map(([name, points], index) => ({
+            key: name,
+            label: name.charAt(0).toUpperCase() + name.slice(1),
+            color: ['#ff7a00', '#2ecc71', '#3498db', '#9b59b6'][index % 4],
+            points
+        }))
+        .filter((serie) => serie.points.length > 0);
+
+    const consistencySeries = Object.entries(weeklyTraining)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-6)
+        .map(([week, count]) => ({ label: week.replace('-', ' '), value: count }));
+
+    const averageMacros = macroDays > 0 ? {
+        kcal: Math.round(macroTotals.kcal / macroDays),
+        prot: Math.round(macroTotals.prot / macroDays),
+        carb: Math.round(macroTotals.carb / macroDays),
+        gras: Math.round(macroTotals.gras / macroDays),
+    } : { kcal: 0, prot: 0, carb: 0, gras: 0 };
+
+    return {
+        locked: false,
+        fuerzaSeries,
+        consistencySeries,
+        calorieSeries: calorieSeries.slice(-7),
+        macrosGoal,
+        averageMacros,
+        recordCount: fechasConDatos.length
+    };
+}
 
 export default function Perfil() {
     const router = useRouter();
@@ -35,6 +190,7 @@ export default function Perfil() {
 
     const [publicaciones, setPublicaciones] = useState([]);
     const [siguiendo, setSiguiendo] = useState(false);
+    const [analisis, setAnalisis] = useState({ locked: true, recordCount: 0 });
 
     useEffect(() => {
         cargarDatosIniciales();
@@ -48,8 +204,13 @@ export default function Perfil() {
         const targetId = params.id || myId;
         setEsPropioPerfil(targetId === myId);
         
-        await cargarUsuario(targetId);
+        const usuarioPerfil = await cargarUsuario(targetId);
         await cargarPublicaciones(targetId);
+        if (targetId === myId) {
+            await cargarAnalisis(targetId, usuarioPerfil);
+        } else {
+            setAnalisis({ locked: true, recordCount: 0 });
+        }
         
         if (targetId !== myId) {
             verificarSeguimiento(myId, targetId);
@@ -74,6 +235,7 @@ export default function Perfil() {
                     setNuevoNivel(result.usuario.nivel || '');
                     setNuevaFrecuencia(result.usuario.frecuencia_semanal?.toString() || '');
                     setNuevaFoto(result.usuario.foto_perfil || '');
+                    return result.usuario;
                 }
             }
         } catch (error) {
@@ -85,10 +247,23 @@ export default function Perfil() {
 
     const cargarPublicaciones = async (userId) => {
         try {
-            const resp = await fetch(`${API_URL}/usuarios/${userId}/publicaciones`);
+            const viewerId = await AsyncStorage.getItem("userId");
+            const resp = await fetch(`${API_URL}/usuarios/${userId}/publicaciones?viewerId=${viewerId || ''}`);
             const data = await resp.json();
             if (data.success) setPublicaciones(data.publicaciones);
         } catch (e) { console.error(e); }
+    };
+
+    const cargarAnalisis = async (userId, usuarioPerfil) => {
+        try {
+            const response = await fetch(`${API_URL}/usuarios/${userId}/historial`);
+            const result = await response.json();
+            if (result.success) {
+                setAnalisis(buildProgressAnalysis(result.historial || {}, usuarioPerfil || usuario || { id: userId, peso: Number(nuevoPeso || 0), altura: Number(nuevaAltura || 0), edad: Number(nuevaEdad || 0), sexo: nuevoSexo, frecuencia_semanal: Number(nuevaFrecuencia || 0), objetivo: nuevoObjetivo }));
+            }
+        } catch (error) {
+            console.error("Error cargando análisis:", error);
+        }
     };
 
     const verificarSeguimiento = async (myId, targetId) => {
@@ -174,6 +349,9 @@ export default function Perfil() {
 
     const cerrarSesion = async () => {
         await AsyncStorage.clear();
+        if (typeof router.dismissAll === 'function') {
+            router.dismissAll();
+        }
         router.replace('/');
     };
 
@@ -399,6 +577,27 @@ export default function Perfil() {
                                 </View>
                             </View>
 
+                            <View style={styles.analysisCard}>
+                                <Text style={styles.analysisTitle}>Análisis de Progreso</Text>
+                                {analisis.locked ? (
+                                    <Text style={styles.analysisLockedText}>
+                                        Sigue registrando entrenamientos y comidas para generar tu análisis de progreso.
+                                    </Text>
+                                ) : (
+                                    <>
+                                        <Text style={styles.analysisHint}>Datos analizados: {analisis.recordCount} registros</Text>
+                                        <LineChartCard title="Evolución de fuerza" series={analisis.fuerzaSeries} />
+                                        <BarChartCard title="Consistencia de entrenamiento" data={analisis.consistencySeries} />
+                                        <BalanceChartCard
+                                            title="Balance calórico"
+                                            calorieSeries={analisis.calorieSeries}
+                                            averageMacros={analisis.averageMacros}
+                                            macrosGoal={analisis.macrosGoal}
+                                        />
+                                    </>
+                                )}
+                            </View>
+
                             <View style={styles.infoCard}>
                                 <View style={styles.rowInfo}>
                                     <View style={styles.infoBox}>
@@ -523,7 +722,18 @@ export default function Perfil() {
                                     <Text style={{color: 'white', fontWeight: 'bold'}}>Descartar cambios</Text>
                                 </TouchableOpacity>
                             )}
-                            
+
+                            <View style={styles.quickActionsCard}>
+                                <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/historial')}>
+                                    <Text style={styles.quickActionText}>Mi historial</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/notificaciones')}>
+                                    <Text style={styles.quickActionText}>Notificaciones</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.quickActionBtn, styles.logoutBtn]} onPress={cerrarSesion}>
+                                    <Text style={styles.quickActionText}>Cerrar sesión</Text>
+                                </TouchableOpacity>
+                            </View>
 
                         </View>
                     )}
@@ -534,7 +744,7 @@ export default function Perfil() {
                             <Text style={styles.noPosts}>No hay publicaciones todavía.</Text>
                         ) : (
                             publicaciones.map(post => (
-                                <View key={post.id} style={styles.postCard}>
+                                <TouchableOpacity key={post.id} style={styles.postCard} activeOpacity={0.9} onPress={() => router.push(`/publicacion?id=${post.id}`)}>
                                     <View style={styles.postHeader}>
                                         <Text style={styles.postTitle}>{post.titulo}</Text>
                                         {esPropioPerfil && (
@@ -548,7 +758,7 @@ export default function Perfil() {
                                         <Image source={{ uri: post.imagenes[0].url }} style={styles.postImg} />
                                     )}
                                     <Text style={styles.postDate}>{new Date(post.fecha_publicacion).toLocaleDateString()}</Text>
-                                </View>
+                                </TouchableOpacity>
                             ))
                         )}
                     </View>
@@ -581,6 +791,154 @@ export default function Perfil() {
                 )}
             </View>
         </ImageBackground>
+    );
+}
+
+function LineChartCard({ title, series }) {
+    if (!series || series.length === 0) {
+        return <Text style={styles.analysisEmpty}>Todavía no hay suficiente carga útil para esta gráfica.</Text>;
+    }
+
+    const allValues = series.flatMap((item) => item.points.map((point) => point.value));
+    const maxValue = Math.max(...allValues, 1);
+    const chartHeight = 120;
+    const chartWidth = 280;
+    const pointCount = Math.max(...series.map((item) => item.points.length), 2);
+
+    return (
+        <View style={styles.chartBlock}>
+            <Text style={styles.chartTitle}>{title}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View>
+                    <Svg width={chartWidth} height={chartHeight + 24}>
+                        {[0, 1, 2, 3].map((index) => {
+                            const y = 12 + (chartHeight / 3) * index;
+                            return <Line key={index} x1="0" y1={y} x2={chartWidth} y2={y} stroke="#ececec" strokeWidth="1" />;
+                        })}
+                        {series.map((serie) => {
+                            const points = serie.points.map((point, index) => {
+                                const x = pointCount === 1 ? chartWidth / 2 : (index / (pointCount - 1)) * (chartWidth - 20) + 10;
+                                const y = 12 + chartHeight - ((point.value / maxValue) * chartHeight);
+                                return `${x},${y}`;
+                            }).join(' ');
+                            return <Polyline key={serie.key} points={points} fill="none" stroke={serie.color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />;
+                        })}
+                    </Svg>
+                    <View style={styles.legendWrap}>
+                        {series.map((serie) => (
+                            <View key={serie.key} style={styles.legendItem}>
+                                <View style={[styles.legendDot, { backgroundColor: serie.color }]} />
+                                <Text style={styles.legendText}>{serie.label}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            </ScrollView>
+        </View>
+    );
+}
+
+function BarChartCard({ title, data }) {
+    if (!data || data.length === 0) {
+        return <Text style={styles.analysisEmpty}>Todavía no hay semanas registradas para esta gráfica.</Text>;
+    }
+
+    const maxValue = Math.max(...data.map((item) => item.value), 1);
+
+    return (
+        <View style={styles.chartBlock}>
+            <Text style={styles.chartTitle}>{title}</Text>
+            <View style={styles.barChartRow}>
+                {data.map((item) => (
+                    <View key={item.label} style={styles.barCol}>
+                        <View style={styles.barTrack}>
+                            <View style={[styles.barFill, { height: `${(item.value / maxValue) * 100}%` }]} />
+                        </View>
+                        <Text style={styles.barValue}>{item.value}</Text>
+                        <Text style={styles.barLabel}>{item.label}</Text>
+                    </View>
+                ))}
+            </View>
+        </View>
+    );
+}
+
+function BalanceChartCard({ title, calorieSeries, averageMacros, macrosGoal }) {
+    const maxValue = Math.max(...(calorieSeries || []).flatMap((item) => [item.consumed, item.target]), 1);
+    const chartHeight = 110;
+    const chartWidth = 280;
+    const pointCount = Math.max((calorieSeries || []).length, 2);
+    const caloriesPoints = (calorieSeries || []).map((item, index) => {
+        const x = pointCount === 1 ? chartWidth / 2 : (index / (pointCount - 1)) * (chartWidth - 20) + 10;
+        const y = 12 + chartHeight - ((item.consumed / maxValue) * chartHeight);
+        return `${x},${y}`;
+    }).join(' ');
+    const targetPoints = (calorieSeries || []).map((item, index) => {
+        const x = pointCount === 1 ? chartWidth / 2 : (index / (pointCount - 1)) * (chartWidth - 20) + 10;
+        const y = 12 + chartHeight - ((item.target / maxValue) * chartHeight);
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <View style={styles.chartBlock}>
+            <Text style={styles.chartTitle}>{title}</Text>
+            {calorieSeries?.length ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View>
+                        <Svg width={chartWidth} height={chartHeight + 24}>
+                            {[0, 1, 2, 3].map((index) => {
+                                const y = 12 + (chartHeight / 3) * index;
+                                return <Line key={index} x1="0" y1={y} x2={chartWidth} y2={y} stroke="#ececec" strokeWidth="1" />;
+                            })}
+                            <Polyline points={targetPoints} fill="none" stroke="#2ecc71" strokeWidth="3" strokeDasharray="6,4" />
+                            <Polyline points={caloriesPoints} fill="none" stroke="#ff7a00" strokeWidth="3" />
+                        </Svg>
+                        <View style={styles.legendWrap}>
+                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#ff7a00' }]} /><Text style={styles.legendText}>Consumidas</Text></View>
+                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#2ecc71' }]} /><Text style={styles.legendText}>Objetivo</Text></View>
+                        </View>
+                    </View>
+                </ScrollView>
+            ) : (
+                <Text style={styles.analysisEmpty}>No hay días con comidas suficientes para esta gráfica.</Text>
+            )}
+
+            <View style={styles.macroGrid}>
+                {[
+                    { key: 'prot', label: 'Proteínas', color: '#3498db' },
+                    { key: 'carb', label: 'Carbohidratos', color: '#2ecc71' },
+                    { key: 'gras', label: 'Grasas', color: '#f1c40f' },
+                ].map((macro) => {
+                    const value = averageMacros?.[macro.key] || 0;
+                    const goal = macrosGoal?.[macro.key] || 1;
+                    const ratio = Math.min(value / goal, 1);
+                    const radius = 22;
+                    const circumference = 2 * Math.PI * radius;
+                    const offset = circumference * (1 - ratio);
+                    return (
+                        <View key={macro.key} style={styles.ringItem}>
+                            <Svg width="64" height="64" viewBox="0 0 64 64">
+                                <Circle cx="32" cy="32" r={radius} stroke="#ececec" strokeWidth="8" fill="none" />
+                                <Circle
+                                    cx="32"
+                                    cy="32"
+                                    r={radius}
+                                    stroke={macro.color}
+                                    strokeWidth="8"
+                                    fill="none"
+                                    strokeDasharray={`${circumference} ${circumference}`}
+                                    strokeDashoffset={offset}
+                                    strokeLinecap="round"
+                                    transform="rotate(-90 32 32)"
+                                />
+                            </Svg>
+                            <Text style={styles.ringValue}>{value}g</Text>
+                            <Text style={styles.ringLabel}>{macro.label}</Text>
+                        </View>
+                    );
+                })}
+            </View>
+        </View>
     );
 }
 
@@ -629,6 +987,27 @@ const styles = StyleSheet.create({
     imcTextContainer: { marginTop: -20, alignItems: 'center' },
     imcValueText: { fontSize: 34, fontWeight: 'bold' },
     imcStatusText: { fontSize: 16, fontWeight: 'bold', color: '#888' },
+    analysisCard: { backgroundColor: 'rgba(255,255,255,0.95)', width: '100%', borderRadius: 20, padding: 20, marginBottom: 20 },
+    analysisTitle: { color: '#222', fontSize: 18, fontWeight: '900', marginBottom: 8 },
+    analysisHint: { color: '#666', fontWeight: '700', marginBottom: 12 },
+    analysisLockedText: { color: '#666', lineHeight: 22, fontWeight: '700' },
+    analysisEmpty: { color: '#666', fontWeight: '700', marginBottom: 14 },
+    chartBlock: { marginBottom: 18 },
+    chartTitle: { color: '#333', fontWeight: '900', marginBottom: 10 },
+    legendWrap: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
+    legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 14, marginBottom: 6 },
+    legendDot: { width: 10, height: 10, borderRadius: 5, marginRight: 6 },
+    legendText: { color: '#666', fontWeight: '700', fontSize: 12 },
+    barChartRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', minHeight: 150 },
+    barCol: { flex: 1, alignItems: 'center', marginHorizontal: 4 },
+    barTrack: { height: 100, width: 24, borderRadius: 12, backgroundColor: '#ececec', justifyContent: 'flex-end', overflow: 'hidden' },
+    barFill: { width: '100%', backgroundColor: '#ff7a00', borderRadius: 12 },
+    barValue: { color: '#222', fontWeight: '900', marginTop: 6, fontSize: 12 },
+    barLabel: { color: '#777', fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 4 },
+    macroGrid: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+    ringItem: { flex: 1, alignItems: 'center' },
+    ringValue: { color: '#222', fontWeight: '900', marginTop: -8, fontSize: 12 },
+    ringLabel: { color: '#666', fontWeight: '700', fontSize: 11, textAlign: 'center', marginTop: 4 },
     infoCard: { backgroundColor: 'rgba(255,255,255,0.95)', width: '100%', borderRadius: 20, padding: 25, alignItems: 'center' },
     rowInfo: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
     infoBox: { flex: 1, alignItems: 'center' },
@@ -638,6 +1017,10 @@ const styles = StyleSheet.create({
     inputNombre: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 5, textAlign: 'center', minWidth: 200, color: 'white' },
     inputEmailEdit: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 3, textAlign: 'center', minWidth: 180, color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },
     inputSimple: { backgroundColor: '#f0f0f0', borderRadius: 10, padding: 10, fontSize: 16, fontWeight: 'bold', color: '#333', marginTop: 5 },
+    quickActionsCard: { width: '100%', backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 16, padding: 14, marginTop: 18, marginBottom: 12 },
+    quickActionBtn: { backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginBottom: 10 },
+    quickActionText: { color: 'white', fontWeight: '800' },
+    logoutBtn: { backgroundColor: 'rgba(231,76,60,0.25)', borderColor: 'rgba(231,76,60,0.45)', marginBottom: 0 },
     divider: { height: 1, backgroundColor: '#eee', marginVertical: 15 },
     rowSelectors: { flexDirection: 'row', gap: 10, marginTop: 10, justifyContent: 'center' },
     columnSelectors: { gap: 8, marginTop: 10 },
