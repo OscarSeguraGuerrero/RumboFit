@@ -12,7 +12,7 @@ RUN npm install
 COPY . .
 
 # Exponemos el puerto de Metro
-EXPOSE 8081
+EXPOSE 8082
 
 # Arrancamos Expo usando la dependencia instalada localmente
-CMD ["npm", "run", "start", "--", "--lan"]
+CMD ["npm", "run", "start", "--", "--lan", "--port", "8082"]
