@@ -1045,21 +1045,19 @@ app.get('/api/usuarios/buscar/:query', async (req, res) => {
         const currentUserId = parseInt(req.query.userId || 0);
         if (!query) return res.json({ success: true, usuarios: [] });
 
-        const usuarios = await prisma.usuario.findMany({
-            where: {
-                nombre: {
-                    contains: query,
-                    mode: 'insensitive'
-                },
-                ...(currentUserId ? { id: { not: currentUserId } } : {})
-            },
-            select: {
-                id: true,
-                nombre: true,
-                foto_perfil: true
-            },
-            take: 20
-        });
+        const normalizedQuery = query.toLowerCase();
+        const usuarios = (await listDocuments(USERS_COLLECTION))
+            .filter((user) => {
+                if (currentUserId && Number(user.id) === currentUserId) return false;
+                return String(user.nombre || '').toLowerCase().includes(normalizedQuery);
+            })
+            .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')))
+            .slice(0, 20)
+            .map((user) => ({
+                id: Number(user.id),
+                nombre: user.nombre || '',
+                foto_perfil: user.foto_perfil || ''
+            }));
 
         res.json({ success: true, usuarios });
     } catch (error) {
