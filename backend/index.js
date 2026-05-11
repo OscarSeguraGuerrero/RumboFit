@@ -38,6 +38,7 @@ const SOCIAL_FOLLOWERS_COLLECTION = 'social_followers';
 const SOCIAL_POSTS_COLLECTION = 'social_posts';
 const SOCIAL_LIKES_COLLECTION = 'social_likes';
 const SOCIAL_NOTIFICATIONS_COLLECTION = 'social_notifications';
+const USERS_COLLECTION = 'users';
 
 const limpiarDocFirebase = ({ _docId, ...data }) => data;
 
@@ -85,6 +86,36 @@ function mapPrismaNotification(notification) {
         origen_nombre: notification.origen_usuario?.nombre || '',
         origen_foto: notification.origen_usuario?.foto_perfil || '',
     };
+}
+
+function mapUserToFirebase(user) {
+    return {
+        id: Number(user.id),
+        nombre: user.nombre || '',
+        email: user.email || '',
+        telefono: user.telefono || '',
+        sexo: user.sexo || '',
+        peso: user.peso !== null && user.peso !== undefined ? Number(user.peso) : null,
+        altura: user.altura !== null && user.altura !== undefined ? Number(user.altura) : null,
+        edad: user.edad !== null && user.edad !== undefined ? Number(user.edad) : null,
+        objetivo: user.objetivo || '',
+        nivel: user.nivel || '',
+        frecuencia_semanal: user.frecuencia_semanal !== null && user.frecuencia_semanal !== undefined ? Number(user.frecuencia_semanal) : null,
+        foto_perfil: user.foto_perfil || '',
+        es_premium: Boolean(user.es_premium),
+        rutina_sugerida: user.rutina_sugerida || null,
+        fecha_registro: user.fecha_registro?.toISOString?.() || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+}
+
+async function syncUserToFirebase(user) {
+    if (!user?.id) return;
+    try {
+        await setDocument(USERS_COLLECTION, String(user.id), mapUserToFirebase(user));
+    } catch (error) {
+        console.error('Firestore user sync failed:', error.message);
+    }
 }
 
 async function syncFollowersFromPrisma(userId) {
@@ -472,6 +503,8 @@ app.post('/api/register', async (req, res) => {
             },
         });
 
+        await syncUserToFirebase(nuevoUsuario);
+
         const token = jwt.sign(
             { id: nuevoUsuario.id, email: nuevoUsuario.email },
             JWT_SECRET,
@@ -798,6 +831,8 @@ app.put('/api/usuarios/:id', async (req, res) => {
                 foto_perfil: foto_perfil || undefined,
             },
         });
+
+        await syncUserToFirebase(usuarioActualizado);
 
         res.json({ success: true, message: "Perfil actualizado", usuario: usuarioActualizado });
     } catch (error) {

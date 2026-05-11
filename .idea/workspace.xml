@@ -4,13 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="red social v1">
+    <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="red social v ultimate">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/dieta.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/dieta.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,12 +42,12 @@
     &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/OscarSeguraGuerrero/RumboFit.git",
-    "accountId": "6cd2f2e3-3737-4233-8480-46438b468c72"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
+    &quot;accountId&quot;: &quot;6cd2f2e3-3737-4233-8480-46438b468c72&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -161,7 +158,7 @@
       <workItem from="1777584931716" duration="1235000" />
       <workItem from="1777638298241" duration="7019000" />
       <workItem from="1778329339594" duration="547000" />
-      <workItem from="1778515508016" duration="6234000" />
+      <workItem from="1778515508016" duration="7163000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
@@ -459,7 +456,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778518958015</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL-00038" summary="red social v ultimate">
+      <option name="closed" value="true" />
+      <created>1778522065645</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1778522065645</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -477,7 +482,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Implementación del docker compose para ver la app con el qr por el móvil" />
     <MESSAGE value="Implementación del docker compose" />
     <MESSAGE value="Implementación del frontend de la página para ver la rutina y el perfil" />
     <MESSAGE value="Ampliar el catálogo de ejercicios y enriquece metadatos para selección inteligente." />
@@ -502,6 +506,7 @@
     <MESSAGE value="Ultimos cambios." />
     <MESSAGE value="error en utils.js" />
     <MESSAGE value="red social v1" />
-    <option name="LAST_COMMIT_MESSAGE" value="red social v1" />
+    <MESSAGE value="red social v ultimate" />
+    <option name="LAST_COMMIT_MESSAGE" value="red social v ultimate" />
   </component>
 </project>

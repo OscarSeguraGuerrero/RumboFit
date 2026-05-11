@@ -50,6 +50,7 @@ export default function RedSocial() {
     const [searching, setSearching] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [topLikedPosts, setTopLikedPosts] = useState([]);
 
     const showMessage = (text, type) => {
         setMessage({ text, type });
@@ -91,6 +92,26 @@ export default function RedSocial() {
         }
     };
 
+    const loadTopLikedPosts = async (currentUserId) => {
+        try {
+            const response = await fetch(`${API_URL}/publicaciones?userId=${currentUserId}`);
+            const data = await parseResponse(response);
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudieron cargar las destacadas');
+            }
+            const rankedPosts = (Array.isArray(data.publicaciones) ? data.publicaciones : [])
+                .sort((a, b) => {
+                    const likeDiff = Number(b?._count?.me_gusta || 0) - Number(a?._count?.me_gusta || 0);
+                    if (likeDiff !== 0) return likeDiff;
+                    return new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion);
+                })
+                .slice(0, 6);
+            setTopLikedPosts(rankedPosts);
+        } catch {
+            setTopLikedPosts([]);
+        }
+    };
+
     const bootstrap = async () => {
         const storedUserId = await AsyncStorage.getItem('userId');
         const storedUserName = await AsyncStorage.getItem('userName');
@@ -102,7 +123,7 @@ export default function RedSocial() {
 
         setUserId(storedUserId);
         if (storedUserName) setUserName(storedUserName);
-        await Promise.all([loadFeed(storedUserId), loadUnreadCount(storedUserId)]);
+        await Promise.all([loadFeed(storedUserId), loadUnreadCount(storedUserId), loadTopLikedPosts(storedUserId)]);
     };
 
     useEffect(() => {
@@ -114,6 +135,7 @@ export default function RedSocial() {
             if (!userId) return undefined;
             loadFeed(userId);
             loadUnreadCount(userId);
+            loadTopLikedPosts(userId);
             return undefined;
         }, [userId])
     );
@@ -418,6 +440,31 @@ export default function RedSocial() {
                     </View>
                 )}
 
+                <View style={styles.featuredSection}>
+                    <View style={styles.featuredHeader}>
+                        <View>
+                            <Text style={styles.featuredEyebrow}>TENDENCIAS</Text>
+                            <Text style={styles.featuredTitle}>Más likes de la comunidad</Text>
+                        </View>
+                    </View>
+                    {topLikedPosts.length === 0 ? (
+                        <View style={styles.featuredEmptyCard}>
+                            <Text style={styles.featuredEmptyText}>Todavía no hay publicaciones destacadas.</Text>
+                        </View>
+                    ) : (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredList}>
+                            {topLikedPosts.map((post) => (
+                                <FeaturedPostCard
+                                    key={`top-${post.id}`}
+                                    post={post}
+                                    onOpenProfile={(targetUserId) => router.push(`/perfil?id=${targetUserId}`)}
+                                    onOpenDetail={(postId) => router.push(`/publicacion?id=${postId}`)}
+                                />
+                            ))}
+                        </ScrollView>
+                    )}
+                </View>
+
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
                     <Text style={styles.sectionTitle}>Tus publicaciones</Text>
                     {myPosts.length === 0 ? (
@@ -521,6 +568,31 @@ function PostCard({ post, ownPost, onDelete, onLike, onOpenProfile, onOpenDetail
     );
 }
 
+function FeaturedPostCard({ post, onOpenProfile, onOpenDetail }) {
+    return (
+        <TouchableOpacity style={styles.featuredCard} activeOpacity={0.9} onPress={() => onOpenDetail(post.id)}>
+            {post.imagenes?.[0]?.url ? (
+                <Image source={{ uri: post.imagenes[0].url }} style={styles.featuredImage} />
+            ) : (
+                <View style={styles.featuredImageFallback} />
+            )}
+            <View style={styles.featuredOverlay} />
+            <View style={styles.featuredBadge}>
+                <Text style={styles.featuredBadgeText}>♥ {post?._count?.me_gusta || 0}</Text>
+            </View>
+            <View style={styles.featuredContent}>
+                <TouchableOpacity onPress={() => onOpenProfile(post.usuario_id)} activeOpacity={0.8}>
+                    <Text style={styles.featuredAuthor}>{post.autor_nombre || 'Usuario'}</Text>
+                </TouchableOpacity>
+                <Text style={styles.featuredPostTitle} numberOfLines={2}>{post.titulo}</Text>
+                {post.descripcion ? (
+                    <Text style={styles.featuredDescription} numberOfLines={2}>{post.descripcion}</Text>
+                ) : null}
+            </View>
+        </TouchableOpacity>
+    );
+}
+
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#ffffff', paddingTop: 10 },
     topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
@@ -557,6 +629,23 @@ const styles = StyleSheet.create({
     searchAvatarFallback: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ff7a00', alignItems: 'center', justifyContent: 'center' },
     searchAvatarFallbackText: { color: 'white', fontWeight: '900' },
     searchName: { color: '#222', fontWeight: '700' },
+    featuredSection: { marginBottom: 18 },
+    featuredHeader: { marginBottom: 12 },
+    featuredEyebrow: { color: 'rgba(255,255,255,0.75)', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+    featuredTitle: { color: 'white', fontSize: 18, fontWeight: '900', marginTop: 3 },
+    featuredList: { paddingRight: 10 },
+    featuredCard: { width: 260, height: 180, borderRadius: 20, marginRight: 12, overflow: 'hidden', backgroundColor: '#d96b00', position: 'relative' },
+    featuredImage: { width: '100%', height: '100%', position: 'absolute' },
+    featuredImageFallback: { width: '100%', height: '100%', position: 'absolute', backgroundColor: 'rgba(255,255,255,0.18)' },
+    featuredOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.28)' },
+    featuredBadge: { position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(255,255,255,0.94)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+    featuredBadgeText: { color: '#e74c3c', fontWeight: '900', fontSize: 12 },
+    featuredContent: { position: 'absolute', left: 14, right: 14, bottom: 14 },
+    featuredAuthor: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '800', marginBottom: 6 },
+    featuredPostTitle: { color: 'white', fontSize: 18, fontWeight: '900', lineHeight: 22, marginBottom: 4 },
+    featuredDescription: { color: 'rgba(255,255,255,0.85)', fontSize: 12, lineHeight: 17, fontWeight: '600' },
+    featuredEmptyCard: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 18, padding: 16 },
+    featuredEmptyText: { color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
     input: { backgroundColor: '#f4f4f4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: '#222', marginBottom: 10, fontWeight: '600' },
     textarea: { minHeight: 96, textAlignVertical: 'top' },
     previewThumb: { width: 64, height: 64, borderRadius: 10, marginRight: 8 },
