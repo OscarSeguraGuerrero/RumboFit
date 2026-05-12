@@ -7,6 +7,9 @@
     <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="red social v ultimatee">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -14,7 +17,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="106" />
+    <option name="cachedIndexableFilesCount" value="111" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -41,12 +44,12 @@
     &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
-    &quot;accountId&quot;: &quot;6cd2f2e3-3737-4233-8480-46438b468c72&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/OscarSeguraGuerrero/RumboFit.git",
+    "accountId": "5171907a-7895-4994-a74b-f77553eb9f4d"
   }
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -82,6 +85,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.agents.accounts&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\Usuario\\WebstormProjects\\RumboFit2\\backend\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
@@ -101,7 +105,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.31033.133" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
       </set>
     </attachedChunks>
   </component>
@@ -158,6 +162,7 @@
       <workItem from="1777638298241" duration="7019000" />
       <workItem from="1778329339594" duration="547000" />
       <workItem from="1778515508016" duration="7925000" />
+      <workItem from="1778593518549" duration="2594000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />

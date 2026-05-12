@@ -32,7 +32,8 @@ const transporter = nodemailer.createTransport({
 
 // --- CONFIGURACIÓN CRÍTICA (SIEMPRE ARRIBA) ---
 app.use(cors()); // Permite conexiones desde tu IP y localhost
-app.use(express.json()); // Permite leer el cuerpo de los JSON
+app.use(express.json({ limit: '15mb' })); // Permite leer JSON con imagenes en base64
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
 const SOCIAL_FOLLOWERS_COLLECTION = 'social_followers';
 const SOCIAL_POSTS_COLLECTION = 'social_posts';
@@ -197,8 +198,17 @@ async function getFirebaseFollowersForUser(userId) {
 async function getFirebasePostsForUser(userId) {
     await syncPostsFromPrisma(userId);
     const allPosts = await listDocuments(SOCIAL_POSTS_COLLECTION);
+    const likesIndex = await getSocialLikesIndex();
     return allPosts
-        .map((item) => normalizarPublicacionFirebase(limpiarDocFirebase(item)))
+        .map((item) => {
+            const post = normalizarPublicacionFirebase(limpiarDocFirebase(item));
+            return {
+                ...post,
+                _count: {
+                    me_gusta: likesIndex[Number(post.id)] || 0
+                }
+            };
+        })
         .filter((post) => Number(post.usuario_id) === userId)
         .sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
 }
@@ -206,8 +216,17 @@ async function getFirebasePostsForUser(userId) {
 async function getFirebaseFeed() {
     await syncAllPostsFromPrisma();
     const allPosts = await listDocuments(SOCIAL_POSTS_COLLECTION);
+    const likesIndex = await getSocialLikesIndex();
     return allPosts
-        .map((item) => normalizarPublicacionFirebase(limpiarDocFirebase(item)))
+        .map((item) => {
+            const post = normalizarPublicacionFirebase(limpiarDocFirebase(item));
+            return {
+                ...post,
+                _count: {
+                    me_gusta: likesIndex[Number(post.id)] || 0
+                }
+            };
+        })
         .sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
 }
 
@@ -297,7 +316,16 @@ async function getSocialFeedForUser(userId) {
 async function getSocialPostById(postId) {
     try {
         const post = await getDocument(SOCIAL_POSTS_COLLECTION, String(postId));
-        if (post) return normalizarPublicacionFirebase(post);
+        if (post) {
+            const normalizedPost = normalizarPublicacionFirebase(post);
+            const likesIndex = await getSocialLikesIndex();
+            return {
+                ...normalizedPost,
+                _count: {
+                    me_gusta: likesIndex[Number(normalizedPost.id)] || 0
+                }
+            };
+        }
     } catch (error) {
         console.error('Firestore get post failed, fallback Prisma:', error.message);
     }
@@ -350,6 +378,29 @@ async function getSocialLikesForPost(postId) {
     } catch (error) {
         console.error('Firestore likes failed, fallback Prisma:', error.message);
         return prisma.me_Gusta.findMany({ where: { publicacion_id: postId } });
+    }
+}
+
+async function getSocialLikesIndex() {
+    try {
+        const allLikes = await listDocuments(SOCIAL_LIKES_COLLECTION);
+        return allLikes.reduce((acc, like) => {
+            const currentPostId = Number(like.publicacion_id);
+            if (!currentPostId) return acc;
+            acc[currentPostId] = (acc[currentPostId] || 0) + 1;
+            return acc;
+        }, {});
+    } catch (error) {
+        console.error('Firestore likes index failed, fallback Prisma:', error.message);
+        const allLikes = await prisma.me_Gusta.findMany({
+            select: { publicacion_id: true }
+        });
+        return allLikes.reduce((acc, like) => {
+            const currentPostId = Number(like.publicacion_id);
+            if (!currentPostId) return acc;
+            acc[currentPostId] = (acc[currentPostId] || 0) + 1;
+            return acc;
+        }, {});
     }
 }
 
@@ -993,46 +1044,42 @@ app.post('/api/publicaciones/:id/like', async (req, res) => {
         }
 
         const liked = await userHasLikedPost(userId, postId);
-        let likesCount = 0;
-
         if (liked) {
-            try {
-                await deleteDocument(SOCIAL_LIKES_COLLECTION, `${userId}_${postId}`);
-            } catch (error) {
-                await prisma.me_Gusta.delete({
-                    where: {
-                        usuario_id_publicacion_id: {
-                            usuario_id: userId,
-                            publicacion_id: postId
-                        }
-                    }
-                });
-            }
-        } else {
-            try {
-                await setDocument(SOCIAL_LIKES_COLLECTION, `${userId}_${postId}`, {
-                    usuario_id: userId,
-                    publicacion_id: postId,
-                    fecha: new Date().toISOString()
-                });
-            } catch (error) {
-                await prisma.me_Gusta.create({
-                    data: {
+            const likesCount = (await getSocialLikesForPost(postId)).length;
+            return res.json({ success: true, liked: true, likesCount, alreadyLiked: true });
+        }
+
+        try {
+            await setDocument(SOCIAL_LIKES_COLLECTION, `${userId}_${postId}`, {
+                usuario_id: userId,
+                publicacion_id: postId,
+                fecha: new Date().toISOString()
+            });
+        } catch (error) {
+            await prisma.me_Gusta.upsert({
+                where: {
+                    usuario_id_publicacion_id: {
                         usuario_id: userId,
                         publicacion_id: postId
                     }
-                });
-            }
-            await createNotification({
-                usuarioId: post.usuario_id,
-                tipo: 'like',
-                origenUsuarioId: userId,
-                publicacionId: postId
+                },
+                update: {},
+                create: {
+                    usuario_id: userId,
+                    publicacion_id: postId
+                }
             });
         }
 
-        likesCount = (await getSocialLikesForPost(postId)).length;
-        res.json({ success: true, liked: !liked, likesCount });
+        await createNotification({
+            usuarioId: post.usuario_id,
+            tipo: 'like',
+            origenUsuarioId: userId,
+            publicacionId: postId
+        });
+
+        const likesCount = (await getSocialLikesForPost(postId)).length;
+        res.json({ success: true, liked: true, likesCount });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Error al actualizar el like" });

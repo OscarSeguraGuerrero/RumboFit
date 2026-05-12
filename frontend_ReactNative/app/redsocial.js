@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import {
     Image,
@@ -41,6 +41,7 @@ export default function RedSocial() {
     const [menuVisible, setMenuVisible] = useState(false);
     const [createVisible, setCreateVisible] = useState(false);
     const [feed, setFeed] = useState([]);
+    const [myPosts, setMyPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [publishing, setPublishing] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
@@ -57,11 +58,6 @@ export default function RedSocial() {
         setTimeout(() => setMessage({ text: '', type: '' }), 4000);
     };
 
-    const myPosts = useMemo(
-        () => feed.filter((post) => Number(post.usuario_id) === Number(userId)),
-        [feed, userId]
-    );
-
     const loadUnreadCount = async (currentUserId) => {
         try {
             const response = await fetch(`${API_URL}/notificaciones/${currentUserId}/unread-count`);
@@ -75,9 +71,6 @@ export default function RedSocial() {
     const loadFeed = async (currentUserId) => {
         setLoading(true);
         try {
-            await fetch(`${API_URL}/notificaciones/${currentUserId}/read`, { method: 'POST' });
-            setUnreadCount(0);
-
             const response = await fetch(`${API_URL}/publicaciones/feed/${currentUserId}`);
             const data = await parseResponse(response);
             if (!response.ok || !data.success) {
@@ -112,6 +105,20 @@ export default function RedSocial() {
         }
     };
 
+    const loadMyPosts = async (currentUserId) => {
+        try {
+            const response = await fetch(`${API_URL}/publicaciones/usuario/${currentUserId}?viewerId=${currentUserId}`);
+            const data = await parseResponse(response);
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudieron cargar tus publicaciones');
+            }
+            setMyPosts(Array.isArray(data.publicaciones) ? data.publicaciones : []);
+        } catch (error) {
+            showMessage(error.message || 'No se pudieron cargar tus publicaciones', 'error');
+            setMyPosts([]);
+        }
+    };
+
     const bootstrap = async () => {
         const storedUserId = await AsyncStorage.getItem('userId');
         const storedUserName = await AsyncStorage.getItem('userName');
@@ -123,7 +130,12 @@ export default function RedSocial() {
 
         setUserId(storedUserId);
         if (storedUserName) setUserName(storedUserName);
-        await Promise.all([loadFeed(storedUserId), loadUnreadCount(storedUserId), loadTopLikedPosts(storedUserId)]);
+        await Promise.all([
+            loadFeed(storedUserId),
+            loadMyPosts(storedUserId),
+            loadUnreadCount(storedUserId),
+            loadTopLikedPosts(storedUserId)
+        ]);
     };
 
     useEffect(() => {
@@ -134,6 +146,7 @@ export default function RedSocial() {
         React.useCallback(() => {
             if (!userId) return undefined;
             loadFeed(userId);
+            loadMyPosts(userId);
             loadUnreadCount(userId);
             loadTopLikedPosts(userId);
             return undefined;
@@ -214,7 +227,7 @@ export default function RedSocial() {
                 throw new Error(data.error || 'No se pudo publicar');
             }
 
-            setFeed((prev) => [data.publicacion, ...prev]);
+            setMyPosts((prev) => [data.publicacion, ...prev]);
             setForm({ titulo: '', descripcion: '', imagenes: [] });
             setCreateVisible(false);
             showMessage('Publicación creada', 'success');
@@ -238,6 +251,8 @@ export default function RedSocial() {
                 throw new Error(data.error || 'No se pudo eliminar');
             }
             setFeed((prev) => prev.filter((post) => Number(post.id) !== Number(deleteTarget)));
+            setMyPosts((prev) => prev.filter((post) => Number(post.id) !== Number(deleteTarget)));
+            setTopLikedPosts((prev) => prev.filter((post) => Number(post.id) !== Number(deleteTarget)));
             showMessage('Publicación eliminada', 'success');
         } catch (error) {
             showMessage(error.message || 'No se pudo eliminar', 'error');
@@ -259,7 +274,7 @@ export default function RedSocial() {
                 throw new Error(data.error || 'No se pudo actualizar el like');
             }
 
-            setFeed((prev) => prev.map((post) => {
+            const applyLikeUpdate = (posts) => posts.map((post) => {
                 if (Number(post.id) !== Number(postId)) return post;
                 return {
                     ...post,
@@ -269,7 +284,11 @@ export default function RedSocial() {
                         me_gusta: data.likesCount
                     }
                 };
-            }));
+            });
+
+            setFeed((prev) => applyLikeUpdate(prev));
+            setMyPosts((prev) => applyLikeUpdate(prev));
+            setTopLikedPosts((prev) => applyLikeUpdate(prev));
         } catch (error) {
             showMessage(error.message || 'No se pudo actualizar el like', 'error');
         }
@@ -470,20 +489,23 @@ export default function RedSocial() {
                     {myPosts.length === 0 ? (
                         <Text style={styles.emptyText}>Todavía no has publicado nada.</Text>
                     ) : (
-                        myPosts.map((post) => (
-                            <PostCard
-                                key={`mine-${post.id}`}
-                                post={post}
-                                ownPost
-                                onDelete={setDeleteTarget}
-                                onLike={toggleLike}
-                                onOpenProfile={(targetUserId) => router.push(`/perfil?id=${targetUserId}`)}
-                                onOpenDetail={(postId) => router.push(`/publicacion?id=${postId}`)}
-                            />
-                        ))
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.myPostsCarousel}>
+                            {myPosts.map((post) => (
+                                <PostCard
+                                    key={`mine-${post.id}`}
+                                    post={post}
+                                    ownPost
+                                    compact
+                                    onDelete={setDeleteTarget}
+                                    onLike={toggleLike}
+                                    onOpenProfile={(targetUserId) => router.push(`/perfil?id=${targetUserId}`)}
+                                    onOpenDetail={(postId) => router.push(`/publicacion?id=${postId}`)}
+                                />
+                            ))}
+                        </ScrollView>
                     )}
 
-                    <Text style={styles.sectionTitle}>Actividad de la comunidad</Text>
+                    <Text style={styles.sectionTitle}>Actividad de amigos</Text>
                     {loading ? (
                         <Text style={styles.emptyText}>Cargando publicaciones...</Text>
                     ) : feed.length === 0 ? (
@@ -526,9 +548,9 @@ export default function RedSocial() {
     );
 }
 
-function PostCard({ post, ownPost, onDelete, onLike, onOpenProfile, onOpenDetail }) {
+function PostCard({ post, ownPost, compact = false, onDelete, onLike, onOpenProfile, onOpenDetail }) {
     return (
-        <View style={styles.postCard}>
+        <View style={[styles.postCard, compact && styles.postCardCompact]}>
             <View style={styles.postHeader}>
                 <TouchableOpacity style={styles.authorRow} onPress={() => onOpenProfile(post.usuario_id)}>
                     {post.autor_foto ? (
@@ -553,9 +575,15 @@ function PostCard({ post, ownPost, onDelete, onLike, onOpenProfile, onOpenDetail
             </View>
 
             <TouchableOpacity onPress={() => onOpenDetail(post.id)} activeOpacity={0.9}>
-                <Text style={styles.postTitle}>{post.titulo}</Text>
-                {post.descripcion ? <Text style={styles.postDescription}>{post.descripcion}</Text> : null}
-                {post.imagenes?.[0]?.url ? <Image source={{ uri: post.imagenes[0].url }} style={styles.postImage} /> : null}
+                <Text style={[styles.postTitle, compact && styles.postTitleCompact]} numberOfLines={compact ? 2 : undefined}>{post.titulo}</Text>
+                {post.descripcion ? (
+                    <Text style={[styles.postDescription, compact && styles.postDescriptionCompact]} numberOfLines={compact ? 2 : undefined}>
+                        {post.descripcion}
+                    </Text>
+                ) : null}
+                {post.imagenes?.[0]?.url ? (
+                    <Image source={{ uri: post.imagenes[0].url }} style={[styles.postImage, compact && styles.postImageCompact]} />
+                ) : null}
             </TouchableOpacity>
 
             <View style={styles.postActions}>
@@ -603,7 +631,7 @@ const styles = StyleSheet.create({
     bellDot: { position: 'absolute', top: 9, right: 9, width: 10, height: 10, borderRadius: 5, backgroundColor: '#ff3b30' },
     avatarGlow: { padding: 3, borderRadius: 26, backgroundColor: 'rgba(255, 122, 0, 0.15)' },
     avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
-    avatarText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
+    avatarText: {color: 'white', fontWeight: 'bold', fontSize: 18 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 70, paddingRight: 15 },
     dropdown: { backgroundColor: '#fff', borderRadius: 16, elevation: 12, minWidth: 190, overflow: 'hidden' },
     dropdownHeader: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', paddingVertical: 14, paddingHorizontal: 16 },
@@ -662,7 +690,9 @@ const styles = StyleSheet.create({
     emptyFeedText: { color: 'white', fontSize: 14, lineHeight: 20, marginBottom: 12, fontWeight: '700' },
     emptyFeedButton: { alignSelf: 'flex-start', backgroundColor: 'white', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
     emptyFeedButtonText: { color: '#ff7a00', fontWeight: '900' },
+    myPostsCarousel: { paddingRight: 10, paddingBottom: 10 },
     postCard: { backgroundColor: 'white', borderRadius: 18, padding: 16, marginBottom: 14 },
+    postCardCompact: { width: 240, marginRight: 12, marginBottom: 4, padding: 14 },
     postHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
     authorRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
     authorAvatar: { width: 42, height: 42, borderRadius: 21 },
@@ -670,9 +700,12 @@ const styles = StyleSheet.create({
     authorAvatarFallbackText: { color: 'white', fontWeight: '900', fontSize: 18 },
     authorName: { color: '#222', fontWeight: '900', fontSize: 14 },
     postTitle: { color: '#222', fontWeight: '900', fontSize: 16, marginBottom: 6 },
+    postTitleCompact: { fontSize: 14, lineHeight: 18 },
     postMeta: { color: '#999', fontSize: 11, fontWeight: '700' },
     postDescription: { color: '#555', fontSize: 13, lineHeight: 19, marginBottom: 10 },
+    postDescriptionCompact: { fontSize: 12, lineHeight: 17, marginBottom: 8 },
     postImage: { width: '100%', height: 260, borderRadius: 14, backgroundColor: '#eee' },
+    postImageCompact: { height: 140, borderRadius: 12 },
     postActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
     likeButton: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     likeIcon: { fontSize: 20, color: '#888' },
@@ -683,8 +716,8 @@ const styles = StyleSheet.create({
     bannerError: { backgroundColor: 'rgba(231, 76, 60, 0.2)', borderWidth: 1, borderColor: '#e74c3c' },
     bannerSuccess: { backgroundColor: 'rgba(46, 204, 113, 0.2)', borderWidth: 1, borderColor: '#2ecc71' },
     bannerText: { color: 'white', fontWeight: 'bold', fontSize: 13, textAlign: 'center' },
-    navContainer: { position: 'absolute', bottom: 15, left: 0, right: 0, alignItems: 'center' },
-    tabBar: { flexDirection: 'row', backgroundColor: '#fff', width: '92%', borderRadius: 20, paddingVertical: 10, elevation: 10, justifyContent: 'space-around', alignItems: 'center' },
+    navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
+    tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
     tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     tabBarText: { fontSize: 13, fontWeight: '900', color: '#bbb', letterSpacing: 1 },
     tabBarTextActive: { color: '#ff7a00' },

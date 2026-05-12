@@ -192,16 +192,25 @@ export default function Perfil() {
     const [siguiendo, setSiguiendo] = useState(false);
     const [analisis, setAnalisis] = useState({ locked: true, recordCount: 0 });
 
+    const getTargetId = (value, fallback) => {
+        if (Array.isArray(value)) return value[0] || fallback;
+        return value || fallback;
+    };
+
     useEffect(() => {
         cargarDatosIniciales();
     }, [params.id]);
 
     const cargarDatosIniciales = async () => {
         setLoading(true);
+        setUsuario(null);
+        setPublicaciones([]);
+        setSiguiendo(false);
+        setEditando(false);
         const myId = await AsyncStorage.getItem("userId");
         setPropioId(myId);
-        
-        const targetId = params.id || myId;
+
+        const targetId = getTargetId(params.id, myId);
         setEsPropioPerfil(targetId === myId);
         
         const usuarioPerfil = await cargarUsuario(targetId);
