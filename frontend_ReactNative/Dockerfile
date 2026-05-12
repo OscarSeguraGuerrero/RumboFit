@@ -1,12 +1,12 @@
-FROM node:20-bullseye-slim
+FROM node:20
 
 WORKDIR /app
 
 # Copiamos archivos de dependencias
 COPY package*.json ./
 
-# Instalamos dependencias de la app
-RUN npm install
+# Instalamos dependencias
+RUN npm install --no-audit --no-fund --loglevel info
 
 # Copiamos el resto del codigo
 COPY . .

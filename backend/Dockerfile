@@ -3,10 +3,10 @@ FROM node:18
 WORKDIR /app
 
 # Copiar dependencias
-COPY package.json ./
+COPY package*.json ./
 
-# Instalar dependencias y dejar Prisma preparado en build
-RUN npm install
+# Instalar dependencias
+RUN npm install --loglevel info
 
 # Copiar codigo fuente
 COPY . .
