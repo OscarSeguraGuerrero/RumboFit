@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const Stripe = require('stripe');
 const {
     listDocuments,
     getDocument,
@@ -17,6 +18,8 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const PREMIUM_PRICE_CENTS = parseInt(process.env.PREMIUM_PRICE_CENTS) || 999;
 const JWT_SECRET = process.env.JWT_SECRET || 'rumbofit_secret_key_2024';
 
 // Configuración de Email (Nodemailer)
@@ -1898,6 +1901,74 @@ app.delete('/api/publicaciones/:id', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Error al eliminar publicación" });
+    }
+});
+
+// ==========================================
+// PREMIUM — STRIPE SANDBOX (HT-07)
+// ==========================================
+
+// Crear un PaymentIntent en Stripe y devolver el clientSecret al frontend
+app.post('/api/premium/crear-intent', async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId requerido' });
+
+    try {
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: PREMIUM_PRICE_CENTS,
+            currency: 'eur',
+            metadata: { userId: String(userId) },
+            automatic_payment_methods: { enabled: true }
+        });
+
+        res.json({
+            success: true,
+            clientSecret: paymentIntent.client_secret,
+            publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+        });
+    } catch (error) {
+        console.error('Stripe error:', error.message);
+        res.status(500).json({ error: 'No se pudo iniciar el proceso de pago' });
+    }
+});
+
+// Activar Premium tras confirmación de pago exitoso en Stripe
+app.post('/api/premium/activar', async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId requerido' });
+
+    try {
+        const usuario = await prisma.usuario.update({
+            where: { id: parseInt(userId) },
+            data: { es_premium: true }
+        });
+
+        await syncUserToFirebase(usuario);
+
+        res.json({ success: true, es_premium: true });
+    } catch (error) {
+        console.error('Error activando premium:', error.message);
+        res.status(500).json({ error: 'No se pudo activar la suscripción' });
+    }
+});
+
+// Cancelar suscripción Premium
+app.post('/api/premium/cancelar', async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId requerido' });
+
+    try {
+        const usuario = await prisma.usuario.update({
+            where: { id: parseInt(userId) },
+            data: { es_premium: false }
+        });
+
+        await syncUserToFirebase(usuario);
+
+        res.json({ success: true, es_premium: false });
+    } catch (error) {
+        console.error('Error cancelando premium:', error.message);
+        res.status(500).json({ error: 'No se pudo cancelar la suscripción' });
     }
 });
 
