@@ -1932,6 +1932,46 @@ app.post('/api/premium/crear-intent', async (req, res) => {
     }
 });
 
+// Activar Premium tras confirmación de pago exitoso en Stripe
+app.post('/api/premium/activar', async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId requerido' });
+
+    try {
+        const usuario = await prisma.usuario.update({
+            where: { id: parseInt(userId) },
+            data: { es_premium: true }
+        });
+
+        await syncUserToFirebase(usuario);
+
+        res.json({ success: true, es_premium: true });
+    } catch (error) {
+        console.error('Error activando premium:', error.message);
+        res.status(500).json({ error: 'No se pudo activar la suscripción' });
+    }
+});
+
+// Cancelar suscripción Premium
+app.post('/api/premium/cancelar', async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId requerido' });
+
+    try {
+        const usuario = await prisma.usuario.update({
+            where: { id: parseInt(userId) },
+            data: { es_premium: false }
+        });
+
+        await syncUserToFirebase(usuario);
+
+        res.json({ success: true, es_premium: false });
+    } catch (error) {
+        console.error('Error cancelando premium:', error.message);
+        res.status(500).json({ error: 'No se pudo cancelar la suscripción' });
+    }
+});
+
 // --- ARRANCAR SERVIDOR ---
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor RumboFit corriendo en http://10.195.60.198:${PORT}`);

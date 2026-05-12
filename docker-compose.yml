@@ -12,9 +12,7 @@ services:
     init: true
     # AÑADIDO: Forzamos el comando con npx para evitar el error "expo: not found"
     command: >
-      sh -c "npm install &&
-      export REACT_NATIVE_PACKAGER_HOSTNAME=$(node -e \"const fs=require('fs'); const match=fs.readFileSync('config.js','utf8').match(/IP_PC\\s*=\\s*['\\\"]([^'\\\"]+)/); if (!match) process.exit(1); console.log(match[1]);\") &&
-      npx expo start --lan --port 8082"
+      sh -c "npm install && export REACT_NATIVE_PACKAGER_HOSTNAME=$(node -e \"const fs=require('fs'); const match=fs.readFileSync('config.js','utf8').match(/IP_PC\\s*=\\s*['\\\"]([^'\\\"]+)/); if (!match) process.exit(1); console.log(match[1]);\") && npx expo start --lan --port 8082"
 
   # BASE DE DATOS: PostgreSQL
   db:
@@ -31,7 +29,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     # AÑADIDO: Healthcheck para comprobar que Postgres está listo para recibir conexiones
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rumbofit -d rumbofit"]
+      test: [ "CMD-SHELL", "pg_isready -U rumbofit -d rumbofit" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -45,6 +43,9 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: "postgresql://rumbofit:password123@db:5432/rumbofit?schema=public"
+      STRIPE_SECRET_KEY: "sk_test_51TWL1tHYDCqDcwTab9fyJFyi1PhHNpfK35P1F0RtkQD5NzYKER0hOIadlSR9EmWFAzhgxPsn1nkIPeFJHbBcIYlm00cpkqXRwr"
+      STRIPE_PUBLISHABLE_KEY: "pk_test_51TWL1tHYDCqDcwTaFil3GxKsyWj6UJNmnk0gbXPCjWtJQy1up4RgEYbOzZYBMM42dUvcOS59gA81vxfVYlMbtsK7007pRjq7cs"
+      PREMIUM_PRICE_CENTS: "999"
     volumes:
       - ./backend:/app
       - /app/node_modules
