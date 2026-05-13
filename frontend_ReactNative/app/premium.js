@@ -1,15 +1,87 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useStripe } from '@stripe/stripe-react-native';
+import { API_URL } from '../config';
 
 export default function PremiumScreen() {
     const [loading, setLoading] = useState(false);
+    const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
     const handleSubscribe = async () => {
-        // Para luego
-        console.log("Iniciar pago...");
+        setLoading(true);
+        try {
+            const userId = await AsyncStorage.getItem("userId");
+            if (!userId) {
+                Alert.alert("Error", "No has iniciado sesión");
+                setLoading(false);
+                return;
+            }
+
+            // 1. Crear el PaymentIntent en nuestro backend
+            const response = await fetch(`${API_URL}/premium/crear-intent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            const data = await response.json();
+            
+            if (!response.ok) throw new Error(data.error || "Error al iniciar pago");
+
+            // 2. Inicializar el SDK de Stripe con el clientSecret
+            const { error: initError } = await initPaymentSheet({
+                merchantDisplayName: 'RumboFit',
+                paymentIntentClientSecret: data.clientSecret,
+                returnURL: 'rumbofit://premium'
+            });
+
+            if (initError) throw new Error(initError.message);
+
+            // 3. Mostrar el formulario nativo de pago de Stripe al usuario
+            const { error: paymentError } = await presentPaymentSheet();
+
+            if (paymentError) {
+                if (paymentError.code !== 'Canceled') {
+                    Alert.alert("Pago fallido", paymentError.message);
+                }
+                setLoading(false);
+                return;
+            }
+
+            // 4. Si el pago fue exitoso, activar el Premium en el backend
+            const activateRes = await fetch(`${API_URL}/premium/activar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            
+            const activateData = await activateRes.json();
+            if (activateData.success) {
+                // Actualizar la caché local para que la app sepa que ya somos premium
+                const profileDataStr = await AsyncStorage.getItem("profileData");
+                if (profileDataStr) {
+                    const profileData = JSON.parse(profileDataStr);
+                    if (profileData.usuario) profileData.usuario.es_premium = true;
+                    await AsyncStorage.setItem("profileData", JSON.stringify(profileData));
+                }
+
+                Alert.alert(
+                    "¡Bienvenido a Premium! 👑", 
+                    "Tu suscripción se ha activado correctamente. Ya puedes disfrutar de todos los beneficios.",
+                    [{ text: "Empezar", onPress: () => router.back() }]
+                );
+            } else {
+                throw new Error("El pago se procesó pero falló la activación.");
+            }
+
+        } catch (error) {
+            console.error("Stripe Checkout Error:", error);
+            Alert.alert("Error", error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
