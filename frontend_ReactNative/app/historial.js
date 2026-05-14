@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated, ActivityIndicator, Alert, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
@@ -14,6 +14,7 @@ export default function Historial() {
     const [historialData, setHistorialData] = useState({});
     const [esPremium, setEsPremium] = useState(false);
     const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
+    const [modalHistorialPremium, setModalHistorialPremium] = useState(false);
 
     const [fechaReferencia, setFechaReferencia] = useState(new Date());
     const [diaSeleccionado, setDiaSeleccionado] = useState(new Date().toISOString().split('T')[0]);
@@ -80,8 +81,7 @@ export default function Historial() {
         const distanciaMeses = Math.floor(diffDays / 30);
 
         if (distanciaMeses > 3 && !esPremium) {
-            setMsgGeneral({ text: "Plan Premium requerido: Las cuentas gratuitas solo ven los últimos 3 meses.", type: 'error' });
-            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 5000);
+            setModalHistorialPremium(true);
             return;
         }
         setFechaReferencia(nueva);
@@ -201,8 +201,7 @@ export default function Historial() {
                                     style={[styles.dayCell, esSeleccionado && styles.daySelected, estaBloqueado && { opacity: 0.3 }]}
                                     onPress={() => {
                                         if (estaBloqueado) {
-                                            setMsgGeneral({ text: "Actualiza a Premium para ver registros de hace más de 3 meses.", type: 'error' });
-                                            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+                                            setModalHistorialPremium(true);
                                         } else {
                                             setDiaSeleccionado(item.fechaStr);
                                         }
@@ -305,6 +304,36 @@ export default function Historial() {
                     )}
                 </View>
             </ScrollView>
+
+            {/* MODAL HISTORIAL PREMIUM (HU-56) */}
+            <Modal
+                visible={modalHistorialPremium}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setModalHistorialPremium(false)}
+            >
+                <View style={styles.premiumModalOverlay}>
+                    <View style={styles.premiumModalBox}>
+                        <Text style={styles.premiumModalIcon}>📅</Text>
+                        <Text style={styles.premiumModalTitle}>Historial bloqueado</Text>
+                        <Text style={styles.premiumModalMsg}>
+                            Las cuentas gratuitas solo pueden ver los <Text style={{ fontWeight: 'bold', color: '#ff7a00' }}>últimos 3 meses</Text> de historial.{'\n\n'}Actualiza a Premium para acceder a tu historial completo sin límites.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.premiumModalBtnPrimary}
+                            onPress={() => { setModalHistorialPremium(false); router.push('/premium'); }}
+                        >
+                            <Text style={styles.premiumModalBtnPrimaryText}>Mejorar a Premium</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.premiumModalBtnSecondary}
+                            onPress={() => setModalHistorialPremium(false)}
+                        >
+                            <Text style={styles.premiumModalBtnSecondaryText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -343,4 +372,19 @@ const styles = StyleSheet.create({
     noData: { color: '#aaa', textAlign: 'center', marginTop: 20 },
     mealMacrosRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
     mealMacroItem: { fontSize: 12, fontWeight: '700', color: '#ff7a00' },
+    msgBanner: { margin: 10, padding: 12, borderRadius: 10 },
+    msgError: { backgroundColor: '#ffe0e0' },
+    msgSuccess: { backgroundColor: '#e0ffe0' },
+    msgText: { textAlign: 'center', fontSize: 13, fontWeight: '700' },
+
+    // --- MODAL PREMIUM (HU-56) ---
+    premiumModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 30 },
+    premiumModalBox: { backgroundColor: '#1e1e1e', borderRadius: 20, padding: 28, alignItems: 'center', width: '100%', maxWidth: 360 },
+    premiumModalIcon: { fontSize: 52, marginBottom: 12 },
+    premiumModalTitle: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
+    premiumModalMsg: { color: '#aaaaaa', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+    premiumModalBtnPrimary: { backgroundColor: '#ff7a00', borderRadius: 25, paddingVertical: 14, paddingHorizontal: 30, width: '100%', alignItems: 'center', marginBottom: 10 },
+    premiumModalBtnPrimaryText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+    premiumModalBtnSecondary: { paddingVertical: 10, paddingHorizontal: 20 },
+    premiumModalBtnSecondaryText: { color: '#888888', fontSize: 14, fontWeight: '600' },
 });
