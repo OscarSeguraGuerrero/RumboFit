@@ -239,6 +239,7 @@ export default function Rutina() {
     const [confirmModal, setConfirmModal] = useState({ visible: false, title: '', message: '', onConfirm: null });
     const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
     const [errorModal, setErrorModal] = useState('');
+    const [modalLimitePremium, setModalLimitePremium] = useState(false);
 
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -545,8 +546,7 @@ export default function Rutina() {
 
     const iniciarNuevaRutina = async () => {
         if (!usuarioCompleto?.es_premium && listaRutinas.length >= 3) {
-            setMsgGeneral({ text: "Límite alcanzado: Las cuentas gratuitas solo pueden tener hasta 3 rutinas. Elimina una para crear más.", type: 'error' });
-            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 5000);
+            setModalLimitePremium(true);
             return;
         }
 
@@ -2061,6 +2061,36 @@ export default function Rutina() {
                     <Text style={styles.msgText}>{msgGeneral.text}</Text>
                 </View>
             ) : null}
+
+            {/* MODAL LÍMITE PREMIUM (HU-55) */}
+            <Modal
+                visible={modalLimitePremium}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setModalLimitePremium(false)}
+            >
+                <View style={styles.premiumModalOverlay}>
+                    <View style={styles.premiumModalBox}>
+                        <Text style={styles.premiumModalIcon}>👑</Text>
+                        <Text style={styles.premiumModalTitle}>Límite de rutinas alcanzado</Text>
+                        <Text style={styles.premiumModalMsg}>
+                            Las cuentas gratuitas pueden guardar hasta <Text style={{ fontWeight: 'bold', color: '#ff7a00' }}>3 rutinas</Text>.{'\n\n'}Actualiza a Premium para crear rutinas ilimitadas y mucho más.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.premiumModalBtnPrimary}
+                            onPress={() => { setModalLimitePremium(false); router.push('/premium'); }}
+                        >
+                            <Text style={styles.premiumModalBtnPrimaryText}>Mejorar a Premium</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.premiumModalBtnSecondary}
+                            onPress={() => setModalLimitePremium(false)}
+                        >
+                            <Text style={styles.premiumModalBtnSecondaryText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -2379,4 +2409,15 @@ const styles = StyleSheet.create({
     communityPostDescription: { color: '#555', fontSize: 13, lineHeight: 19, marginBottom: 10 },
     communityPostImage: { width: '100%', height: 260, borderRadius: 14, backgroundColor: '#eee' },
     communityDeleteText: { color: '#e74c3c', fontWeight: '800', fontSize: 12 },
+
+    // --- MODAL PREMIUM (HU-55) ---
+    premiumModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 30 },
+    premiumModalBox: { backgroundColor: '#1e1e1e', borderRadius: 20, padding: 28, alignItems: 'center', width: '100%', maxWidth: 360 },
+    premiumModalIcon: { fontSize: 52, marginBottom: 12 },
+    premiumModalTitle: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
+    premiumModalMsg: { color: '#aaaaaa', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+    premiumModalBtnPrimary: { backgroundColor: '#ff7a00', borderRadius: 25, paddingVertical: 14, paddingHorizontal: 30, width: '100%', alignItems: 'center', marginBottom: 10 },
+    premiumModalBtnPrimaryText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+    premiumModalBtnSecondary: { paddingVertical: 10, paddingHorizontal: 20 },
+    premiumModalBtnSecondaryText: { color: '#888888', fontSize: 14, fontWeight: '600' },
 });
