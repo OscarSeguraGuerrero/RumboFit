@@ -1,11 +1,11 @@
 import { Stack } from 'expo-router';
-import { StripeProvider } from '@stripe/stripe-react-native';
 import { STRIPE_PUBLISHABLE_KEY } from '../config';
+import StripeWrapper from '../components/StripeWrapper';
 
 export default function Layout() {
   return (
-    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+    <StripeWrapper publishableKey={STRIPE_PUBLISHABLE_KEY}>
       <Stack screenOptions={{ headerShown: false }} />
-    </StripeProvider>
+    </StripeWrapper>
   );
 }

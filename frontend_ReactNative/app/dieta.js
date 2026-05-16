@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import React from 'react';
 import { API_URL } from '../config';
 import { getUnidad, getCantidadInicial, convertirCantidadAGramos, convertirGramosACantidad, calcularMacrosAlimento } from '../utils';
+import MainHeader from '../components/MainHeader';
 import {
     Image,
     ScrollView,
@@ -106,7 +107,6 @@ export default function Dieta() {
     const franjasDisponibles = ['Desayuno', 'Media mañana', 'Almuerzo', 'Merienda', 'Cena', 'Comida extra'];
     const [tituloComida, setTituloComida] = useState(franjasDisponibles[0]);
     const [guardando, setGuardando] = useState(false);
-    const [menuVisible, setMenuVisible] = useState(false);
 
     // Estado para crear alimento nuevo
     const [modalAlimentoVisible, setModalAlimentoVisible] = useState(false);
@@ -362,11 +362,6 @@ export default function Dieta() {
         });
     };
 
-    const cerrarSesion = async () => {
-        setMenuVisible(false);
-        await AsyncStorage.clear();
-        router.replace('/');
-    };
 
     const añadirAlimentoAComida = async (comidaId, alimento) => {
         try {
@@ -428,48 +423,7 @@ export default function Dieta() {
 
     return (
         <View style={styles.container}>
-            {/* --- TOP BAR --- */}
-            <View style={styles.topBar}>
-                <Image source={require('../assets/images/logo1.png')} style={styles.topBarLogo} resizeMode="contain" />
-                <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.avatarGlow}>
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                            {usuarioCompleto?.nombre ? usuarioCompleto.nombre[0].toUpperCase() : 'U'}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
-
-            {/* --- MENÚ DESPLEGABLE --- */}
-            <Modal transparent visible={menuVisible} animationType="fade">
-                <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
-                    <View style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback>
-                            <View style={styles.dropdown}>
-                                <Text style={styles.dropdownHeader}>{usuarioCompleto?.nombre || 'Usuario'}</Text>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/perfil'); }}>
-                                    <Text style={styles.dropdownText}>Ver Perfil</Text>
-                                </TouchableOpacity>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity
-                                    style={styles.dropdownItem}
-                                    onPress={() => { setMenuVisible(false); router.push('/historial'); }}
-                                >
-                                    <Text style={styles.dropdownText}>Mi Historial</Text>
-                                </TouchableOpacity>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={cerrarSesion}>
-                                    <Text style={[styles.dropdownText, {color: '#ff4444'}]}>Cerrar Sesión</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
-
-
-
+            <MainHeader />
             <View style={styles.mainCard}>
                 {(() => {
                     const comidaDetalle = comidaDetalleId ? comidasHoy.find(c => c.id === comidaDetalleId) : null;
@@ -902,21 +856,7 @@ export default function Dieta() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#ffffff', paddingTop: 10 },
-    loading: { flex: 1, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center' },
-    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
-    topBarLogo: { width: 140, height: 51, tintColor: '#ff7a00', marginLeft: -35 },
-
-    // ESTILOS DEL AVATAR Y MENÚ DESPLEGABLE
-    avatarGlow: { padding: 3, borderRadius: 26, backgroundColor: 'rgba(255, 122, 0, 0.15)' },
-    avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
-    avatarText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 70, paddingRight: 15 },
-    dropdown: { backgroundColor: '#fff', borderRadius: 16, elevation: 12, minWidth: 190, overflow: 'hidden' },
-    dropdownHeader: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', paddingVertical: 14, paddingHorizontal: 16 },
-    dropdownItem: { paddingVertical: 14, paddingHorizontal: 16 },
-    dropdownText: { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
-    dropdownDivider: { height: 1, backgroundColor: '#f0f0f0' },
+    container: { flex: 1, backgroundColor: '#ffffff' },
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
     header: { marginBottom: 15 },

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useStripe } from '@stripe/stripe-react-native';
+import { useStripeConditional } from '../hooks/useStripeConditional';
 import { API_URL } from '../config';
 
 export default function PremiumScreen() {
     const [loading, setLoading] = useState(false);
-    const { initPaymentSheet, presentPaymentSheet } = useStripe();
+    const { initPaymentSheet, presentPaymentSheet } = useStripeConditional();
 
     const handleSubscribe = async () => {
+        if (Platform.OS === 'web') {
+            Alert.alert("No disponible", "Los pagos nativos no están disponibles en la versión web.");
+            return;
+        }
+
         setLoading(true);
         try {
             const userId = await AsyncStorage.getItem("userId");

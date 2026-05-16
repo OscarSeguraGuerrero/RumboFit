@@ -1866,8 +1866,128 @@ app.post('/api/dieta/comida/:id/alimento', async (req, res) => {
         });
         res.json({ success: true, item: nuevo });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Error al añadir alimento a la comida" });
+    }
+});
+
+// Crear publicación (HU-42)
+app.post('/api/publicaciones', async (req, res) => {
+    const { userId, titulo, descripcion, imagenes, entrenamientoId } = req.body;
+    
+    if (!userId || !titulo || !descripcion) {
+        return res.status(400).json({ error: "Faltan campos obligatorios" });
+    }
+
+    try {
+        const id = parseInt(userId);
+        
+        // Creamos la publicación en la base de datos
+        const publicacion = await prisma.publicacion.create({
+            data: {
+                usuario_id: id,
+                titulo,
+                descripcion,
+                entrenamiento_id: entrenamientoId ? parseInt(entrenamientoId) : null,
+                imagenes: {
+                    create: (imagenes || []).map((url, index) => ({
+                        url,
+                        orden: index
+                    }))
+                }
+            },
+            include: {
+                usuario: {
+                    select: { id: true, nombre: true, foto_perfil: true }
+                },
+                imagenes: true,
+                _count: {
+                    select: { me_gusta: true }
+                }
+            }
+        });
+
+        // Formatear para el frontend
+        const formatted = {
+            id: publicacion.id,
+            usuario_id: publicacion.usuario_id,
+            autor_nombre: publicacion.usuario.nombre,
+            autor_foto: publicacion.usuario.foto_perfil,
+            titulo: publicacion.titulo,
+            descripcion: publicacion.descripcion,
+            fecha_publicacion: publicacion.fecha_publicacion,
+            imagenes: publicacion.imagenes,
+            likedByMe: false,
+            _count: publicacion._count
+        };
+
+        res.json({ success: true, publicacion: formatted });
+    } catch (error) {
+        console.error("Error al crear publicación:", error);
+        res.status(500).json({ error: "No se pudo crear la publicación" });
+    }
+});
+
+// GET Feed de publicaciones (HU-41)
+app.get('/api/publicaciones/feed/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const id = parseInt(userId);
+        
+        // 1. Obtener los IDs de los usuarios seguidos
+        const seguidos = await prisma.seguidor.findMany({
+            where: { seguidor_id: id },
+            select: { seguido_id: true }
+        });
+        const followedIds = seguidos.map(s => s.seguido_id);
+
+        if (followedIds.length === 0) {
+            return res.json({ success: true, publicaciones: [] });
+        }
+
+        // 2. Obtener publicaciones de esos usuarios (orden descendente)
+        const publicaciones = await prisma.publicacion.findMany({
+            where: {
+                usuario_id: { in: followedIds }
+            },
+            include: {
+                usuario: {
+                    select: { id: true, nombre: true, foto_perfil: true }
+                },
+                imagenes: true,
+                _count: {
+                    select: { me_gusta: true }
+                }
+            },
+            orderBy: { fecha_publicacion: 'desc' }
+        });
+
+        // 3. Verificar si le gustan al usuario actual
+        const userLikes = await prisma.me_gusta.findMany({
+            where: {
+                usuario_id: id,
+                publicacion_id: { in: publicaciones.map(p => p.id) }
+            },
+            select: { publicacion_id: true }
+        });
+        const likedPostIds = new Set(userLikes.map(l => l.publicacion_id));
+
+        const feed = publicaciones.map(p => ({
+            id: p.id,
+            usuario_id: p.usuario_id,
+            autor_nombre: p.usuario.nombre,
+            autor_foto: p.usuario.foto_perfil,
+            titulo: p.titulo,
+            descripcion: p.descripcion,
+            fecha_publicacion: p.fecha_publicacion,
+            imagenes: p.imagenes,
+            likedByMe: likedPostIds.has(p.id),
+            _count: p._count
+        }));
+
+        res.json({ success: true, publicaciones: feed });
+    } catch (error) {
+        console.error('Error cargando feed:', error);
+        res.status(500).json({ success: false, error: 'No se pudo cargar el tablón' });
     }
 });
 
@@ -1884,23 +2004,89 @@ app.get('/api/publicaciones/usuario/:id', async (req, res) => {
     }
 });
 
-// Eliminar una publicación
+// Eliminar una publicación (HU-44)
 app.delete('/api/publicaciones/:id', async (req, res) => {
+    const { id } = req.params;
+    const { userId } = req.body;
     try {
-        const id = parseInt(req.params.id);
-        const userId = req.body?.userId ? parseInt(req.body.userId) : null;
-        if (userId) {
-            await syncPostsFromPrisma(userId);
-        }
-        const post = await getDocument(SOCIAL_POSTS_COLLECTION, String(id));
-        if (!post) {
-            return res.status(404).json({ error: "No encontrado" });
-        }
-        await deleteDocument(SOCIAL_POSTS_COLLECTION, String(id));
+        const postId = parseInt(id);
+        const uid = parseInt(userId);
+
+        // Verificar propiedad
+        const post = await prisma.publicacion.findUnique({
+            where: { id: postId }
+        });
+
+        if (!post) return res.status(404).json({ error: "Publicación no encontrada" });
+        if (post.usuario_id !== uid) return res.status(403).json({ error: "No tienes permiso para borrar esto" });
+
+        await prisma.publicacion.delete({
+            where: { id: postId }
+        });
+
         res.json({ success: true });
     } catch (error) {
-        console.error(error);
+        console.error("Error al eliminar publicación:", error);
         res.status(500).json({ error: "Error al eliminar publicación" });
+    }
+});
+
+// Obtener historial completo para estadísticas (HU-39)
+app.get('/api/usuarios/:id/historial', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        
+        // Obtenemos comidas (usando Registro_Diario como base)
+        const registrosDiarios = await prisma.registro_Diario.findMany({
+            where: { usuario_id: userId },
+            include: {
+                comidas: {
+                    include: { alimento: true }
+                }
+            },
+            orderBy: { fecha: 'asc' }
+        });
+
+        // Obtenemos entrenamientos realizados
+        const entrenamientos = await prisma.entrenamiento_realizado.findMany({
+            where: { usuario_id: userId },
+            include: {
+                series: {
+                    include: { ejercicio: true }
+                }
+            },
+            orderBy: { fecha: 'asc' }
+        });
+
+        // Agrupamos por fecha (YYYY-MM-DD)
+        const historial = {};
+
+        registrosDiarios.forEach(reg => {
+            const dateKey = reg.fecha.toISOString().split('T')[0];
+            if (!historial[dateKey]) historial[dateKey] = { comidas: [], entrenamientos: [] };
+            
+            const comidasConMacros = reg.comidas.map(c => ({
+                ...c,
+                macros: {
+                    kcal: (c.alimento.kcal * c.cantidad_gramos) / 100,
+                    prot: (c.alimento.proteinas * c.cantidad_gramos) / 100,
+                    carb: (c.alimento.carbohidratos * c.cantidad_gramos) / 100,
+                    gras: (c.alimento.grasas * c.cantidad_gramos) / 100
+                }
+            }));
+            historial[dateKey].comidas.push(...comidasConMacros);
+        });
+
+        entrenamientos.forEach(ent => {
+            const dateKey = ent.fecha.toISOString().split('T')[0];
+            if (!historial[dateKey]) historial[dateKey] = { comidas: [], entrenamientos: [] };
+            historial[dateKey].entrenamientos.push(ent);
+        });
+
+        res.json({ success: true, historial });
+    } catch (error) {
+        console.error("Error al obtener historial:", error);
+        res.status(500).json({ success: false, error: "Fallo al recuperar historial" });
     }
 });
 

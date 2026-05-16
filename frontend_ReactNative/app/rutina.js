@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
 import React from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { API_URL } from '../config';
+import MainHeader from '../components/MainHeader';
 import {
     Image,
     Modal,
@@ -193,7 +194,6 @@ export default function Rutina() {
     const [usuario, setUsuario] = useState({ nombre: 'Usuario' });
     const [usuarioCompleto, setUsuarioCompleto] = useState(null);
     const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
-    const [menuVisible, setMenuVisible] = useState(false);
     const [rutinaEditable, setRutinaEditable] = useState({});
     const [entrenamientoCompletado, setEntrenamientoCompletado] = useState(false);
     const [editando, setEditando] = useState(false);
@@ -759,14 +759,6 @@ export default function Rutina() {
 
     const irAPerfil = () => router.push('/perfil');
 
-    const cerrarSesion = async () => {
-        await AsyncStorage.clear();
-        if (typeof router.dismissAll === 'function') {
-            router.dismissAll();
-        }
-        router.replace('/');
-    };
-
     const cargarRutinasGuardadas = async () => {
         const userId = await AsyncStorage.getItem("userId");
         if (!userId) {
@@ -1258,43 +1250,8 @@ export default function Rutina() {
 
     return (
         <View style={{ flex: 1 }}>
+            <MainHeader />
             <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-
-            {/* --- TOP BAR --- */}
-            <View style={styles.topBar}>
-                <Image source={require('../assets/images/logo1.png')} style={styles.topBarLogo} resizeMode="contain" />
-                <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.avatarGlow}>
-                    <View style={styles.avatar}><Text style={styles.avatarText}>{usuario.nombre[0].toUpperCase()}</Text></View>
-                </TouchableOpacity>
-            </View>
-
-            {/* --- MENÚ DESPLEGABLE --- */}
-            <Modal transparent visible={menuVisible} animationType="fade">
-                <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
-                    <View style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback>
-                            <View style={styles.dropdown}>
-                                <Text style={styles.dropdownHeader}>{usuario.nombre}</Text>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); irAPerfil(); }}>
-                                    <Text style={styles.dropdownText}>Ver Perfil</Text>
-                                </TouchableOpacity>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity
-                                    style={styles.dropdownItem}
-                                    onPress={() => { setMenuVisible(false); router.push('/historial'); }}
-                                >
-                                    <Text style={styles.dropdownText}>Mi Historial</Text>
-                                </TouchableOpacity>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); cerrarSesion(); }}>
-                                    <Text style={[styles.dropdownText, {color: '#ff4444'}]}>Cerrar Sesión</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
 
             {/* MODAL CONFIRMACIÓN ELIMINAR RUTINA */}
             <Modal transparent={true} visible={confirmModal.visible} animationType="fade">
@@ -2096,19 +2053,7 @@ export default function Rutina() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#ffffff', paddingTop: 10 },
-    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
-    topBarLogo: { width: 140, height: 51, tintColor: '#ff7a00', marginLeft: -35 },
-    avatarGlow: { padding: 3, borderRadius: 26, backgroundColor: 'rgba(255, 122, 0, 0.15)' },
-    avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
-    avatarText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 70, paddingRight: 15 },
-    dropdown: { backgroundColor: '#fff', borderRadius: 16, elevation: 12, minWidth: 190, overflow: 'hidden' },
-    dropdownHeader: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', paddingVertical: 14, paddingHorizontal: 16 },
-    dropdownItem: { paddingVertical: 14, paddingHorizontal: 16 },
-    dropdownText: { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
-    dropdownDivider: { height: 1, backgroundColor: '#f0f0f0' },
+    container: { flex: 1, backgroundColor: '#ffffff' },
 
     mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
     header: { marginBottom: 15, position: 'relative' },

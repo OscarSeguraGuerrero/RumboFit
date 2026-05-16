@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import {
     Image,
@@ -14,6 +14,7 @@ import {
     View,
 } from 'react-native';
 import { API_URL } from '../config';
+import MainHeader from '../components/MainHeader';
 
 async function parseResponse(response) {
     const text = await response.text();
@@ -37,10 +38,9 @@ function relativeTime(dateString) {
 export default function RedSocial() {
     const router = useRouter();
     const [userId, setUserId] = useState(null);
-    const [userName, setUserName] = useState('Usuario');
-    const [menuVisible, setMenuVisible] = useState(false);
     const [createVisible, setCreateVisible] = useState(false);
     const [feed, setFeed] = useState([]);
+    const searchInputRef = useRef(null);
     const [myPosts, setMyPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [publishing, setPublishing] = useState(false);
@@ -49,7 +49,6 @@ export default function RedSocial() {
     const [search, setSearch] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [searching, setSearching] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [topLikedPosts, setTopLikedPosts] = useState([]);
 
@@ -58,15 +57,6 @@ export default function RedSocial() {
         setTimeout(() => setMessage({ text: '', type: '' }), 4000);
     };
 
-    const loadUnreadCount = async (currentUserId) => {
-        try {
-            const response = await fetch(`${API_URL}/notificaciones/${currentUserId}/unread-count`);
-            const data = await parseResponse(response);
-            if (response.ok && data.success) {
-                setUnreadCount(Number(data.count || 0));
-            }
-        } catch {}
-    };
 
     const loadFeed = async (currentUserId) => {
         setLoading(true);
@@ -129,11 +119,9 @@ export default function RedSocial() {
         }
 
         setUserId(storedUserId);
-        if (storedUserName) setUserName(storedUserName);
         await Promise.all([
             loadFeed(storedUserId),
             loadMyPosts(storedUserId),
-            loadUnreadCount(storedUserId),
             loadTopLikedPosts(storedUserId)
         ]);
     };
@@ -147,7 +135,6 @@ export default function RedSocial() {
             if (!userId) return undefined;
             loadFeed(userId);
             loadMyPosts(userId);
-            loadUnreadCount(userId);
             loadTopLikedPosts(userId);
             return undefined;
         }, [userId])
@@ -228,6 +215,7 @@ export default function RedSocial() {
             }
 
             setMyPosts((prev) => [data.publicacion, ...prev]);
+            setFeed((prev) => [data.publicacion, ...prev]);
             setForm({ titulo: '', descripcion: '', imagenes: [] });
             setCreateVisible(false);
             showMessage('Publicación creada', 'success');
@@ -294,59 +282,10 @@ export default function RedSocial() {
         }
     };
 
-    const cerrarSesion = async () => {
-        setMenuVisible(false);
-        await AsyncStorage.clear();
-        if (typeof router.dismissAll === 'function') {
-            router.dismissAll();
-        }
-        router.replace('/');
-    };
 
     return (
         <View style={styles.container}>
-            <View style={styles.topBar}>
-                <Image source={require('../assets/images/logo1.png')} style={styles.topBarLogo} resizeMode="contain" />
-                <View style={styles.topRight}>
-                    <TouchableOpacity style={styles.bellButton} onPress={() => router.push('/notificaciones')}>
-                        <Text style={styles.bellIcon}>🔔</Text>
-                        {unreadCount > 0 ? <View style={styles.bellDot} /> : null}
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.avatarGlow}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <Modal transparent visible={menuVisible} animationType="fade">
-                <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
-                    <View style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback>
-                            <View style={styles.dropdown}>
-                                <Text style={styles.dropdownHeader}>{userName || 'Usuario'}</Text>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/perfil'); }}>
-                                    <Text style={styles.dropdownText}>Ver Perfil</Text>
-                                </TouchableOpacity>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/historial'); }}>
-                                    <Text style={styles.dropdownText}>Mi Historial</Text>
-                                </TouchableOpacity>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={() => { setMenuVisible(false); router.push('/notificaciones'); }}>
-                                    <Text style={styles.dropdownText}>Notificaciones</Text>
-                                </TouchableOpacity>
-                                <View style={styles.dropdownDivider} />
-                                <TouchableOpacity style={styles.dropdownItem} onPress={cerrarSesion}>
-                                    <Text style={[styles.dropdownText, { color: '#ff4444' }]}>Cerrar Sesión</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
+            <MainHeader />
 
             <Modal transparent visible={createVisible} animationType="fade">
                 <View style={styles.createOverlay}>
@@ -425,6 +364,7 @@ export default function RedSocial() {
                 </View>
 
                 <TextInput
+                    ref={searchInputRef}
                     style={styles.searchInput}
                     placeholder="Buscar usuarios por nombre"
                     placeholderTextColor="#999"
@@ -511,7 +451,10 @@ export default function RedSocial() {
                     ) : feed.length === 0 ? (
                         <View style={styles.emptyFeedCard}>
                             <Text style={styles.emptyFeedText}>Aún no hay actividad. ¡Busca a otros usuarios para empezar!</Text>
-                            <TouchableOpacity style={styles.emptyFeedButton} onPress={() => showMessage('Usa la barra superior para buscar usuarios', 'success')}>
+                            <TouchableOpacity 
+                                style={styles.emptyFeedButton} 
+                                onPress={() => searchInputRef.current?.focus()}
+                            >
                                 <Text style={styles.emptyFeedButtonText}>Buscar usuarios</Text>
                             </TouchableOpacity>
                         </View>
@@ -622,22 +565,7 @@ function FeaturedPostCard({ post, onOpenProfile, onOpenDetail }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#ffffff', paddingTop: 10 },
-    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
-    topBarLogo: { width: 140, height: 51, tintColor: '#ff7a00', marginLeft: -35 },
-    topRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    bellButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,122,0,0.12)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-    bellIcon: { fontSize: 18 },
-    bellDot: { position: 'absolute', top: 9, right: 9, width: 10, height: 10, borderRadius: 5, backgroundColor: '#ff3b30' },
-    avatarGlow: { padding: 3, borderRadius: 26, backgroundColor: 'rgba(255, 122, 0, 0.15)' },
-    avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ff7a00', justifyContent: 'center', alignItems: 'center' },
-    avatarText: {color: 'white', fontWeight: 'bold', fontSize: 18 },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 70, paddingRight: 15 },
-    dropdown: { backgroundColor: '#fff', borderRadius: 16, elevation: 12, minWidth: 190, overflow: 'hidden' },
-    dropdownHeader: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', paddingVertical: 14, paddingHorizontal: 16 },
-    dropdownItem: { paddingVertical: 14, paddingHorizontal: 16 },
-    dropdownText: { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
-    dropdownDivider: { height: 1, backgroundColor: '#f0f0f0' },
+    container: { flex: 1, backgroundColor: '#ffffff' },
     createOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: 20 },
     createCard: { width: '100%', maxWidth: 420, backgroundColor: 'white', borderRadius: 20, padding: 20 },
     confirmCard: { width: '100%', maxWidth: 420, backgroundColor: 'white', borderRadius: 20, padding: 20 },
