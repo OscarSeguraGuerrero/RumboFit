@@ -2,6 +2,54 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+function ImageCarousel({ imagenes }) {
+    const [idx, setIdx] = React.useState(0);
+    if (!imagenes || imagenes.length === 0) return null;
+    const urls = imagenes.map(img => img.url || img).filter(Boolean);
+    if (urls.length === 0) return null;
+    return (
+        <View style={carouselStyles.wrapper}>
+            <Image source={{ uri: urls[idx] }} style={carouselStyles.image} />
+            {urls.length > 1 && (
+                <>
+                    <TouchableOpacity
+                        style={[carouselStyles.arrow, carouselStyles.arrowLeft, idx === 0 && carouselStyles.arrowDisabled]}
+                        onPress={() => setIdx(i => Math.max(0, i - 1))}
+                        disabled={idx === 0}
+                    >
+                        <Text style={carouselStyles.arrowText}>‹</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[carouselStyles.arrow, carouselStyles.arrowRight, idx === urls.length - 1 && carouselStyles.arrowDisabled]}
+                        onPress={() => setIdx(i => Math.min(urls.length - 1, i + 1))}
+                        disabled={idx === urls.length - 1}
+                    >
+                        <Text style={carouselStyles.arrowText}>›</Text>
+                    </TouchableOpacity>
+                    <View style={carouselStyles.dots}>
+                        {urls.map((_, i) => (
+                            <View key={i} style={[carouselStyles.dot, i === idx && carouselStyles.dotActive]} />
+                        ))}
+                    </View>
+                </>
+            )}
+        </View>
+    );
+}
+
+const carouselStyles = StyleSheet.create({
+    wrapper: { width: '100%', aspectRatio: 1.4, backgroundColor: '#eee', marginBottom: 10, position: 'relative' },
+    image: { width: '100%', height: '100%' },
+    arrow: { position: 'absolute', top: '50%', marginTop: -22, backgroundColor: 'rgba(0,0,0,0.45)', width: 36, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    arrowLeft: { left: 8 },
+    arrowRight: { right: 8 },
+    arrowDisabled: { opacity: 0.2 },
+    arrowText: { color: 'white', fontSize: 28, fontWeight: '900', lineHeight: 32 },
+    dots: { position: 'absolute', bottom: 8, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.5)' },
+    dotActive: { backgroundColor: 'white', width: 9, height: 9 },
+});
 import { API_URL } from '../config';
 
 async function parseResponse(response) {
@@ -96,7 +144,7 @@ export default function PublicacionDetalle() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/redsocial')}>
                     <Text style={styles.backText}>Volver</Text>
                 </TouchableOpacity>
             </View>
@@ -118,13 +166,11 @@ export default function PublicacionDetalle() {
                     </TouchableOpacity>
 
                     <Text style={styles.title}>{post.titulo}</Text>
-                    {post.imagenes?.map((imagen, index) => (
-                        <Image key={`${post.id}-${index}`} source={{ uri: imagen.url }} style={styles.mainImage} />
-                    ))}
+                    <ImageCarousel imagenes={post.imagenes} />
                     <Text style={styles.description}>{post.descripcion}</Text>
 
                     <TouchableOpacity style={styles.likeButton} onPress={toggleLike}>
-                        <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>{post.likedByMe ? '♥' : '♡'}</Text>
+                        <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>{post.likedByMe ? '❤️' : '🤍'}</Text>
                         <Text style={styles.likeCount}>{post?._count?.me_gusta || 0}</Text>
                     </TouchableOpacity>
                 </ScrollView>

@@ -187,6 +187,8 @@ export default function Perfil() {
     const [nuevaFoto, setNuevaFoto] = useState('');
     const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
     const [confirmModal, setConfirmModal] = useState({ visible: false, postId: null });
+    const [cancelModalVisible, setCancelModalVisible] = useState(false);
+    const [cancelLoading, setCancelLoading] = useState(false);
 
     const [publicaciones, setPublicaciones] = useState([]);
     const [siguiendo, setSiguiendo] = useState(false);
@@ -211,7 +213,8 @@ export default function Perfil() {
         setPropioId(myId);
 
         const targetId = getTargetId(params.id, myId);
-        setEsPropioPerfil(targetId === myId);
+        // Aseguramos comparación de strings para evitar fallos por tipo
+        setEsPropioPerfil(String(targetId) === String(myId));
         
         const usuarioPerfil = await cargarUsuario(targetId);
         await cargarPublicaciones(targetId);
@@ -245,6 +248,8 @@ export default function Perfil() {
                     setNuevaFrecuencia(result.usuario.frecuencia_semanal?.toString() || '');
                     setNuevaFoto(result.usuario.foto_perfil || '');
                     return result.usuario;
+                } else {
+                    console.error("Error en respuesta de usuario:", result.error);
                 }
             }
         } catch (error) {
@@ -293,15 +298,25 @@ export default function Perfil() {
             });
             const data = await resp.json();
             if (data.success) {
-                setSiguiendo(!siguiendo);
-                // Actualizamos contadores localmente
+                const nuevoEstado = !siguiendo;
+                setSiguiendo(nuevoEstado);
+                
+                // Actualización reactiva del contador local (HU-46)
                 setUsuario(prev => ({
                     ...prev,
                     _count: {
                         ...prev._count,
-                        seguidores: siguiendo ? prev._count.seguidores - 1 : prev._count.seguidores + 1
+                        seguidores: nuevoEstado 
+                            ? (prev._count.seguidores + 1) 
+                            : Math.max(0, prev._count.seguidores - 1)
                     }
                 }));
+
+                setMsgGeneral({ 
+                    text: nuevoEstado ? `Ahora sigues a ${usuario.nombre}` : `Has dejado de seguir a ${usuario.nombre}`, 
+                    type: 'success' 
+                });
+                setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
             }
         } catch (e) { 
             setMsgGeneral({ text: "No se pudo procesar la acción.", type: 'error' });
@@ -325,6 +340,10 @@ export default function Perfil() {
             const data = await resp.json();
             if (data.success) {
                 setPublicaciones(prev => prev.filter(p => p.id !== postId));
+                setUsuario(prev => prev ? ({
+                    ...prev,
+                    _count: { ...prev._count, publicaciones: Math.max(0, (prev._count?.publicaciones || 1) - 1) }
+                }) : prev);
                 setMsgGeneral({ text: "Publicación eliminada.", type: 'success' });
                 setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
             }
@@ -440,6 +459,42 @@ export default function Perfil() {
         }
     };
 
+    const handleCancelarSuscripcion = async () => {
+        setCancelLoading(true);
+        try {
+            const userId = await AsyncStorage.getItem("userId");
+            const response = await fetch(`${API_URL}/premium/cancelar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // 1. Actualizar estado local
+                setUsuario(prev => ({ ...prev, es_premium: false }));
+                
+                // 2. Actualizar AsyncStorage
+                const profileDataStr = await AsyncStorage.getItem("profileData");
+                if (profileDataStr) {
+                    const profileData = JSON.parse(profileDataStr);
+                    if (profileData.usuario) profileData.usuario.es_premium = false;
+                    await AsyncStorage.setItem("profileData", JSON.stringify(profileData));
+                }
+
+                setCancelModalVisible(false);
+                setMsgGeneral({ text: "Tu suscripción ha sido cancelada.", type: 'success' });
+            } else {
+                throw new Error(data.error || "No se pudo cancelar");
+            }
+        } catch (error) {
+            setMsgGeneral({ text: error.message, type: 'error' });
+        } finally {
+            setCancelLoading(false);
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+        }
+    };
+
     const calcularIMC = () => {
         const p = editando ? parseFloat(nuevoPeso) : usuario?.peso;
         const a = editando ? parseFloat(nuevaAltura) : usuario?.altura;
@@ -458,10 +513,24 @@ export default function Perfil() {
 
     const infoImc = getImcData(imcValue);
 
-    if (loading || !usuario) {
+    if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <Text style={{color:'white'}}>Cargando perfil...</Text>
+                <Text style={{color:'white', fontWeight: 'bold'}}>Cargando perfil...</Text>
+            </View>
+        );
+    }
+
+    if (!usuario) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={{color:'white', fontSize: 18, fontWeight: 'bold', marginBottom: 20}}>Usuario no encontrado</Text>
+                <TouchableOpacity
+                    style={{backgroundColor: '#ff7a00', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12}}
+                    onPress={() => router.canGoBack() ? router.back() : router.replace('/redsocial')}
+                >
+                    <Text style={{color: 'white', fontWeight: 'bold'}}>Volver atrás</Text>
+                </TouchableOpacity>
             </View>
         );
     }
@@ -483,7 +552,7 @@ export default function Perfil() {
                         </View>
                     ) : null}
                     <View style={styles.topHeader}>
-                        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+                        <TouchableOpacity style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace(esPropioPerfil ? '/rutina' : '/redsocial')}>
                             <Text style={styles.backText}>← Volver</Text>
                         </TouchableOpacity>
 
@@ -565,6 +634,21 @@ export default function Perfil() {
 
                     {esPropioPerfil && (
                         <View style={styles.privateZone}>
+                            {usuario?.es_premium && (
+                                <View style={styles.premiumBanner}>
+                                    <View style={styles.premiumTextContainer}>
+                                        <Text style={styles.premiumBadge}>👑 PREMIUM ACTIVADO</Text>
+                                        <Text style={styles.premiumStatusMsg}>Eres usuario Premium. Disfrutas de todas las ventajas.</Text>
+                                    </View>
+                                    <TouchableOpacity 
+                                        style={styles.cancelSubscriptionBtn}
+                                        onPress={() => setCancelModalVisible(true)}
+                                    >
+                                        <Text style={styles.cancelSubscriptionText}>Cancelar</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
                             <View style={styles.imcCard}>
                                 <Text style={styles.imcLabel}>Tu IMC calculado</Text>
                                 <View style={styles.gaugeContainer}>
@@ -798,6 +882,38 @@ export default function Perfil() {
                         </View>
                     </View>
                 )}
+                {/* MODAL CONFIRMACIÓN CANCELAR SUSCRIPCIÓN (HU-58) */}
+                {cancelModalVisible && (
+                    <View style={styles.confirmOverlay}>
+                        <View style={styles.confirmCard}>
+                            <View style={styles.confirmIconContainer}>
+                                <Text style={{fontSize: 40}}>👋</Text>
+                            </View>
+                            <Text style={styles.confirmTitle}>¿Quieres cancelar RumboFit Premium?</Text>
+                            <Text style={styles.confirmMsg}>
+                                Perderás el acceso al historial antiguo, la creación ilimitada de rutinas y volverás a ver anuncios.
+                            </Text>
+                            <View style={styles.confirmActions}>
+                                <TouchableOpacity 
+                                    style={styles.confirmBtnCancel} 
+                                    onPress={() => setCancelModalVisible(false)}
+                                    disabled={cancelLoading}
+                                >
+                                    <Text style={styles.confirmBtnCancelText}>Mantener</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.confirmBtnDelete, {backgroundColor: '#666'}]} 
+                                    onPress={handleCancelarSuscripcion}
+                                    disabled={cancelLoading}
+                                >
+                                    <Text style={styles.confirmBtnDeleteText}>
+                                        {cancelLoading ? 'Procesando...' : 'Confirmar Baja'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                )}
             </View>
         </ImageBackground>
     );
@@ -990,6 +1106,27 @@ const styles = StyleSheet.create({
     privateZone: { width: '100%' },
     titulo: { color: 'white', fontSize: 22, fontWeight: 'bold', marginBottom: 2 },
     subtituloEmail: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 20 },
+    premiumBanner: { 
+        backgroundColor: '#FFD700', 
+        width: '100%', 
+        borderRadius: 20, 
+        padding: 18, 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        marginBottom: 20,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    premiumTextContainer: { flex: 1 },
+    premiumBadge: { color: '#000', fontWeight: '900', fontSize: 13, marginBottom: 2 },
+    premiumStatusMsg: { color: 'rgba(0,0,0,0.7)', fontSize: 11, fontWeight: '700' },
+    cancelSubscriptionBtn: { backgroundColor: 'rgba(0,0,0,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.2)' },
+    cancelSubscriptionText: { color: '#000', fontWeight: 'bold', fontSize: 11 },
+    confirmIconContainer: { alignItems: 'center', marginBottom: 15 },
     imcCard: { backgroundColor: 'rgba(255,255,255,0.95)', width: '100%', borderRadius: 20, padding: 20, alignItems: 'center', marginBottom: 20 },
     imcLabel: { color: '#666', fontSize: 14, fontWeight: '600' },
     gaugeContainer: { alignItems: 'center', marginTop: 10 },

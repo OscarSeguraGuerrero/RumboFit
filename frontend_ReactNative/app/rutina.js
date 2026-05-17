@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import React from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { API_URL } from '../config';
@@ -23,6 +23,31 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
+
+/**
+ * Recarga el estado premium del usuario desde el backend o caché
+ * para asegurar que los cambios de suscripción sean instantáneos.
+ */
+const useActualizarEstadoPremium = (setUsuarioCompleto) => {
+    useFocusEffect(
+        useCallback(() => {
+            const refresh = async () => {
+                const uid = await AsyncStorage.getItem('userId');
+                if (!uid) return;
+                try {
+                    const res = await fetch(`${API_URL}/usuarios/${uid}`);
+                    const data = await res.json();
+                    if (data.success) {
+                        setUsuarioCompleto(data.usuario);
+                    }
+                } catch (e) {
+                    console.log("Error refrescando estado premium:", e);
+                }
+            };
+            refresh();
+        }, [])
+    );
+};
 
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
     const id = 'rumbofit-no-focus-ring';
@@ -196,6 +221,10 @@ export default function Rutina() {
     const [macrosHoy, setMacrosHoy] = useState({ kcal: 0, prot: 0, carb: 0, gras: 0 });
     const [rutinaEditable, setRutinaEditable] = useState({});
     const [entrenamientoCompletado, setEntrenamientoCompletado] = useState(false);
+    
+    // HU-57: Asegurar que el cambio a premium sea instantáneo al volver de la pasarela
+    useActualizarEstadoPremium(setUsuarioCompleto);
+
     const [editando, setEditando] = useState(false);
     const [perfData, setPerfData] = useState({}); // { [index]: { peso: "", ritmo: "" } }
 
@@ -1284,7 +1313,10 @@ export default function Rutina() {
                                     <Text style={styles.title}>Mis Rutinas</Text>
                                 </View>
                                 <TouchableOpacity
-                                    style={styles.createRoutineButton}
+                                    style={[
+                                        styles.createRoutineButton,
+                                        (!usuarioCompleto?.es_premium && listaRutinas.length >= 3) && styles.createRoutineButtonDisabled
+                                    ]}
                                     onPress={iniciarNuevaRutina}
                                     activeOpacity={0.85}
                                 >
@@ -2069,6 +2101,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center'
     },
     createRoutineButtonText: { color: 'white', fontWeight: 'bold', fontSize: 13 },
+    createRoutineButtonDisabled: {
+        opacity: 0.4,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderStyle: 'dashed',
+    },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
     actionButtons: { flexDirection: 'row', gap: 8 },
     btnSmall: { backgroundColor: 'rgba(255,255,255,0.25)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: 'white' },

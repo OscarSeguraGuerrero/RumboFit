@@ -51,6 +51,7 @@ export default function RedSocial() {
     const [searching, setSearching] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [topLikedPosts, setTopLikedPosts] = useState([]);
+    const [errorModal, setErrorModal] = useState('');
 
     const showMessage = (text, type) => {
         setMessage({ text, type });
@@ -111,19 +112,12 @@ export default function RedSocial() {
 
     const bootstrap = async () => {
         const storedUserId = await AsyncStorage.getItem('userId');
-        const storedUserName = await AsyncStorage.getItem('userName');
-
         if (!storedUserId) {
             router.replace('/');
             return;
         }
-
         setUserId(storedUserId);
-        await Promise.all([
-            loadFeed(storedUserId),
-            loadMyPosts(storedUserId),
-            loadTopLikedPosts(storedUserId)
-        ]);
+        await loadFeed(storedUserId);
     };
 
     useEffect(() => {
@@ -134,8 +128,6 @@ export default function RedSocial() {
         React.useCallback(() => {
             if (!userId) return undefined;
             loadFeed(userId);
-            loadMyPosts(userId);
-            loadTopLikedPosts(userId);
             return undefined;
         }, [userId])
     );
@@ -167,7 +159,44 @@ export default function RedSocial() {
         return () => clearTimeout(timeout);
     }, [search, userId]);
 
+    const toggleFollowSearch = async (targetUser) => {
+        const yaSiguiendo = targetUser.siguiendo;
+        const endpoint = yaSiguiendo ? 'unfollow' : 'follow';
+        try {
+            const resp = await fetch(`${API_URL}/usuarios/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ seguidorId: userId, seguidoId: targetUser.id })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                // 1. Actualizar estado del buscador
+                setSearchResults(prev => prev.map(u => 
+                    u.id === targetUser.id ? { ...u, siguiendo: !yaSiguiendo } : u
+                ));
+
+                // 2. Si dejamos de seguir, limpiar el tablón local (HU-47)
+                if (yaSiguiendo) {
+                    setFeed(prev => prev.filter(p => Number(p.usuario_id) !== Number(targetUser.id)));
+                    showMessage(`Has dejado de seguir a ${targetUser.nombre}`, 'success');
+                } else {
+                    // Si empezamos a seguir, recargamos el feed para que aparezcan sus posts
+                    loadFeed(userId);
+                    showMessage(`Ahora sigues a ${targetUser.nombre}`, 'success');
+                }
+            }
+        } catch (e) {
+            showMessage('No se pudo procesar el seguimiento', 'error');
+        }
+    };
+
     const seleccionarImagen = async () => {
+        const remaining = 5 - form.imagenes.length;
+        if (remaining === 0) {
+            setErrorModal('Ya tienes el máximo de 5 imágenes');
+            return;
+        }
+
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
             showMessage('Hace falta permiso para acceder a la galería', 'error');
@@ -177,23 +206,38 @@ export default function RedSocial() {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsMultipleSelection: true,
-            selectionLimit: 5,
-            quality: 0.6,
+            selectionLimit: remaining,
+            quality: 0.3,
             base64: true,
+            exif: false,
         });
 
         if (!result.canceled) {
-            const selectedImages = result.assets
-                .slice(0, 5)
-                .map((asset) => `data:image/jpeg;base64,${asset.base64}`);
-            setForm((prev) => ({ ...prev, imagenes: selectedImages }));
+            if (result.assets.length > remaining) {
+                setErrorModal(`Solo puedes añadir ${remaining} imagen${remaining !== 1 ? 'es' : ''} más (máximo 5 en total)`);
+                return;
+            }
+            const newImages = result.assets.map(asset => `data:image/jpeg;base64,${asset.base64}`);
+            setForm(prev => ({ ...prev, imagenes: [...prev.imagenes, ...newImages] }));
         }
+    };
+
+    const eliminarImagenPrevia = (index) => {
+        setForm(prev => ({ ...prev, imagenes: prev.imagenes.filter((_, i) => i !== index) }));
+    };
+
+    const cerrarModal = () => {
+        setCreateVisible(false);
+        setForm({ titulo: '', descripcion: '', imagenes: [] });
+        setErrorModal('');
     };
 
     const publicar = async () => {
         if (!userId) return;
+        setErrorModal('');
+
         if (!form.titulo.trim() || !form.descripcion.trim()) {
-            showMessage('El título y la descripción son obligatorios', 'error');
+            setErrorModal('El título y la descripción son obligatorios');
             return;
         }
 
@@ -214,13 +258,11 @@ export default function RedSocial() {
                 throw new Error(data.error || 'No se pudo publicar');
             }
 
-            setMyPosts((prev) => [data.publicacion, ...prev]);
             setFeed((prev) => [data.publicacion, ...prev]);
-            setForm({ titulo: '', descripcion: '', imagenes: [] });
-            setCreateVisible(false);
+            cerrarModal(); // Limpia y cierra
             showMessage('Publicación creada', 'success');
         } catch (error) {
-            showMessage(error.message || 'No se pudo publicar', 'error');
+            setErrorModal(error.message || 'No se pudo publicar');
         } finally {
             setPublishing(false);
         }
@@ -239,8 +281,6 @@ export default function RedSocial() {
                 throw new Error(data.error || 'No se pudo eliminar');
             }
             setFeed((prev) => prev.filter((post) => Number(post.id) !== Number(deleteTarget)));
-            setMyPosts((prev) => prev.filter((post) => Number(post.id) !== Number(deleteTarget)));
-            setTopLikedPosts((prev) => prev.filter((post) => Number(post.id) !== Number(deleteTarget)));
             showMessage('Publicación eliminada', 'success');
         } catch (error) {
             showMessage(error.message || 'No se pudo eliminar', 'error');
@@ -251,6 +291,21 @@ export default function RedSocial() {
 
     const toggleLike = async (postId) => {
         if (!userId) return;
+
+        const applyUpdate = (posts, liked, count) => posts.map((post) => {
+            if (Number(post.id) !== Number(postId)) return post;
+            return { ...post, likedByMe: liked, _count: { ...post._count, me_gusta: count } };
+        });
+
+        // Actualización optimista inmediata
+        const currentPost = feed.find(p => Number(p.id) === Number(postId));
+        if (!currentPost) return;
+        const optimisticLiked = !currentPost.likedByMe;
+        const optimisticCount = optimisticLiked
+            ? (currentPost._count?.me_gusta || 0) + 1
+            : Math.max(0, (currentPost._count?.me_gusta || 0) - 1);
+        setFeed((prev) => applyUpdate(prev, optimisticLiked, optimisticCount));
+
         try {
             const response = await fetch(`${API_URL}/publicaciones/${postId}/like`, {
                 method: 'POST',
@@ -258,26 +313,12 @@ export default function RedSocial() {
                 body: JSON.stringify({ userId }),
             });
             const data = await parseResponse(response);
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || 'No se pudo actualizar el like');
-            }
-
-            const applyLikeUpdate = (posts) => posts.map((post) => {
-                if (Number(post.id) !== Number(postId)) return post;
-                return {
-                    ...post,
-                    likedByMe: data.liked,
-                    _count: {
-                        ...post._count,
-                        me_gusta: data.likesCount
-                    }
-                };
-            });
-
-            setFeed((prev) => applyLikeUpdate(prev));
-            setMyPosts((prev) => applyLikeUpdate(prev));
-            setTopLikedPosts((prev) => applyLikeUpdate(prev));
+            if (!response.ok || !data.success) throw new Error(data.error || 'No se pudo actualizar el like');
+            // Confirmar con los valores reales del servidor
+            setFeed((prev) => applyUpdate(prev, data.liked, data.likesCount));
         } catch (error) {
+            // Revertir si falla
+            setFeed((prev) => applyUpdate(prev, currentPost.likedByMe, currentPost._count?.me_gusta || 0));
             showMessage(error.message || 'No se pudo actualizar el like', 'error');
         }
     };
@@ -297,7 +338,10 @@ export default function RedSocial() {
                             placeholderTextColor="#999"
                             maxLength={80}
                             value={form.titulo}
-                            onChangeText={(text) => setForm((prev) => ({ ...prev, titulo: text }))}
+                            onChangeText={(text) => {
+                                setForm((prev) => ({ ...prev, titulo: text }));
+                                if (errorModal) setErrorModal('');
+                            }}
                         />
                         <TextInput
                             style={[styles.input, styles.textarea]}
@@ -305,20 +349,45 @@ export default function RedSocial() {
                             placeholderTextColor="#999"
                             multiline
                             value={form.descripcion}
-                            onChangeText={(text) => setForm((prev) => ({ ...prev, descripcion: text }))}
+                            onChangeText={(text) => {
+                                setForm((prev) => ({ ...prev, descripcion: text }));
+                                if (errorModal) setErrorModal('');
+                            }}
                         />
-                        <TouchableOpacity style={styles.secondaryButton} onPress={seleccionarImagen}>
+
+                        {errorModal ? (
+                            <Text style={styles.modalErrorText}>{errorModal}</Text>
+                        ) : null}
+
+                        <TouchableOpacity
+                            style={[styles.secondaryButton, form.imagenes.length >= 5 && styles.secondaryButtonDisabled]}
+                            onPress={seleccionarImagen}
+                        >
                             <Text style={styles.secondaryButtonText}>
-                                {form.imagenes.length > 0 ? `${form.imagenes.length} imágenes seleccionadas` : 'Añadir imágenes'}
+                                {form.imagenes.length === 0
+                                    ? 'Añadir imágenes'
+                                    : form.imagenes.length >= 5
+                                        ? '5/5 — máximo alcanzado'
+                                        : `Añadir más (${form.imagenes.length}/5)`}
                             </Text>
                         </TouchableOpacity>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-                            {form.imagenes.map((imagen, index) => (
-                                <Image key={`${imagen}-${index}`} source={{ uri: imagen }} style={styles.previewThumb} />
-                            ))}
-                        </ScrollView>
+                        {form.imagenes.length > 0 && (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+                                {form.imagenes.map((imagen, index) => (
+                                    <View key={index} style={styles.previewThumbWrapper}>
+                                        <Image source={{ uri: imagen }} style={styles.previewThumb} />
+                                        <TouchableOpacity
+                                            style={styles.removeThumbBtn}
+                                            onPress={() => eliminarImagenPrevia(index)}
+                                        >
+                                            <Text style={styles.removeThumbText}>✕</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        )}
                         <View style={styles.createActions}>
-                            <TouchableOpacity style={styles.cancelButton} onPress={() => setCreateVisible(false)}>
+                            <TouchableOpacity style={styles.cancelButton} onPress={cerrarModal}>
                                 <Text style={styles.cancelButtonText}>Cancelar</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.primaryButton} onPress={publicar} disabled={publishing}>
@@ -332,8 +401,8 @@ export default function RedSocial() {
             <Modal transparent visible={Boolean(deleteTarget)} animationType="fade">
                 <View style={styles.createOverlay}>
                     <View style={styles.confirmCard}>
-                        <Text style={styles.createTitle}>Eliminar publicaciÃ³n</Text>
-                        <Text style={styles.confirmText}>Esta acciÃ³n quitarÃ¡ la publicaciÃ³n del tablÃ³n.</Text>
+                        <Text style={styles.confirmTitle}>Eliminar publicación</Text>
+                        <Text style={styles.confirmText}>Esta acción borrará la publicación permanentemente del tablón.</Text>
                         <View style={styles.createActions}>
                             <TouchableOpacity style={styles.cancelButton} onPress={() => setDeleteTarget(null)}>
                                 <Text style={styles.cancelButtonText}>Cancelar</Text>
@@ -347,128 +416,131 @@ export default function RedSocial() {
             </Modal>
 
             <View style={styles.mainCard}>
-                {message.text ? (
-                    <View style={[styles.banner, message.type === 'error' ? styles.bannerError : styles.bannerSuccess]}>
-                        <Text style={styles.bannerText}>{message.text}</Text>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={styles.scrollContent}
+                >
+                    <View style={styles.headerRow}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.methodLabel}>RED SOCIAL</Text>
+                            <Text style={styles.title}>Comunidad</Text>
+                        </View>
+                        <TouchableOpacity style={styles.createButton} onPress={() => setCreateVisible(true)}>
+                            <Text style={styles.createButtonText}>+ Crear Post</Text>
+                        </TouchableOpacity>
                     </View>
-                ) : null}
 
-                <View style={styles.headerRow}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.methodLabel}>RED SOCIAL</Text>
-                        <Text style={styles.title}>Tu tablón</Text>
-                    </View>
-                    <TouchableOpacity style={styles.createButton} onPress={() => setCreateVisible(true)}>
-                        <Text style={styles.createButtonText}>+ Crear</Text>
-                    </TouchableOpacity>
-                </View>
+                    {/* BUSCADOR INTERACTIVO (HU-45) */}
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Buscar usuarios por nombre..."
+                        placeholderTextColor="#999"
+                        value={search}
+                        onChangeText={setSearch}
+                    />
 
-                <TextInput
-                    ref={searchInputRef}
-                    style={styles.searchInput}
-                    placeholder="Buscar usuarios por nombre"
-                    placeholderTextColor="#999"
-                    value={search}
-                    onChangeText={setSearch}
-                />
-
-                {(search.trim().length > 0 || searching) && (
-                    <View style={styles.searchPanel}>
-                        {searching ? (
-                            <Text style={styles.searchState}>Buscando...</Text>
-                        ) : searchResults.length === 0 ? (
-                            <Text style={styles.searchState}>No se han encontrado coincidencias</Text>
-                        ) : (
-                            searchResults.map((result) => (
-                                <TouchableOpacity
-                                    key={result.id}
-                                    style={styles.searchResultRow}
-                                    onPress={() => router.push(`/perfil?id=${result.id}`)}
-                                >
-                                    {result.foto_perfil ? (
-                                        <Image source={{ uri: result.foto_perfil }} style={styles.searchAvatar} />
-                                    ) : (
-                                        <View style={styles.searchAvatarFallback}>
-                                            <Text style={styles.searchAvatarFallbackText}>{result.nombre.charAt(0).toUpperCase()}</Text>
+                    {(search.trim().length > 0 || searching) && (
+                        <View style={styles.searchPanel}>
+                            {searching ? (
+                                <Text style={styles.searchState}>Buscando coincidencias...</Text>
+                            ) : searchResults.length === 0 ? (
+                                <Text style={styles.searchState}>No se han encontrado coincidencias</Text>
+                            ) : (
+                                searchResults.map((result) => (
+                                    <TouchableOpacity
+                                        key={result.id}
+                                        style={styles.searchResultRow}
+                                        onPress={() => {
+                                            setSearch('');
+                                            router.push(`/perfil?id=${result.id}`);
+                                        }}
+                                    >
+                                        {result.foto_perfil ? (
+                                            <Image source={{ uri: result.foto_perfil }} style={styles.searchAvatar} />
+                                        ) : (
+                                            <View style={styles.searchAvatarFallback}>
+                                                <Text style={styles.searchAvatarFallbackText}>
+                                                    {result.nombre.charAt(0).toUpperCase()}
+                                                </Text>
+                                            </View>
+                                        )}
+                                        <View style={{ flex: 1, marginLeft: 10 }}>
+                                            <Text style={styles.searchName}>{result.nombre}</Text>
+                                            <TouchableOpacity
+                                                onPress={() => toggleFollowSearch(result)}
+                                                style={[styles.miniFollowBtn, result.siguiendo && styles.miniUnfollowBtn]}
+                                            >
+                                                <Text style={styles.miniFollowBtnText}>
+                                                    {result.siguiendo ? 'Siguiendo' : 'Seguir'}
+                                                </Text>
+                                            </TouchableOpacity>
                                         </View>
-                                    )}
-                                    <Text style={styles.searchName}>{result.nombre}</Text>
-                                </TouchableOpacity>
-                            ))
-                        )}
-                    </View>
-                )}
-
-                <View style={styles.featuredSection}>
-                    <View style={styles.featuredHeader}>
-                        <View>
-                            <Text style={styles.featuredEyebrow}>TENDENCIAS</Text>
-                            <Text style={styles.featuredTitle}>Más likes de la comunidad</Text>
+                                    </TouchableOpacity>
+                                ))
+                            )}
                         </View>
-                    </View>
-                    {topLikedPosts.length === 0 ? (
-                        <View style={styles.featuredEmptyCard}>
-                            <Text style={styles.featuredEmptyText}>Todavía no hay publicaciones destacadas.</Text>
-                        </View>
-                    ) : (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredList}>
-                            {topLikedPosts.map((post) => (
-                                <FeaturedPostCard
-                                    key={`top-${post.id}`}
-                                    post={post}
-                                    onOpenProfile={(targetUserId) => router.push(`/perfil?id=${targetUserId}`)}
-                                    onOpenDetail={(postId) => router.push(`/publicacion?id=${postId}`)}
-                                />
-                            ))}
-                        </ScrollView>
-                    )}
-                </View>
-
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-                    <Text style={styles.sectionTitle}>Tus publicaciones</Text>
-                    {myPosts.length === 0 ? (
-                        <Text style={styles.emptyText}>Todavía no has publicado nada.</Text>
-                    ) : (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.myPostsCarousel}>
-                            {myPosts.map((post) => (
-                                <PostCard
-                                    key={`mine-${post.id}`}
-                                    post={post}
-                                    ownPost
-                                    compact
-                                    onDelete={setDeleteTarget}
-                                    onLike={toggleLike}
-                                    onOpenProfile={(targetUserId) => router.push(`/perfil?id=${targetUserId}`)}
-                                    onOpenDetail={(postId) => router.push(`/publicacion?id=${postId}`)}
-                                />
-                            ))}
-                        </ScrollView>
                     )}
 
-                    <Text style={styles.sectionTitle}>Actividad de amigos</Text>
+                    <Text style={styles.sectionTitle}>Tablón de Actividad</Text>
+
                     {loading ? (
-                        <Text style={styles.emptyText}>Cargando publicaciones...</Text>
+                        <Text style={{ color: 'white', fontWeight: '700', textAlign: 'center', marginTop: 20 }}>Cargando publicaciones...</Text>
                     ) : feed.length === 0 ? (
                         <View style={styles.emptyFeedCard}>
-                            <Text style={styles.emptyFeedText}>Aún no hay actividad. ¡Busca a otros usuarios para empezar!</Text>
-                            <TouchableOpacity 
-                                style={styles.emptyFeedButton} 
-                                onPress={() => searchInputRef.current?.focus()}
-                            >
-                                <Text style={styles.emptyFeedButtonText}>Buscar usuarios</Text>
-                            </TouchableOpacity>
+                            <Text style={styles.emptyFeedText}>
+                                Aún no hay actividad. ¡Busca a otros usuarios para empezar!
+                            </Text>
                         </View>
                     ) : (
                         feed.map((post) => (
-                            <PostCard
-                                key={`feed-${post.id}`}
-                                post={post}
-                                ownPost={Number(post.usuario_id) === Number(userId)}
-                                onDelete={setDeleteTarget}
-                                onLike={toggleLike}
-                                onOpenProfile={(targetUserId) => router.push(`/perfil?id=${targetUserId}`)}
-                                onOpenDetail={(postId) => router.push(`/publicacion?id=${postId}`)}
-                            />
+                            <View key={post.id} style={styles.postCard}>
+                                <View style={styles.postHeader}>
+                                    <TouchableOpacity
+                                        style={styles.authorRow}
+                                        onPress={() => router.push(`/perfil?id=${post.usuario_id}`)}
+                                    >
+                                        {post.autor_foto ? (
+                                            <Image source={{ uri: post.autor_foto }} style={styles.authorAvatar} />
+                                        ) : (
+                                            <View style={styles.authorAvatarFallback}>
+                                                <Text style={styles.authorAvatarFallbackText}>
+                                                    {(post.autor_nombre || 'U').charAt(0)}
+                                                </Text>
+                                            </View>
+                                        )}
+                                        <View>
+                                            <Text style={styles.authorName}>{post.autor_nombre}</Text>
+                                            <Text style={styles.postMeta}>
+                                                {new Date(post.fecha_publicacion).toLocaleDateString()}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+
+                                    {Number(post.usuario_id) === Number(userId) && (
+                                        <TouchableOpacity onPress={() => setDeleteTarget(post.id)}>
+                                            <Text style={styles.deleteText}>Eliminar</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                <Text style={styles.postTitle}>{post.titulo}</Text>
+                                <Text style={styles.postDescription}>{post.descripcion}</Text>
+
+                                <ImageCarousel imagenes={post.imagenes} />
+
+                                <View style={styles.postActions}>
+                                    <TouchableOpacity
+                                        style={styles.likeButton}
+                                        onPress={() => toggleLike(post.id)}
+                                    >
+                                        <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>
+                                            {post.likedByMe ? '❤️' : '🤍'}
+                                        </Text>
+                                        <Text style={styles.likeCount}>{post._count?.me_gusta || 0}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         ))
                     )}
                 </ScrollView>
@@ -491,53 +563,53 @@ export default function RedSocial() {
     );
 }
 
-function PostCard({ post, ownPost, compact = false, onDelete, onLike, onOpenProfile, onOpenDetail }) {
+function ImageCarousel({ imagenes }) {
+    const [idx, setIdx] = React.useState(0);
+    if (!imagenes || imagenes.length === 0) return null;
+    const urls = imagenes.map(img => img.url || img).filter(Boolean);
+    if (urls.length === 0) return null;
     return (
-        <View style={[styles.postCard, compact && styles.postCardCompact]}>
-            <View style={styles.postHeader}>
-                <TouchableOpacity style={styles.authorRow} onPress={() => onOpenProfile(post.usuario_id)}>
-                    {post.autor_foto ? (
-                        <Image source={{ uri: post.autor_foto }} style={styles.authorAvatar} />
-                    ) : (
-                        <View style={styles.authorAvatarFallback}>
-                            <Text style={styles.authorAvatarFallbackText}>
-                                {(post.autor_nombre || 'U').charAt(0).toUpperCase()}
-                            </Text>
-                        </View>
-                    )}
-                    <View>
-                        <Text style={styles.authorName}>{post.autor_nombre || 'Usuario'}</Text>
-                        <Text style={styles.postMeta}>{relativeTime(post.fecha_publicacion)}</Text>
-                    </View>
-                </TouchableOpacity>
-                {ownPost ? (
-                    <TouchableOpacity onPress={() => onDelete(post.id)}>
-                        <Text style={styles.deleteText}>Eliminar</Text>
+        <View style={carouselStyles.wrapper}>
+            <Image source={{ uri: urls[idx] }} style={carouselStyles.image} />
+            {urls.length > 1 && (
+                <>
+                    <TouchableOpacity
+                        style={[carouselStyles.arrow, carouselStyles.arrowLeft, idx === 0 && carouselStyles.arrowDisabled]}
+                        onPress={() => setIdx(i => Math.max(0, i - 1))}
+                        disabled={idx === 0}
+                    >
+                        <Text style={carouselStyles.arrowText}>‹</Text>
                     </TouchableOpacity>
-                ) : null}
-            </View>
-
-            <TouchableOpacity onPress={() => onOpenDetail(post.id)} activeOpacity={0.9}>
-                <Text style={[styles.postTitle, compact && styles.postTitleCompact]} numberOfLines={compact ? 2 : undefined}>{post.titulo}</Text>
-                {post.descripcion ? (
-                    <Text style={[styles.postDescription, compact && styles.postDescriptionCompact]} numberOfLines={compact ? 2 : undefined}>
-                        {post.descripcion}
-                    </Text>
-                ) : null}
-                {post.imagenes?.[0]?.url ? (
-                    <Image source={{ uri: post.imagenes[0].url }} style={[styles.postImage, compact && styles.postImageCompact]} />
-                ) : null}
-            </TouchableOpacity>
-
-            <View style={styles.postActions}>
-                <TouchableOpacity style={styles.likeButton} onPress={() => onLike(post.id)}>
-                    <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>{post.likedByMe ? '♥' : '♡'}</Text>
-                    <Text style={styles.likeCount}>{post?._count?.me_gusta || 0}</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={[carouselStyles.arrow, carouselStyles.arrowRight, idx === urls.length - 1 && carouselStyles.arrowDisabled]}
+                        onPress={() => setIdx(i => Math.min(urls.length - 1, i + 1))}
+                        disabled={idx === urls.length - 1}
+                    >
+                        <Text style={carouselStyles.arrowText}>›</Text>
+                    </TouchableOpacity>
+                    <View style={carouselStyles.dots}>
+                        {urls.map((_, i) => (
+                            <View key={i} style={[carouselStyles.dot, i === idx && carouselStyles.dotActive]} />
+                        ))}
+                    </View>
+                </>
+            )}
         </View>
     );
 }
+
+const carouselStyles = StyleSheet.create({
+    wrapper: { width: '100%', aspectRatio: 1.6, borderRadius: 14, overflow: 'hidden', backgroundColor: '#eee', marginVertical: 10, position: 'relative' },
+    image: { width: '100%', height: '100%' },
+    arrow: { position: 'absolute', top: '50%', marginTop: -22, backgroundColor: 'rgba(0,0,0,0.45)', width: 36, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    arrowLeft: { left: 8 },
+    arrowRight: { right: 8 },
+    arrowDisabled: { opacity: 0.2 },
+    arrowText: { color: 'white', fontSize: 28, fontWeight: '900', lineHeight: 32 },
+    dots: { position: 'absolute', bottom: 8, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.5)' },
+    dotActive: { backgroundColor: 'white', width: 9, height: 9 },
+});
 
 function FeaturedPostCard({ post, onOpenProfile, onOpenDetail }) {
     return (
@@ -571,7 +643,8 @@ const styles = StyleSheet.create({
     confirmCard: { width: '100%', maxWidth: 420, backgroundColor: 'white', borderRadius: 20, padding: 20 },
     createTitle: { fontSize: 18, fontWeight: '900', color: '#222', marginBottom: 14 },
     confirmText: { color: '#555', fontSize: 14, lineHeight: 20 },
-    mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, elevation: 20 },
+    mainCard: { flex: 1, backgroundColor: '#ff7a00', borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 20, overflow: 'hidden' },
+    scrollContent: { padding: 18, paddingBottom: 100 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
     methodLabel: { color: '#ffffff', fontSize: 9, fontWeight: 'bold', letterSpacing: 1, opacity: 0.9 },
     title: { color: 'white', fontSize: 18, fontWeight: '900', textTransform: 'uppercase' },
@@ -604,14 +677,19 @@ const styles = StyleSheet.create({
     featuredEmptyText: { color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
     input: { backgroundColor: '#f4f4f4', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: '#222', marginBottom: 10, fontWeight: '600' },
     textarea: { minHeight: 96, textAlignVertical: 'top' },
+    modalErrorText: { color: '#e74c3c', fontSize: 12, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
     previewThumb: { width: 64, height: 64, borderRadius: 10, marginRight: 8 },
     createActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 16 },
     secondaryButton: { flex: 1, borderWidth: 1, borderColor: '#ff7a00', borderRadius: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: '#fff' },
+    secondaryButtonDisabled: { borderColor: '#ccc', backgroundColor: '#f9f9f9' },
     secondaryButtonText: { color: '#ff7a00', fontWeight: '800' },
     primaryButton: { flex: 1, backgroundColor: '#ff7a00', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
     primaryButtonText: { color: 'white', fontWeight: '900' },
     cancelButton: { flex: 1, backgroundColor: '#efefef', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
     cancelButtonText: { color: '#666', fontWeight: '800' },
+    previewThumbWrapper: { position: 'relative', marginRight: 8 },
+    removeThumbBtn: { position: 'absolute', top: 3, right: 3, backgroundColor: 'rgba(0,0,0,0.65)', width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+    removeThumbText: { color: 'white', fontSize: 11, fontWeight: '900', lineHeight: 13 },
     sectionTitle: { color: 'white', fontWeight: '900', fontSize: 16, marginBottom: 12 },
     emptyText: { color: 'rgba(255,255,255,0.78)', fontSize: 13, fontWeight: '600', marginBottom: 16 },
     emptyFeedCard: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 18, padding: 18, marginBottom: 16 },
@@ -644,6 +722,22 @@ const styles = StyleSheet.create({
     bannerError: { backgroundColor: 'rgba(231, 76, 60, 0.2)', borderWidth: 1, borderColor: '#e74c3c' },
     bannerSuccess: { backgroundColor: 'rgba(46, 204, 113, 0.2)', borderWidth: 1, borderColor: '#2ecc71' },
     bannerText: { color: 'white', fontWeight: 'bold', fontSize: 13, textAlign: 'center' },
+    miniFollowBtn: {
+        marginTop: 4,
+        backgroundColor: '#ff7a00',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 8,
+        alignSelf: 'flex-start'
+    },
+    miniUnfollowBtn: {
+        backgroundColor: '#ccc'
+    },
+    miniFollowBtnText: {
+        color: 'white',
+        fontSize: 11,
+        fontWeight: '900'
+    },
     navContainer: { position: 'absolute', bottom: 25, left: 20, right: 20 },
     tabBar: { flexDirection: 'row', backgroundColor: '#ffffff', height: 60, borderRadius: 25, alignItems: 'center', elevation: 10 },
     tabBarItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },

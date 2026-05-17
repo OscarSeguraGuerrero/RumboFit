@@ -67,13 +67,14 @@ export default function Notificaciones() {
             router.push(`/publicacion?id=${item.publicacion_id}`);
             return;
         }
+        // HU-52: El recurso ya no existe
         setMessage('El contenido original ya no está disponible');
     };
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/perfil')} style={styles.backBtn}>
                     <Text style={styles.backText}>Volver</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Notificaciones</Text>
@@ -109,7 +110,7 @@ export default function Notificaciones() {
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.cardText}>
                                     {item.tipo_notificacion === 'like'
-                                        ? `A ${item.origen_nombre || 'alguien'} le ha gustado tu post`
+                                        ? `${item.origen_nombre || 'Alguien'} le ha dado me gusta a tu publicación${item.publicacion_titulo ? ` "${item.publicacion_titulo}"` : ''}`
                                         : `${item.origen_nombre || 'Alguien'} ha empezado a seguirte`}
                                 </Text>
                                 <Text style={styles.cardTime}>{relativeTime(item.fecha)}</Text>

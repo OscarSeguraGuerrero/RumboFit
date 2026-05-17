@@ -22,6 +22,16 @@ export default function Historial() {
     useFocusEffect(
         useCallback(() => {
             cargarHistorial();
+            // Refrescar estado premium explícitamente para HU-57
+            const checkPremium = async () => {
+                const uid = await AsyncStorage.getItem("userId");
+                if (uid) {
+                    const res = await fetch(`${API_URL}/usuarios/${uid}`);
+                    const data = await res.json();
+                    if (data.success) setEsPremium(data.usuario.es_premium);
+                }
+            };
+            checkPremium();
         }, [])
     );
 
@@ -71,19 +81,10 @@ export default function Historial() {
         const nueva = new Date(fechaReferencia);
         nueva.setMonth(nueva.getMonth() + offset);
         const hoy = new Date();
-        const limiteAtras = new Date();
-        limiteAtras.setMonth(hoy.getMonth() - 3);
 
+        // Evitar ir a meses futuros
         if (nueva.getFullYear() > hoy.getFullYear() || (nueva.getFullYear() === hoy.getFullYear() && nueva.getMonth() > hoy.getMonth())) return;
 
-        const diffTime = Math.abs(hoy - nueva);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        const distanciaMeses = Math.floor(diffDays / 30);
-
-        if (distanciaMeses > 3 && !esPremium) {
-            setModalHistorialPremium(true);
-            return;
-        }
         setFechaReferencia(nueva);
     };
 
@@ -157,7 +158,7 @@ export default function Historial() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/rutina')} style={styles.backBtn}>
                     <Text style={styles.backText}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Historial RumboFit</Text>

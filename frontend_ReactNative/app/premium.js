@@ -8,7 +8,19 @@ import { API_URL } from '../config';
 
 export default function PremiumScreen() {
     const [loading, setLoading] = useState(false);
+    const [esPremium, setEsPremium] = useState(false);
     const { initPaymentSheet, presentPaymentSheet } = useStripeConditional();
+
+    React.useEffect(() => {
+        const checkStatus = async () => {
+            const profileDataStr = await AsyncStorage.getItem("profileData");
+            if (profileDataStr) {
+                const profileData = JSON.parse(profileDataStr);
+                setEsPremium(profileData.usuario?.es_premium || false);
+            }
+        };
+        checkStatus();
+    }, []);
 
     const handleSubscribe = async () => {
         if (Platform.OS === 'web') {
@@ -139,14 +151,18 @@ export default function PremiumScreen() {
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.subscribeButton, loading && styles.buttonDisabled]}
+                    style={[styles.subscribeButton, (loading || esPremium) && styles.buttonDisabled]}
                     onPress={handleSubscribe}
-                    disabled={loading}
+                    disabled={loading || esPremium}
                 >
                     <Text style={styles.subscribeButtonText}>
-                        {loading ? 'Procesando...' : 'Suscribirse Ahora'}
+                        {loading ? 'Procesando...' : (esPremium ? '👑 Suscripción Activa' : 'Suscribirse Ahora')}
                     </Text>
                 </TouchableOpacity>
+                
+                {esPremium && (
+                    <Text style={styles.premiumNote}>Ya disfrutas de todas las ventajas Premium.</Text>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -258,4 +274,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
+    premiumNote: {
+        color: '#aaaaaa',
+        fontSize: 14,
+        textAlign: 'center',
+        marginTop: 15,
+        fontStyle: 'italic'
+    }
 });

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { API_URL } from '../config';
 
 const necesitaDiagnostico = (usuario) => {
@@ -27,6 +27,17 @@ export default function Auth() {
     const [form, setForm] = useState({ nombre: '', email: '', password: '', telefono: '' });
     const [error, setError] = useState('');
     const [exito, setExito] = useState('');
+    const [mostrarPublicidad, setMostrarPublicidad] = useState(false);
+    const [rutaDestino, setRutaDestino] = useState('');
+
+    useEffect(() => {
+        AsyncStorage.getItem('pendingAdRuta').then(pending => {
+            if (pending) {
+                setRutaDestino(pending);
+                setMostrarPublicidad(true);
+            }
+        });
+    }, []);
 
     const handleAuth = async () => {
         setError(''); // Limpiar errores previos
@@ -98,10 +109,18 @@ export default function Auth() {
                     const profileResponse = await fetch(`${API_URL}/usuarios/${data.user.id}`);
                     const profileData = await profileResponse.json();
 
-                    if (profileData.success && !necesitaDiagnostico(profileData.usuario)) {
-                        router.replace('/rutina');
-                    } else {
-                        router.replace('/formulario');
+                    if (profileData.success) {
+                        const user = profileData.usuario;
+                        const target = necesitaDiagnostico(user) ? '/formulario' : '/rutina';
+
+                        if (!user.es_premium) {
+                            // HU-54: Interceptar para mostrar publicidad
+                            setRutaDestino(target);
+                            setMostrarPublicidad(true);
+                        } else {
+                            // Usuario Premium: Navegación directa
+                            router.replace(target);
+                        }
                     }
                 } else {
                     setError(data.error || "Credenciales incorrectas");
@@ -111,6 +130,18 @@ export default function Auth() {
             console.error(err);
             setError("No se pudo conectar con el servidor. Revisa tu IP.");
         }
+    };
+
+    const cerrarPublicidad = async () => {
+        await AsyncStorage.removeItem('pendingAdRuta');
+        setMostrarPublicidad(false);
+        router.replace(rutaDestino);
+    };
+
+    const irAPremium = async () => {
+        await AsyncStorage.setItem('pendingAdRuta', rutaDestino);
+        setMostrarPublicidad(false);
+        router.push('/premium');
     };
 
     return (
@@ -187,6 +218,27 @@ export default function Auth() {
                     </View>
                 </View>
             </ScrollView>
+
+            {/* MODAL DE PUBLICIDAD INTERSTICIAL (HU-54) */}
+            <Modal visible={mostrarPublicidad} animationType="slide" transparent={false}>
+                <View style={styles.adContainer}>
+                    <Image
+                        source={require('../assets/images/publicidad.jpg')}
+                        style={styles.adImage}
+                        resizeMode="cover"
+                    />
+                    <TouchableOpacity style={styles.closeAdBtn} onPress={cerrarPublicidad}>
+                        <Text style={styles.closeAdText}>✕</Text>
+                    </TouchableOpacity>
+                    <View style={styles.adOverlay}>
+                        <Text style={styles.adTitle}>RumboFit Premium</Text>
+                        <Text style={styles.adSubtitle}>Entrena sin anuncios y desbloquea funciones exclusivas.</Text>
+                        <TouchableOpacity style={styles.adButton} onPress={irAPremium}>
+                            <Text style={styles.adButtonText}>Suscríbete a Premium</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -202,5 +254,16 @@ const styles = StyleSheet.create({
     buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     switchText: { marginTop: 15, color: '#ff7a00', fontWeight: '500' },
     errorText: { color: 'red', fontSize: 12, marginBottom: 10, textAlign: 'center' },
-    successText: { color: '#2ecc71', fontSize: 12, marginBottom: 10, textAlign: 'center', fontWeight: 'bold' }
+    successText: { color: '#2ecc71', fontSize: 12, marginBottom: 10, textAlign: 'center', fontWeight: 'bold' },
+    
+    // Estilos Publicidad (HU-54)
+    adContainer: { flex: 1, backgroundColor: '#000' },
+    adImage: { width: '100%', height: '100%', position: 'absolute' },
+    closeAdBtn: { position: 'absolute', top: 50, right: 25, backgroundColor: 'rgba(0,0,0,0.5)', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+    closeAdText: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+    adOverlay: { position: 'absolute', bottom: 0, width: '100%', padding: 40, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center' },
+    adTitle: { color: '#ff7a00', fontSize: 28, fontWeight: '900', marginBottom: 10 },
+    adSubtitle: { color: 'white', fontSize: 16, textAlign: 'center', marginBottom: 25, fontWeight: '600' },
+    adButton: { backgroundColor: '#ff7a00', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 30 },
+    adButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 }
 });
