@@ -531,7 +531,9 @@ function PostCard({ post, ownPost, compact = false, onDelete, onLike, onOpenProf
 
             <View style={styles.postActions}>
                 <TouchableOpacity style={styles.likeButton} onPress={() => onLike(post.id)}>
-                    <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>{post.likedByMe ? '♥' : '♡'}</Text>
+                    <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>
+                        {post.likedByMe ? '\u2665' : '\u2661'}
+                    </Text>
                     <Text style={styles.likeCount}>{post?._count?.me_gusta || 0}</Text>
                 </TouchableOpacity>
             </View>
@@ -549,7 +551,7 @@ function FeaturedPostCard({ post, onOpenProfile, onOpenDetail }) {
             )}
             <View style={styles.featuredOverlay} />
             <View style={styles.featuredBadge}>
-                <Text style={styles.featuredBadgeText}>♥ {post?._count?.me_gusta || 0}</Text>
+                <Text style={styles.featuredBadgeText}>{'\u2665'} {post?._count?.me_gusta || 0}</Text>
             </View>
             <View style={styles.featuredContent}>
                 <TouchableOpacity onPress={() => onOpenProfile(post.usuario_id)} activeOpacity={0.8}>

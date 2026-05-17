@@ -124,7 +124,9 @@ export default function PublicacionDetalle() {
                     <Text style={styles.description}>{post.descripcion}</Text>
 
                     <TouchableOpacity style={styles.likeButton} onPress={toggleLike}>
-                        <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>{post.likedByMe ? '♥' : '♡'}</Text>
+                        <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>
+                            {post.likedByMe ? '\u2665' : '\u2661'}
+                        </Text>
                         <Text style={styles.likeCount}>{post?._count?.me_gusta || 0}</Text>
                     </TouchableOpacity>
                 </ScrollView>
