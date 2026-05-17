@@ -353,6 +353,36 @@ export default function Perfil() {
         }
     };
 
+    const toggleLike = async (postId) => {
+        if (!propioId) return;
+        try {
+            const resp = await fetch(`${API_URL}/publicaciones/${postId}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: propioId })
+            });
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                throw new Error(data.error || 'No se pudo actualizar el like');
+            }
+
+            setPublicaciones((prev) => prev.map((post) => {
+                if (Number(post.id) !== Number(postId)) return post;
+                return {
+                    ...post,
+                    likedByMe: data.liked,
+                    _count: {
+                        ...post._count,
+                        me_gusta: data.likesCount
+                    }
+                };
+            }));
+        } catch (e) {
+            setMsgGeneral({ text: "No se pudo actualizar el like.", type: 'error' });
+            setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
+        }
+    };
+
     const seleccionarImagen = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
@@ -850,7 +880,15 @@ export default function Perfil() {
                                     {post.imagenes && post.imagenes.length > 0 && (
                                         <Image source={{ uri: post.imagenes[0].url }} style={styles.postImg} />
                                     )}
-                                    <Text style={styles.postDate}>{new Date(post.fecha_publicacion).toLocaleDateString()}</Text>
+                                    <View style={styles.postFooter}>
+                                        <Text style={styles.postDate}>{new Date(post.fecha_publicacion).toLocaleDateString()}</Text>
+                                        <TouchableOpacity style={styles.likeButton} onPress={() => toggleLike(post.id)}>
+                                            <Text style={[styles.likeIcon, post.likedByMe && styles.likeIconActive]}>
+                                                {post.likedByMe ? '\u2665' : '\u2661'}
+                                            </Text>
+                                            <Text style={styles.likeCount}>{post?._count?.me_gusta || 0}</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </TouchableOpacity>
                             ))
                         )}
@@ -1188,7 +1226,12 @@ const styles = StyleSheet.create({
     deletePostText: { color: 'red', fontSize: 12, fontWeight: '600' },
     postDesc: { color: '#666', fontSize: 14, marginBottom: 10 },
     postImg: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10 },
-    postDate: { color: '#999', fontSize: 10, textAlign: 'right' },
+    postFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    postDate: { color: '#999', fontSize: 10 },
+    likeButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4, paddingHorizontal: 6 },
+    likeIcon: { fontSize: 20, color: '#888' },
+    likeIconActive: { color: '#e74c3c' },
+    likeCount: { color: '#333', fontWeight: '900', fontSize: 12 },
     cancelarBtn: { marginTop: 20, padding: 10, alignSelf: 'center' },
     loadingContainer: { flex: 1, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
 
