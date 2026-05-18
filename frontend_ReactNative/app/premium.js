@@ -9,7 +9,13 @@ import { API_URL } from '../config';
 export default function PremiumScreen() {
     const [loading, setLoading] = useState(false);
     const [esPremium, setEsPremium] = useState(false);
+    const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
     const { initPaymentSheet, presentPaymentSheet } = useStripeConditional();
+
+    const mostrarMensaje = (text, type = 'error') => {
+        setMsgGeneral({ text, type });
+        setTimeout(() => setMsgGeneral({ text: '', type: '' }), 4000);
+    };
 
     React.useEffect(() => {
         const checkStatus = async () => {
@@ -22,9 +28,89 @@ export default function PremiumScreen() {
         checkStatus();
     }, []);
 
+    // Manejar el retorno de Stripe Checkout en la web
+    React.useEffect(() => {
+        const checkWebStripeCallback = async () => {
+            if (Platform.OS === 'web') {
+                const urlParams = new URLSearchParams(window.location.search);
+                const isSuccess = urlParams.get('success');
+                const isCanceled = urlParams.get('canceled');
+
+                if (isSuccess === 'true') {
+                    setLoading(true);
+                    try {
+                        const userId = await AsyncStorage.getItem("userId");
+                        if (userId) {
+                            // Activar premium en el backend tras el pago
+                            const activateRes = await fetch(`${API_URL}/premium/activar`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId })
+                            });
+                            
+                            const activateData = await activateRes.json();
+                            if (activateData.success) {
+                                const profileDataStr = await AsyncStorage.getItem("profileData");
+                                if (profileDataStr) {
+                                    const profileData = JSON.parse(profileDataStr);
+                                    if (profileData.usuario) profileData.usuario.es_premium = true;
+                                    await AsyncStorage.setItem("profileData", JSON.stringify(profileData));
+                                }
+                                setEsPremium(true);
+                                mostrarMensaje("¡Pago completado con éxito a través de Stripe!\n\nBienvenido a Premium 👑", 'success');
+                                
+                                // Redirigir a la página principal tras el pago exitoso en la web
+                                setTimeout(() => router.replace('/rutina'), 2500);
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error activando premium tras success:", error);
+                        mostrarMensaje("Hubo un error validando tu pago.", 'error');
+                    } finally {
+                        setLoading(false);
+                        // Limpiar la URL para evitar recargas infinitas
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                } else if (isCanceled === 'true') {
+                    mostrarMensaje("El pago fue cancelado.", 'error');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+        };
+        checkWebStripeCallback();
+    }, []);
+
     const handleSubscribe = async () => {
         if (Platform.OS === 'web') {
-            Alert.alert("No disponible", "Los pagos nativos no están disponibles en la versión web.");
+            setLoading(true);
+            try {
+                const userId = await AsyncStorage.getItem("userId");
+                if (!userId) {
+                    mostrarMensaje("Error: No has iniciado sesión", 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                // Llamar al backend para crear la sesión de Checkout de Stripe
+                const origin = window.location.origin;
+                const checkoutRes = await fetch(`${API_URL}/premium/crear-checkout-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, origin })
+                });
+                
+                const checkoutData = await checkoutRes.json();
+                if (checkoutData.success && checkoutData.url) {
+                    // Redirigir a la página de pago segura de Stripe
+                    window.location.href = checkoutData.url;
+                } else {
+                    throw new Error("No se pudo iniciar el Checkout de Stripe.");
+                }
+            } catch (error) {
+                console.error("Web Checkout Error:", error);
+                mostrarMensaje("Error: " + error.message, 'error');
+                setLoading(false);
+            }
             return;
         }
 
@@ -32,7 +118,7 @@ export default function PremiumScreen() {
         try {
             const userId = await AsyncStorage.getItem("userId");
             if (!userId) {
-                Alert.alert("Error", "No has iniciado sesión");
+                mostrarMensaje("Error: No has iniciado sesión", 'error');
                 setLoading(false);
                 return;
             }
@@ -61,7 +147,7 @@ export default function PremiumScreen() {
 
             if (paymentError) {
                 if (paymentError.code !== 'Canceled') {
-                    Alert.alert("Pago fallido", paymentError.message);
+                    mostrarMensaje(paymentError.message, 'error');
                 }
                 setLoading(false);
                 return;
@@ -84,18 +170,15 @@ export default function PremiumScreen() {
                     await AsyncStorage.setItem("profileData", JSON.stringify(profileData));
                 }
 
-                Alert.alert(
-                    "¡Bienvenido a Premium! 👑", 
-                    "Tu suscripción se ha activado correctamente. Ya puedes disfrutar de todos los beneficios.",
-                    [{ text: "Empezar", onPress: () => router.back() }]
-                );
+                mostrarMensaje("¡Bienvenido a Premium! 👑\n\nTu suscripción se ha activado correctamente.", 'success');
+                setTimeout(() => router.back(), 2500);
             } else {
                 throw new Error("El pago se procesó pero falló la activación.");
             }
 
         } catch (error) {
             console.error("Stripe Checkout Error:", error);
-            Alert.alert("Error", error.message);
+            mostrarMensaje(error.message, 'error');
         } finally {
             setLoading(false);
         }
@@ -110,6 +193,12 @@ export default function PremiumScreen() {
                 <Text style={styles.headerTitle}>RumboFit Premium</Text>
                 <View style={{ width: 28 }} />
             </View>
+
+            {msgGeneral.text ? (
+                <View style={[styles.msgBanner, msgGeneral.type === 'error' ? styles.msgError : styles.msgSuccess]}>
+                    <Text style={styles.msgText}>{msgGeneral.text}</Text>
+                </View>
+            ) : null}
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.heroSection}>
@@ -280,5 +369,25 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 15,
         fontStyle: 'italic'
+    },
+    msgBanner: {
+        padding: 15,
+        marginHorizontal: 20,
+        marginTop: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    msgError: {
+        backgroundColor: '#e74c3c',
+    },
+    msgSuccess: {
+        backgroundColor: '#2ecc71',
+    },
+    msgText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
     }
 });
