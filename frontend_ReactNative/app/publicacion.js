@@ -61,6 +61,10 @@ async function parseResponse(response) {
     }
 }
 
+function getAuthorDisplayName(post, currentUserId) {
+    return Number(post?.usuario_id) === Number(currentUserId) ? 'Yo' : (post?.autor_nombre || 'Usuario');
+}
+
 export default function PublicacionDetalle() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -156,11 +160,11 @@ export default function PublicacionDetalle() {
                             <Image source={{ uri: post.autor_foto }} style={styles.avatar} />
                         ) : (
                             <View style={styles.avatarFallback}>
-                                <Text style={styles.avatarFallbackText}>{(post.autor_nombre || 'U').charAt(0).toUpperCase()}</Text>
+                                <Text style={styles.avatarFallbackText}>{getAuthorDisplayName(post, userId).charAt(0).toUpperCase()}</Text>
                             </View>
                         )}
                         <View>
-                            <Text style={styles.authorName}>{post.autor_nombre || 'Usuario'}</Text>
+                            <Text style={styles.authorName}>{getAuthorDisplayName(post, userId)}</Text>
                             <Text style={styles.dateText}>{new Date(post.fecha_publicacion).toLocaleString()}</Text>
                         </View>
                     </TouchableOpacity>

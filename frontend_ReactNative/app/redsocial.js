@@ -37,10 +37,18 @@ function relativeTime(dateString) {
 
 function sortPostsByRecent(posts) {
     return [...posts].sort((a, b) => {
-        const dateA = new Date(a?.fecha_publicacion || 0).getTime();
-        const dateB = new Date(b?.fecha_publicacion || 0).getTime();
+        const dateA = Number.isFinite(new Date(a?.fecha_publicacion || 0).getTime())
+            ? new Date(a?.fecha_publicacion || 0).getTime()
+            : 0;
+        const dateB = Number.isFinite(new Date(b?.fecha_publicacion || 0).getTime())
+            ? new Date(b?.fecha_publicacion || 0).getTime()
+            : 0;
         return dateB - dateA;
     });
+}
+
+function getAuthorDisplayName(post, currentUserId) {
+    return Number(post?.usuario_id) === Number(currentUserId) ? 'Yo' : (post?.autor_nombre || 'Usuario');
 }
 
 export default function RedSocial() {
@@ -502,7 +510,12 @@ export default function RedSocial() {
                         </View>
                     ) : (
                         feed.map((post) => (
-                            <View key={post.id} style={styles.postCard}>
+                            <TouchableOpacity
+                                key={post.id}
+                                style={styles.postCard}
+                                activeOpacity={0.92}
+                                onPress={() => router.push(`/publicacion?id=${post.id}`)}
+                            >
                                 <View style={styles.postHeader}>
                                     <TouchableOpacity
                                         style={styles.authorRow}
@@ -513,12 +526,12 @@ export default function RedSocial() {
                                         ) : (
                                             <View style={styles.authorAvatarFallback}>
                                                 <Text style={styles.authorAvatarFallbackText}>
-                                                    {(post.autor_nombre || 'U').charAt(0)}
+                                                    {getAuthorDisplayName(post, userId).charAt(0)}
                                                 </Text>
                                             </View>
                                         )}
                                         <View>
-                                            <Text style={styles.authorName}>{post.autor_nombre}</Text>
+                                            <Text style={styles.authorName}>{getAuthorDisplayName(post, userId)}</Text>
                                             <Text style={styles.postMeta}>
                                                 {new Date(post.fecha_publicacion).toLocaleDateString()}
                                             </Text>
@@ -548,7 +561,7 @@ export default function RedSocial() {
                                         <Text style={styles.likeCount}>{post._count?.me_gusta || 0}</Text>
                                     </TouchableOpacity>
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         ))
                     )}
                 </ScrollView>
@@ -619,7 +632,7 @@ const carouselStyles = StyleSheet.create({
     dotActive: { backgroundColor: 'white', width: 9, height: 9 },
 });
 
-function FeaturedPostCard({ post, onOpenProfile, onOpenDetail }) {
+function FeaturedPostCard({ post, onOpenProfile, onOpenDetail, currentUserId }) {
     return (
         <TouchableOpacity style={styles.featuredCard} activeOpacity={0.9} onPress={() => onOpenDetail(post.id)}>
             {post.imagenes?.[0]?.url ? (
@@ -633,7 +646,7 @@ function FeaturedPostCard({ post, onOpenProfile, onOpenDetail }) {
             </View>
             <View style={styles.featuredContent}>
                 <TouchableOpacity onPress={() => onOpenProfile(post.usuario_id)} activeOpacity={0.8}>
-                    <Text style={styles.featuredAuthor}>{post.autor_nombre || 'Usuario'}</Text>
+                    <Text style={styles.featuredAuthor}>{getAuthorDisplayName(post, currentUserId)}</Text>
                 </TouchableOpacity>
                 <Text style={styles.featuredPostTitle} numberOfLines={2}>{post.titulo}</Text>
                 {post.descripcion ? (

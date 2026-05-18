@@ -106,6 +106,11 @@ function sanitizeSocialPost(rawPost, usersMap) {
     };
 }
 
+function getPostDateMs(post) {
+    const parsed = new Date(post?.fecha_publicacion || 0).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function mapPrismaPostToSocial(post) {
     return normalizarPublicacionFirebase({
         ...post,
@@ -393,7 +398,7 @@ async function getFirebasePostsForUser(userId) {
                 me_gusta: likesIndex[Number(post.id)] || 0
             }
         }))
-        .sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
+        .sort((a, b) => getPostDateMs(b) - getPostDateMs(a));
 
     const [legacyFirebaseFeed, prismaPosts, legacyLikesIndex] = await Promise.all([
         listDocuments(SOCIAL_POSTS_COLLECTION),
@@ -449,7 +454,7 @@ async function getFirebaseFeed() {
                 me_gusta: likesIndex[Number(post.id)] || 0
             }
         }))
-        .sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
+        .sort((a, b) => getPostDateMs(b) - getPostDateMs(a));
 
     const [legacyFirebaseFeed, prismaFeed, legacyLikesIndex] = await Promise.all([
         listDocuments(SOCIAL_POSTS_COLLECTION),
@@ -594,7 +599,7 @@ async function getSocialFeedForUser(userId) {
     const feed = await getSocialFeed();
     return feed
         .filter((post) => allowedIds.includes(Number(post.usuario_id)))
-        .sort((a, b) => new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion));
+        .sort((a, b) => getPostDateMs(b) - getPostDateMs(a));
 }
 
 async function getSocialPostById(postId) {

@@ -72,6 +72,24 @@ const formatShortDate = (dateString) => {
     return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const getPostTimestamp = (post) => {
+    const parsed = new Date(post?.fecha_publicacion || 0).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const sortPostsByRecent = (posts) => {
+    return [...(Array.isArray(posts) ? posts : [])].sort((a, b) => getPostTimestamp(b) - getPostTimestamp(a));
+};
+
+const getPostImageUri = (post) => {
+    const firstImage = Array.isArray(post?.imagenes) ? post.imagenes[0] : null;
+    if (!firstImage) return null;
+    if (typeof firstImage === 'string') return firstImage;
+    if (typeof firstImage?.url === 'string' && firstImage.url.trim() !== '') return firstImage.url;
+    if (typeof firstImage?.uri === 'string' && firstImage.uri.trim() !== '') return firstImage.uri;
+    return null;
+};
+
 function buildProgressAnalysis(historial, user) {
     const fechas = Object.keys(historial || {}).sort((a, b) => new Date(a) - new Date(b));
     const fechasConDatos = fechas.filter((fecha) => {
@@ -264,7 +282,7 @@ export default function Perfil() {
             const viewerId = await AsyncStorage.getItem("userId");
             const resp = await fetch(`${API_URL}/usuarios/${userId}/publicaciones?viewerId=${viewerId || ''}`);
             const data = await resp.json();
-            if (data.success) setPublicaciones(data.publicaciones);
+            if (data.success) setPublicaciones(sortPostsByRecent(data.publicaciones));
         } catch (e) { console.error(e); }
     };
 
@@ -339,7 +357,7 @@ export default function Perfil() {
             });
             const data = await resp.json();
             if (data.success) {
-                setPublicaciones(prev => prev.filter(p => p.id !== postId));
+                setPublicaciones(prev => sortPostsByRecent(prev.filter(p => p.id !== postId)));
                 setUsuario(prev => prev ? ({
                     ...prev,
                     _count: { ...prev._count, publicaciones: Math.max(0, (prev._count?.publicaciones || 1) - 1) }
@@ -376,7 +394,7 @@ export default function Perfil() {
                         me_gusta: data.likesCount
                     }
                 };
-            }));
+            }).sort((a, b) => getPostTimestamp(b) - getPostTimestamp(a)));
         } catch (e) {
             setMsgGeneral({ text: "No se pudo actualizar el like.", type: 'error' });
             setTimeout(() => setMsgGeneral({ text: '', type: '' }), 3000);
@@ -877,8 +895,8 @@ export default function Perfil() {
                                         )}
                                     </View>
                                     <Text style={styles.postDesc}>{post.descripcion}</Text>
-                                    {post.imagenes && post.imagenes.length > 0 && (
-                                        <Image source={{ uri: post.imagenes[0].url }} style={styles.postImg} />
+                                    {getPostImageUri(post) && (
+                                        <Image source={{ uri: getPostImageUri(post) }} style={styles.postImg} />
                                     )}
                                     <View style={styles.postFooter}>
                                         <Text style={styles.postDate}>{new Date(post.fecha_publicacion).toLocaleDateString()}</Text>
