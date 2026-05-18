@@ -35,6 +35,14 @@ function relativeTime(dateString) {
     return `Hace ${days} d`;
 }
 
+function sortPostsByRecent(posts) {
+    return [...posts].sort((a, b) => {
+        const dateA = new Date(a?.fecha_publicacion || 0).getTime();
+        const dateB = new Date(b?.fecha_publicacion || 0).getTime();
+        return dateB - dateA;
+    });
+}
+
 export default function RedSocial() {
     const router = useRouter();
     const [userId, setUserId] = useState(null);
@@ -67,7 +75,7 @@ export default function RedSocial() {
             if (!response.ok || !data.success) {
                 throw new Error(data.error || 'No se pudo cargar la comunidad');
             }
-            setFeed(Array.isArray(data.publicaciones) ? data.publicaciones : []);
+            setFeed(sortPostsByRecent(Array.isArray(data.publicaciones) ? data.publicaciones : []));
         } catch (error) {
             showMessage(error.message || 'No se pudo cargar la comunidad', 'error');
             setFeed([]);
@@ -177,7 +185,7 @@ export default function RedSocial() {
 
                 // 2. Si dejamos de seguir, limpiar el tablón local (HU-47)
                 if (yaSiguiendo) {
-                    setFeed(prev => prev.filter(p => Number(p.usuario_id) !== Number(targetUser.id)));
+                    setFeed(prev => sortPostsByRecent(prev.filter(p => Number(p.usuario_id) !== Number(targetUser.id))));
                     showMessage(`Has dejado de seguir a ${targetUser.nombre}`, 'success');
                 } else {
                     // Si empezamos a seguir, recargamos el feed para que aparezcan sus posts
@@ -258,7 +266,7 @@ export default function RedSocial() {
                 throw new Error(data.error || 'No se pudo publicar');
             }
 
-            setFeed((prev) => [data.publicacion, ...prev]);
+            setFeed((prev) => sortPostsByRecent([data.publicacion, ...prev]));
             cerrarModal(); // Limpia y cierra
             showMessage('Publicación creada', 'success');
         } catch (error) {

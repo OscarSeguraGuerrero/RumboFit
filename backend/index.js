@@ -113,6 +113,136 @@ function mapUserToFirebase(user) {
     };
 }
 
+function normalizarUsuarioFirebase(user) {
+    return {
+        id: user?.id !== null && user?.id !== undefined ? Number(user.id) : null,
+        nombre: user?.nombre || '',
+        email: user?.email || '',
+        telefono: user?.telefono || '',
+        sexo: user?.sexo || '',
+        peso: user?.peso !== null && user?.peso !== undefined ? Number(user.peso) : null,
+        altura: user?.altura !== null && user?.altura !== undefined ? Number(user.altura) : null,
+        edad: user?.edad !== null && user?.edad !== undefined ? Number(user.edad) : null,
+        objetivo: user?.objetivo || '',
+        nivel: user?.nivel || '',
+        frecuencia_semanal: user?.frecuencia_semanal !== null && user?.frecuencia_semanal !== undefined ? Number(user.frecuencia_semanal) : null,
+        foto_perfil: user?.foto_perfil || '',
+        es_premium: Boolean(user?.es_premium),
+        rutina_sugerida: user?.rutina_sugerida || null,
+        fecha_registro: user?.fecha_registro || null,
+        updated_at: user?.updated_at || null
+    };
+}
+
+function mergeUserData(prismaUser, firebaseUser) {
+    if (!prismaUser) return null;
+    if (!firebaseUser) return prismaUser;
+
+    const firebase = normalizarUsuarioFirebase(firebaseUser);
+    const pickString = (firebaseValue, prismaValue) =>
+        typeof firebaseValue === 'string' && firebaseValue.trim() !== '' ? firebaseValue : (prismaValue || '');
+    const pickNullable = (firebaseValue, prismaValue) =>
+        firebaseValue !== null && firebaseValue !== undefined ? firebaseValue : prismaValue;
+
+    return {
+        ...prismaUser,
+        nombre: pickString(firebase.nombre, prismaUser.nombre),
+        email: pickString(firebase.email, prismaUser.email),
+        telefono: pickString(firebase.telefono, prismaUser.telefono),
+        sexo: pickString(firebase.sexo, prismaUser.sexo),
+        objetivo: pickString(firebase.objetivo, prismaUser.objetivo),
+        nivel: pickString(firebase.nivel, prismaUser.nivel),
+        foto_perfil: pickString(firebase.foto_perfil, prismaUser.foto_perfil),
+        peso: pickNullable(firebase.peso, prismaUser.peso),
+        altura: pickNullable(firebase.altura, prismaUser.altura),
+        edad: pickNullable(firebase.edad, prismaUser.edad),
+        frecuencia_semanal: pickNullable(firebase.frecuencia_semanal, prismaUser.frecuencia_semanal),
+        es_premium: typeof firebase.es_premium === 'boolean' ? firebase.es_premium : prismaUser.es_premium,
+        rutina_sugerida: firebase.rutina_sugerida || prismaUser.rutina_sugerida || null,
+        fecha_registro: firebase.fecha_registro || prismaUser.fecha_registro,
+        updated_at: firebase.updated_at || prismaUser.updated_at
+    };
+}
+
+async function getSocialUserById(userId) {
+    const prismaUser = await prisma.usuario.findUnique({
+        where: { id: userId }
+    });
+
+    if (!prismaUser) return null;
+
+    try {
+        const firebaseUser = await getDocument(USERS_COLLECTION, String(userId));
+        if (!firebaseUser) {
+            await syncUserToFirebase(prismaUser);
+            return prismaUser;
+        }
+        return mergeUserData(prismaUser, firebaseUser);
+    } catch (error) {
+        console.error('Firestore user read failed, fallback Prisma:', error.message);
+        return prismaUser;
+    }
+}
+
+async function searchSocialUsersByName(query, currentUserId) {
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    if (!normalizedQuery) return [];
+
+    const followedIds = currentUserId ? new Set(await getFollowedUserIds(currentUserId)) : new Set();
+
+    try {
+        const firebaseUsers = await listDocuments(USERS_COLLECTION);
+        const users = firebaseUsers
+            .map(limpiarDocFirebase)
+            .map(normalizarUsuarioFirebase)
+            .filter((user) =>
+                user.id &&
+                Number(user.id) !== Number(currentUserId || 0) &&
+                String(user.nombre || '').toLowerCase().includes(normalizedQuery)
+            )
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+            .slice(0, 20)
+            .map((user) => ({
+                id: user.id,
+                nombre: user.nombre,
+                foto_perfil: user.foto_perfil || '',
+                email: user.email || '',
+                siguiendo: followedIds.has(Number(user.id))
+            }));
+
+        if (users.length > 0) return users;
+    } catch (error) {
+        console.error('Firestore user search failed, fallback Prisma:', error.message);
+    }
+
+    const usuariosDB = await prisma.usuario.findMany({
+        where: {
+            nombre: {
+                contains: query,
+                mode: 'insensitive'
+            },
+            NOT: {
+                id: currentUserId || undefined
+            }
+        },
+        select: {
+            id: true,
+            nombre: true,
+            foto_perfil: true,
+            email: true
+        },
+        take: 20,
+        orderBy: {
+            nombre: 'asc'
+        }
+    });
+
+    return usuariosDB.map((user) => ({
+        ...user,
+        siguiendo: followedIds.has(Number(user.id))
+    }));
+}
+
 async function syncUserToFirebase(user) {
     if (!user?.id) return;
     try {
@@ -312,18 +442,43 @@ async function getSocialFeed() {
 }
 
 async function getSocialFollowersAndFollowing(userId) {
+    const mergeFollowers = (firebaseFollowers = [], prismaFollowers = []) => {
+        const merged = new Map();
+
+        [...prismaFollowers, ...firebaseFollowers].forEach((item) => {
+            const followerId = Number(item?.seguidor_id);
+            const followedId = Number(item?.seguido_id);
+            if (!followerId || !followedId) return;
+
+            merged.set(`${followerId}_${followedId}`, {
+                seguidor_id: followerId,
+                seguido_id: followedId,
+                fecha: item?.fecha || null
+            });
+        });
+
+        return Array.from(merged.values());
+    };
+
+    const prismaFollowersPromise = prisma.seguidor.findMany({
+        where: {
+            OR: [
+                { seguidor_id: userId },
+                { seguido_id: userId }
+            ]
+        }
+    });
+
     try {
-        return await getFirebaseFollowersForUser(userId);
+        const [firebaseFollowers, prismaFollowers] = await Promise.all([
+            getFirebaseFollowersForUser(userId),
+            prismaFollowersPromise
+        ]);
+
+        return mergeFollowers(firebaseFollowers, prismaFollowers);
     } catch (error) {
         console.error('Firestore followers failed, fallback Prisma:', error.message);
-        return prisma.seguidor.findMany({
-            where: {
-                OR: [
-                    { seguidor_id: userId },
-                    { seguido_id: userId }
-                ]
-            }
-        });
+        return mergeFollowers([], await prismaFollowersPromise);
     }
 }
 
@@ -897,9 +1052,7 @@ app.post('/api/rutinas/generar', async (req, res) => {
 app.get('/api/usuarios/:id', async (req, res) => {
     const userId = parseInt(req.params.id);
     try {
-        const usuario = await prisma.usuario.findUnique({
-            where: { id: userId }
-        });
+        const usuario = await getSocialUserById(userId);
         if (!usuario) return res.status(404).json({ success: false, error: "No encontrado" });
         const socialCounts = await getSocialCounts(userId);
         res.json({ success: true, usuario: { ...usuario, _count: socialCounts } });
@@ -1169,30 +1322,8 @@ app.get('/api/usuarios/buscar/:query', async (req, res) => {
         if (!query) return res.json({ success: true, usuarios: [] });
 
         console.log(`[SEARCH] Buscando usuarios con query: "${query}" (excluyendo userId: ${currentUserId})`);
-
-        // Cambiamos Firebase por Prisma para asegurar que los usuarios existan en la DB principal
-        const usuariosDB = await prisma.usuario.findMany({
-            where: {
-                nombre: {
-                    startsWith: query,
-                    mode: 'insensitive'
-                },
-                NOT: {
-                    id: currentUserId || undefined
-                }
-            },
-            select: {
-                id: true,
-                nombre: true,
-                foto_perfil: true
-            },
-            take: 20,
-            orderBy: {
-                nombre: 'asc'
-            }
-        });
-
-        res.json({ success: true, usuarios: usuariosDB });
+        const usuarios = await searchSocialUsersByName(query, currentUserId);
+        res.json({ success: true, usuarios });
     } catch (error) {
         console.error('[SEARCH ERROR]', error);
         res.status(500).json({ error: "Error al buscar usuarios" });

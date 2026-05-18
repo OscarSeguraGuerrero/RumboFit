@@ -7,8 +7,6 @@
     <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/perfil.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/publicacion.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/publicacion.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/redsocial.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
     </list>
@@ -18,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="112" />
+    <option name="cachedIndexableFilesCount" value="118" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -45,15 +43,18 @@
     &quot;assignee&quot;: &quot;SamuelDiazGonzalezz&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
-    &quot;accountId&quot;: &quot;45dfd795-2780-4552-bff6-1dd18bcfeeec&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/OscarSeguraGuerrero/RumboFit.git",
+    "accountId": "6cd2f2e3-3737-4233-8480-46438b468c72"
   }
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
+  </component>
+  <component name="PackageJsonUpdateNotifier">
+    <dismissed value="$PROJECT_DIR$/backend/package.json" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
@@ -167,6 +168,7 @@
       <workItem from="1779001870290" duration="117000" />
       <workItem from="1779002011282" duration="121000" />
       <workItem from="1779002196337" duration="2068000" />
+      <workItem from="1779122877108" duration="954000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
