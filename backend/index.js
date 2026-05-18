@@ -1978,6 +1978,40 @@ app.post('/api/premium/crear-intent', async (req, res) => {
     }
 });
 
+// Crear una Checkout Session para la versión Web
+app.post('/api/premium/crear-checkout-session', async (req, res) => {
+    const { userId, origin } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId requerido' });
+
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'eur',
+                        product_data: {
+                            name: 'RumboFit Premium',
+                            description: 'Acceso ilimitado a todas las funciones.',
+                        },
+                        unit_amount: PREMIUM_PRICE_CENTS,
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: `${origin}/premium?success=true`,
+            cancel_url: `${origin}/premium?canceled=true`,
+            metadata: { userId: String(userId) }
+        });
+
+        res.json({ success: true, url: session.url });
+    } catch (error) {
+        console.error('Stripe Checkout error:', error.message);
+        res.status(500).json({ error: 'No se pudo iniciar Checkout Session' });
+    }
+});
+
 // Activar Premium tras confirmación de pago exitoso en Stripe
 app.post('/api/premium/activar', async (req, res) => {
     const { userId } = req.body;
