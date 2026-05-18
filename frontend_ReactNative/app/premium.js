@@ -22,9 +22,86 @@ export default function PremiumScreen() {
         checkStatus();
     }, []);
 
+    // Manejar el retorno de Stripe Checkout en la web
+    React.useEffect(() => {
+        const checkWebStripeCallback = async () => {
+            if (Platform.OS === 'web') {
+                const urlParams = new URLSearchParams(window.location.search);
+                const isSuccess = urlParams.get('success');
+                const isCanceled = urlParams.get('canceled');
+
+                if (isSuccess === 'true') {
+                    setLoading(true);
+                    try {
+                        const userId = await AsyncStorage.getItem("userId");
+                        if (userId) {
+                            // Activar premium en el backend tras el pago
+                            const activateRes = await fetch(`${API_URL}/premium/activar`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId })
+                            });
+                            
+                            const activateData = await activateRes.json();
+                            if (activateData.success) {
+                                const profileDataStr = await AsyncStorage.getItem("profileData");
+                                if (profileDataStr) {
+                                    const profileData = JSON.parse(profileDataStr);
+                                    if (profileData.usuario) profileData.usuario.es_premium = true;
+                                    await AsyncStorage.setItem("profileData", JSON.stringify(profileData));
+                                }
+                                setEsPremium(true);
+                                window.alert("¡Pago completado con éxito a través de Stripe!\n\nBienvenido a Premium 👑");
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error activando premium tras success:", error);
+                        window.alert("Hubo un error validando tu pago.");
+                    } finally {
+                        setLoading(false);
+                        // Limpiar la URL para evitar recargas infinitas
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                } else if (isCanceled === 'true') {
+                    window.alert("El pago fue cancelado.");
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+        };
+        checkWebStripeCallback();
+    }, []);
+
     const handleSubscribe = async () => {
         if (Platform.OS === 'web') {
-            Alert.alert("No disponible", "Los pagos nativos no están disponibles en la versión web.");
+            setLoading(true);
+            try {
+                const userId = await AsyncStorage.getItem("userId");
+                if (!userId) {
+                    window.alert("Error: No has iniciado sesión");
+                    setLoading(false);
+                    return;
+                }
+
+                // Llamar al backend para crear la sesión de Checkout de Stripe
+                const origin = window.location.origin;
+                const checkoutRes = await fetch(`${API_URL}/premium/crear-checkout-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, origin })
+                });
+                
+                const checkoutData = await checkoutRes.json();
+                if (checkoutData.success && checkoutData.url) {
+                    // Redirigir a la página de pago segura de Stripe
+                    window.location.href = checkoutData.url;
+                } else {
+                    throw new Error("No se pudo iniciar el Checkout de Stripe.");
+                }
+            } catch (error) {
+                console.error("Web Checkout Error:", error);
+                window.alert("Error: " + error.message);
+                setLoading(false);
+            }
             return;
         }
 
