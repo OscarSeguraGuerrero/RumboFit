@@ -52,6 +52,9 @@ export default function PremiumScreen() {
                                 }
                                 setEsPremium(true);
                                 window.alert("¡Pago completado con éxito a través de Stripe!\n\nBienvenido a Premium 👑");
+                                
+                                // Redirigir a la página principal tras el pago exitoso en la web
+                                router.replace('/rutina');
                             }
                         }
                     } catch (error) {
