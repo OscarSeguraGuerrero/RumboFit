@@ -10,6 +10,7 @@ export default function PremiumScreen() {
     const [loading, setLoading] = useState(false);
     const [esPremium, setEsPremium] = useState(false);
     const [msgGeneral, setMsgGeneral] = useState({ text: '', type: '' });
+    const [returnRoute, setReturnRoute] = useState('/rutina');
     const { initPaymentSheet, presentPaymentSheet } = useStripeConditional();
 
     const mostrarMensaje = (text, type = 'error') => {
@@ -20,13 +21,22 @@ export default function PremiumScreen() {
     React.useEffect(() => {
         const checkStatus = async () => {
             const profileDataStr = await AsyncStorage.getItem("profileData");
+            const storedReturnRoute = await AsyncStorage.getItem("premiumReturnRoute");
             if (profileDataStr) {
                 const profileData = JSON.parse(profileDataStr);
                 setEsPremium(profileData.usuario?.es_premium || false);
             }
+            if (storedReturnRoute) {
+                setReturnRoute(storedReturnRoute);
+            }
         };
         checkStatus();
     }, []);
+
+    const volverDesdePremium = async () => {
+        await AsyncStorage.removeItem("premiumReturnRoute");
+        router.replace(returnRoute || '/rutina');
+    };
 
     // Manejar el retorno de Stripe Checkout en la web
     React.useEffect(() => {
@@ -60,7 +70,7 @@ export default function PremiumScreen() {
                                 mostrarMensaje("¡Pago completado con éxito a través de Stripe!\n\nBienvenido a Premium 👑", 'success');
                                 
                                 // Redirigir a la página principal tras el pago exitoso en la web
-                                setTimeout(() => router.replace('/rutina'), 2500);
+                                setTimeout(() => volverDesdePremium(), 2500);
                             }
                         }
                     } catch (error) {
@@ -171,7 +181,7 @@ export default function PremiumScreen() {
                 }
 
                 mostrarMensaje("¡Bienvenido a Premium! 👑\n\nTu suscripción se ha activado correctamente.", 'success');
-                setTimeout(() => router.back(), 2500);
+                setTimeout(() => volverDesdePremium(), 2500);
             } else {
                 throw new Error("El pago se procesó pero falló la activación.");
             }
@@ -187,7 +197,7 @@ export default function PremiumScreen() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity onPress={volverDesdePremium} style={styles.backButton}>
                     <MaterialIcons name="arrow-back" size={28} color="#ffffff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>RumboFit Premium</Text>

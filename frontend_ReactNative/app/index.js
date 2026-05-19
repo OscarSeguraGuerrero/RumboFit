@@ -29,6 +29,7 @@ export default function Auth() {
     const [exito, setExito] = useState('');
     const [mostrarPublicidad, setMostrarPublicidad] = useState(false);
     const [rutaDestino, setRutaDestino] = useState('');
+    const [adImageSource, setAdImageSource] = useState(require('../assets/images/publicidad.jpg'));
 
     useEffect(() => {
         AsyncStorage.getItem('pendingAdRuta').then(pending => {
@@ -110,6 +111,7 @@ export default function Auth() {
                     const profileData = await profileResponse.json();
 
                     if (profileData.success) {
+                        await AsyncStorage.setItem("profileData", JSON.stringify(profileData));
                         const user = profileData.usuario;
                         const target = necesitaDiagnostico(user) ? '/formulario' : '/rutina';
 
@@ -121,6 +123,9 @@ export default function Auth() {
                             // Usuario Premium: Navegación directa
                             router.replace(target);
                         }
+                    } else {
+                        await AsyncStorage.removeItem("profileData");
+                        router.replace('/formulario');
                     }
                 } else {
                     setError(data.error || "Credenciales incorrectas");
@@ -139,6 +144,7 @@ export default function Auth() {
     };
 
     const irAPremium = async () => {
+        await AsyncStorage.setItem('premiumReturnRoute', rutaDestino || '/rutina');
         await AsyncStorage.setItem('pendingAdRuta', rutaDestino);
         setMostrarPublicidad(false);
         router.push('/premium');
@@ -223,9 +229,10 @@ export default function Auth() {
             <Modal visible={mostrarPublicidad} animationType="slide" transparent={false}>
                 <View style={styles.adContainer}>
                     <Image
-                        source={require('../assets/images/publicidad.jpg')}
+                        source={adImageSource}
                         style={styles.adImage}
                         resizeMode="cover"
+                        onError={() => setAdImageSource(require('../assets/images/publicidad3.jpg'))}
                     />
                     <TouchableOpacity style={styles.closeAdBtn} onPress={cerrarPublicidad}>
                         <Text style={styles.closeAdText}>✕</Text>

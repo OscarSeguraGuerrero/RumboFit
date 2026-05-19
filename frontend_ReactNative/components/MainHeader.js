@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, usePathname } from 'expo-router';
 import { API_URL } from '../config';
 
 /**
@@ -10,6 +10,7 @@ import { API_URL } from '../config';
  */
 export default function MainHeader() {
     const router = useRouter();
+    const pathname = usePathname();
     const [unreadCount, setUnreadCount] = useState(0);
     const [userName, setUserName] = useState('Usuario');
     const [menuVisible, setMenuVisible] = useState(false);
@@ -43,6 +44,11 @@ export default function MainHeader() {
         router.replace('/');
     };
 
+    const irAPremium = async () => {
+        await AsyncStorage.setItem('premiumReturnRoute', pathname || '/rutina');
+        router.push('/premium');
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.topBar}>
@@ -52,6 +58,14 @@ export default function MainHeader() {
                     resizeMode="contain" 
                 />
                 <View style={styles.topRight}>
+                    <TouchableOpacity
+                        style={styles.premiumButton}
+                        onPress={irAPremium}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.premiumIcon}>★</Text>
+                        <Text style={styles.premiumText}>Premium</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity 
                         style={styles.bellButton} 
                         onPress={() => router.push('/notificaciones')}
@@ -138,6 +152,37 @@ const styles = StyleSheet.create({
         flexDirection: 'row', 
         alignItems: 'center', 
         gap: 12 
+    },
+    premiumButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#f7c948',
+        borderWidth: 1,
+        borderColor: '#c58b00',
+        borderRadius: 21,
+        paddingVertical: 9,
+        paddingHorizontal: 14,
+        shadowColor: '#8a5a00',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 6,
+        elevation: 8
+    },
+    premiumIcon: {
+        fontSize: 16,
+        color: '#fff7cc',
+        textShadowColor: 'rgba(120, 72, 0, 0.45)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2
+    },
+    premiumText: {
+        fontSize: 12,
+        color: '#5c3900',
+        fontWeight: '800',
+        textShadowColor: 'rgba(255, 244, 200, 0.6)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 1
     },
     bellButton: { 
         width: 42, 

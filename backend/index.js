@@ -222,6 +222,24 @@ async function getSocialUserById(userId) {
     }
 }
 
+async function getUserProfileById(userId) {
+    const [prismaUser, firebaseUser] = await Promise.all([
+        prisma.usuario.findUnique({ where: { id: userId } }),
+        getSocialUserById(userId)
+    ]);
+
+    if (!prismaUser && !firebaseUser) return null;
+    if (!prismaUser) return firebaseUser;
+
+    const usuario = mergeUserData(prismaUser, firebaseUser);
+
+    if (!firebaseUser) {
+        await syncUserToFirebase(prismaUser);
+    }
+
+    return usuario;
+}
+
 async function searchSocialUsersByName(query, currentUserId) {
     const normalizedQuery = String(query || '').trim().toLowerCase();
     if (!normalizedQuery) return [];
@@ -835,6 +853,8 @@ app.post('/api/login', async (req, res) => {
             { expiresIn: '30d' }
         );
 
+        await syncUserToFirebase(usuario);
+
         res.json({
             success: true,
             token: token,
@@ -1087,7 +1107,7 @@ app.post('/api/rutinas/generar', async (req, res) => {
 app.get('/api/usuarios/:id', async (req, res) => {
     const userId = parseInt(req.params.id);
     try {
-        const usuario = await getSocialUserById(userId);
+        const usuario = await getUserProfileById(userId);
         if (!usuario) return res.status(404).json({ success: false, error: "No encontrado" });
         const socialCounts = await getSocialCounts(userId);
         res.json({ success: true, usuario: { ...usuario, _count: socialCounts } });

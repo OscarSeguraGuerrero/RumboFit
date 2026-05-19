@@ -2067,7 +2067,7 @@ export default function Rutina() {
                         </Text>
                         <TouchableOpacity
                             style={styles.premiumModalBtnPrimary}
-                            onPress={() => { setModalLimitePremium(false); router.push('/premium'); }}
+                            onPress={async () => { await AsyncStorage.setItem('premiumReturnRoute', '/rutina'); setModalLimitePremium(false); router.push('/premium'); }}
                         >
                             <Text style={styles.premiumModalBtnPrimaryText}>Mejorar a Premium</Text>
                         </TouchableOpacity>

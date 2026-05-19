@@ -322,7 +322,7 @@ export default function Historial() {
                         </Text>
                         <TouchableOpacity
                             style={styles.premiumModalBtnPrimary}
-                            onPress={() => { setModalHistorialPremium(false); router.push('/premium'); }}
+                            onPress={async () => { await AsyncStorage.setItem('premiumReturnRoute', '/historial'); setModalHistorialPremium(false); router.push('/premium'); }}
                         >
                             <Text style={styles.premiumModalBtnPrimaryText}>Mejorar a Premium</Text>
                         </TouchableOpacity>
