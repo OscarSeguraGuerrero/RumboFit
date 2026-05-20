@@ -2305,5 +2305,5 @@ app.post('/api/premium/cancelar', async (req, res) => {
 
 // --- ARRANCAR SERVIDOR ---
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor RumboFit corriendo en http://10.195.60.198:${PORT}`);
+    console.log(`Servidor RumboFit escuchando en todas las interfaces en el puerto ${PORT}`);
 });

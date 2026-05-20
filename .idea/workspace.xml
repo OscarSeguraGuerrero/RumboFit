@@ -7,12 +7,10 @@
     <list default="true" id="48e5cfe6-9aa9-4595-b2a3-c57d70332e33" name="Changes" comment="v7">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/historial.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/historial.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/premium.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/premium.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app/rutina.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/components/MainHeader.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/components/MainHeader.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/app.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend_ReactNative/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend_ReactNative/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend_ReactNative/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,7 +18,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="118" />
+    <option name="cachedIndexableFilesCount" value="2402" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -50,7 +48,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/OscarSeguraGuerrero/RumboFit.git&quot;,
-    &quot;accountId&quot;: &quot;6cd2f2e3-3737-4233-8480-46438b468c72&quot;
+    &quot;accountId&quot;: &quot;45dfd795-2780-4552-bff6-1dd18bcfeeec&quot;
   }
 }</component>
   <component name="McpProjectServerCommands">
@@ -175,6 +173,7 @@
       <workItem from="1779122877108" duration="4000000" />
       <workItem from="1779127729209" duration="17000" />
       <workItem from="1779182910217" duration="3208000" />
+      <workItem from="1779261681379" duration="2278000" />
     </task>
     <task id="LOCAL-00001" summary="Creación básica del frontend  de la aplicación">
       <option name="closed" value="true" />
